@@ -652,7 +652,7 @@ EOF
 # /********************************************************************
 # LiteSpeed Cloud Script
 # @Author:   LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
-# @Copyright: (c) 2018-2019
+# @Copyright: (c) 2018-2020
 # @Version: 1.3
 # *********************************************************************/
 . /var/lib/cloud/scripts/per-instance/per-instance.sh
