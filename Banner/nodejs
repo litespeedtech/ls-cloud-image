@@ -1,0 +1,26 @@
+#!/bin/bash
+#
+# Configured as part of the 1-Click Image build process
+function echoY
+{
+    FLAG=$1
+    shift
+    echo -e "\033[38;5;148m$FLAG\033[39m$@"
+}
+myip=$(curl -s ifconfig.me)
+cat <<EOF
+********************************************************************************
+Welcome to One-Click OpenLiteSpeed Node.js Server.
+To keep this Droplet secure, the firewalld is enabled.
+All ports are BLOCKED except 22 (SSH), 80 (HTTP) and 443 (HTTPS).
+
+The Node.js OLS One-Click Quickstart guide:
+* https://docs.litespeedtech.com/cloud/nodejs
+In a web browser, you can view:
+* The sample node site: http://$myip/node/
+On the server:
+* You can get the Web Admin admin password with the following command:
+   $(echoY "cat /root/.litespeed_password")
+********************************************************************************
+To delete this message of the day: rm -rf $(readlink -f ${0})
+EOF

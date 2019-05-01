@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Configured as part of the GCP Image build process
+# Configured as part of the 1-Click Image build process
 echoY()
 {
     FLAG=$1
@@ -10,7 +10,7 @@ echoY()
 myip=$(curl -s ifconfig.me)
 cat <<EOF
 ********************************************************************************
-Welcome to One-Click WordPress+LiteSpeed Instance.
+Welcome to One-Click OpenLiteSpeed WordPress Server.
 To keep this server secure, the UFW firewall is enabled.
 All ports are BLOCKED except 22 (SSH), 80 (HTTP) and 443 (HTTPS).
 In a web browser, you can view:
