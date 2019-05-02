@@ -13,7 +13,8 @@ WEBCF="${LSWSHM}/conf/httpd_config.conf"
 WEBVHCF="${LSWSHM}/conf/vhosts/Example/vhconf.conf"
 UPDATELIST='/var/lib/update-notifier/updates-available'
 WWW='FALSE'
-UPDATE='FALSE'
+UPDATE='TRUE'
+OSNAME=''
 
 echoY() {
     echo -e "\033[38;5;148m${1}\033[39m"
@@ -22,6 +23,16 @@ echoG() {
     echo -e "\033[38;5;71m${1}\033[39m"
 }
 
+check_os(){
+    if [ -f /etc/redhat-release ] ; then
+        OSNAME=centos
+    elif [ -f /etc/lsb-release ] ; then
+        OSNAME=ubuntu    
+    elif [ -f /etc/debian_version ] ; then
+        OSNAME=debian
+    fi         
+}
+check_os
 providerck()
 {
   if [ "$(sudo cat /sys/devices/virtual/dmi/id/product_uuid | cut -c 1-3)" = 'EC2' ] && [ -d /home/ubuntu ]; then 
@@ -44,6 +55,7 @@ ipget()
     MY_IP=$(curl -s -H "Metadata-Flavor: Google" http://metadata/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip)    
   else
     MY_IP=$(ifconfig eth0 | grep 'inet '| awk '{printf $2}')
+    #MY_IP=$(ip -4 route get 8.8.8.8 | awk {'print $7'} | tr -d '\n')
   fi    
 }
 ipget
@@ -164,10 +176,19 @@ endsetup(){
 aptupgradelist() {
     PACKAGE=$(cat ${UPDATELIST} | awk '{print $1}' | sed -n 2p)
     SECURITY=$(cat ${UPDATELIST} | awk '{print $1}' | sed -n 3p)
-    if [ "${PACKAGE}" != '0' ] || [ "${SECURITY}" != '0' ]; then 
-        UPDATE='TRUE'
+    if [ "${PACKAGE}" = '0' ] || [ "${SECURITY}" = '0' ]; then 
+        UPDATE='FALSE'    
     fi    
 }
+
+yumupgradelist(){
+    PACKAGE=$(yum check-update | grep -v '*\|Load*\|excluded' | wc -l)
+    if [ "${PACKAGE}" = '0' ]; then 
+        UPDATE='FALSE'
+    fi    
+}
+
+
 aptgetupgrade() {
     apt-get update > /dev/null 2>&1
     echo -ne '#####                     (33%)\r'
@@ -178,6 +199,12 @@ aptgetupgrade() {
     apt-get autoremove -y > /dev/null 2>&1
     apt-get clean > /dev/null 2>&1
     apt-get autoclean > /dev/null 2>&1
+    echo -ne '#######################   (100%)\r'
+}
+
+yumupgrade(){
+    echo -ne '#                         (5%)\r'
+    yum update -y > /dev/null 2>&1
     echo -ne '#######################   (100%)\r'
 }
 
@@ -216,20 +243,29 @@ main(){
         fi    
         echoG "\nEnjoy your accelarated WordPress with OpenLiteSpeed."
     fi   
-    aptupgradelist
+    if [ "${OSNAME}" = 'ubuntu' ]; then 
+        aptupgradelist
+    else
+        yumupgradelist
+    fi    
     if [ "${UPDATE}" = 'TRUE' ]; then
         printf "%s"   "Do you wish to update the system which include the web server? [Y/n]"
         read TMP_YN
         if [[ ! "${TMP_YN}" =~ ^(n|N) ]]; then
             START_TIME="$(date -u +%s)"
             echoG "Update Starting..." 
-            aptgetupgrade
+            if [ "${OSNAME}" = 'ubuntu' ]; then 
+                aptgetupgrade
+            else
+                yumupgrade
+            fi    
             echoG "\nUpdate complete" 
             END_TIME="$(date -u +%s)"
             ELAPSED="$((${END_TIME}-${START_TIME}))"
             echoY "***Total of ${ELAPSED} seconds to finish process***"
         fi    
-    fi    
+    fi 
+    echoG 'Your system is up to date'
     endsetup
 }
 main

@@ -13,14 +13,26 @@ GROUP='www-data'
 WPCONFIG='wordpress'
 TEMPFOLDER='/tmp'
 
-function echoG
+check_os()
+{
+    if [ -f /etc/redhat-release ] ; then
+        OSNAME=centos
+    elif [ -f /etc/lsb-release ] ; then
+        OSNAME=ubuntu    
+    elif [ -f /etc/debian_version ] ; then
+        OSNAME=debian
+    fi         
+}
+check_os
+
+echoG()
 {
     FLAG=$1
     shift
     echo -e "\033[38;5;71m$FLAG\033[39m$@"
 }
 
-function echoR
+echoR()
 {
     FLAG=$1
     shift
@@ -133,7 +145,11 @@ cked()
         echoG "ed exist"
     else
         echoG "no ed, ready to install"
-        apt-get install ed -y
+        if [ "${OSNAME}" = 'ubuntu' ] || [ "${OSNAME}" = 'debian' ]; then  
+            apt-get install ed -y
+        elif [ "${OSNAME}" = 'centos' ]; then    
+            yum install ed -y
+        fi    
     fi    
 }
 

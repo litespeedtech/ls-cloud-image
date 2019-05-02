@@ -7,7 +7,8 @@ echoY()
     shift
     echo "\033[38;5;148m$FLAG\033[39m$@"
 }
-myip=$(curl -s ifconfig.me)
+MYIP=$(ip -4 route get 8.8.8.8 | awk {'print $7'} | tr -d '\n')
+#MYIP=$(curl -s ifconfig.me)
 cat <<EOF
 ********************************************************************************
 Welcome to One-Click OpenLiteSpeed WordPress Server.
@@ -16,8 +17,8 @@ All ports are BLOCKED except 22 (SSH), 80 (HTTP) and 443 (HTTPS).
 In a web browser, you can view:
 * The WordPress+LiteSpeed One-Click Quickstart guide:
    https://docs.litespeedtech.com/cloud/wordpress
-* The new WordPress site: $(echoY "http://$myip")
-* The phpMyAdmin: http://$myip/phpmyadmin
+* The new WordPress site: $(echoY "http://$MYIP")
+* The phpMyAdmin: http://$MYIP/phpmyadmin
 On the server:
 * The default web root is located at /var/www/html
 * You can get the MySQL root password and MySQL WordPress user password with command:
@@ -29,5 +30,4 @@ On the server:
 * The phpMyAdmin is located at /var/www/phpmyadmin
 * A script will run that will allow you to add a domain to the web server and implement SSL.
 ********************************************************************************
-To delete this message of the day: rm -rf $(readlink -f ${0})
 EOF

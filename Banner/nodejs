@@ -7,7 +7,8 @@ function echoY
     shift
     echo -e "\033[38;5;148m$FLAG\033[39m$@"
 }
-myip=$(curl -s ifconfig.me)
+MYIP=$(ip -4 route get 8.8.8.8 | awk {'print $7'} | tr -d '\n')
+#MYIP=$(curl -s ifconfig.me)
 cat <<EOF
 ********************************************************************************
 Welcome to One-Click OpenLiteSpeed Node.js Server.
@@ -17,10 +18,9 @@ All ports are BLOCKED except 22 (SSH), 80 (HTTP) and 443 (HTTPS).
 The Node.js OLS One-Click Quickstart guide:
 * https://docs.litespeedtech.com/cloud/nodejs
 In a web browser, you can view:
-* The sample node site: http://$myip/node/
+* The sample node site: http://$MYIP/node/
 On the server:
 * You can get the Web Admin admin password with the following command:
    $(echoY "cat /root/.litespeed_password")
 ********************************************************************************
-To delete this message of the day: rm -rf $(readlink -f ${0})
 EOF

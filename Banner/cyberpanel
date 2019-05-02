@@ -17,7 +17,9 @@ GSTART='\033[32m'
 GEND='\033[0m'
 LOCAL_VERSION=$(cat /usr/local/CyberCP/version.txt | sed -z 's/\n/./g')
 LAST_VERSION=$(curl -s https://cyberpanel.net/version.txt | grep -Eo '[0-9]'|sed -z 's/\n/./g')
-myip=$(curl -s ifconfig.me)
+#MYIP=$(ip -4 route get 8.8.8.8 | awk {'print $7'} | tr -d '\n')
+MYIP=$(cat /etc/cyberpanel/machineIP)
+#MYIP=$(curl -s ifconfig.me)
 verlt ${LOCAL_VERSION} ${LAST_VERSION::-1} && CPUPGRADE="Please upgrade CyberPanel version from ${LOCAL_VERSION} to ${LAST_VERSION},\nhttps://docs.litespeedtech.com/cloud/cyberpanel/#how-do-i-upgrade-cyberpanel" || CPUPGRADE="Your CyberPanel is up to date"
 cat <<EOF
 ********************************************************************************
@@ -26,13 +28,13 @@ To keep this server secure, the firewalld is enabled.
 CyberPanel One-Click Quickstart guide:
 * https://docs.litespeedtech.com/cloud/cyberpanel
 In a web browser, you can view:
-* CyberPanel: $(echoY https://$myip:8090)
-* phpMyAdmin: https://$myip:8090/phpmyadmin
-* Rainloop: https://$myip:8090/rainloop
+* CyberPanel: $(echoY https://$MYIP:8090)
+* phpMyAdmin: https://$MYIP:8090/phpmyadmin
+* Rainloop: https://$MYIP:8090/rainloop
 On the server:
 * You can get the CyberPanel admin password with the following command: $(echoY "cat .litespeed_password")
 * You can get the Mysql cyberpanel user password with the following command: cat .db_password
+
 $(echo -e "${GSTART}${CPUPGRADE}${GEND}")
 ********************************************************************************
-To delete this message of the day: rm -rf $(readlink -f ${0})
 EOF

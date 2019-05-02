@@ -1,10 +1,22 @@
 #!/usr/bin/env bash
+CLDINITPATH='/var/lib/cloud/scripts/per-instance'
+OSNAME=''
 setup ()
 {
-  if [ -e '/var/lib/cloud/scripts/per-instance/per-instance.sh' ]; then
-    rm -rf /var/lib/cloud/scripts/per-instance/per-instance.sh
+  if [ -e "${CLDINITPATH}/per-instance.sh" ]; then
+    rm -rf ${CLDINITPATH}/per-instance.sh
   fi
-  cat << EOF > /var/lib/cloud/scripts/per-instance/per-instance.sh
+  check_os(){
+    if [ -f /etc/redhat-release ] ; then
+        OSNAME=centos
+    elif [ -f /etc/lsb-release ] ; then
+        OSNAME=ubuntu    
+    elif [ -f /etc/debian_version ] ; then
+        OSNAME=debian
+    fi         
+  }
+  check_os
+  cat << EOF > ${CLDINITPATH}/per-instance.sh
 #!/bin/bash
 # /********************************************************************
 # LiteSpeed Cloud Script
@@ -21,6 +33,18 @@ LSHTTPDCFPATH="\${LSDIR}/conf/httpd_config.conf"
 LSEXAMCFPATH="\${LSDIR}/conf/vhosts/Example/vhconf.conf"
 CLOUDPERINSTPATH='/var/lib/cloud/scripts/per-instance'
 WPCT='noneclassified'
+OSNAME=''
+
+check_os(){
+    if [ -f /etc/redhat-release ] ; then
+        OSNAME=centos
+    elif [ -f /etc/lsb-release ] ; then
+        OSNAME=ubuntu    
+    elif [ -f /etc/debian_version ] ; then
+        OSNAME=debian
+    fi         
+}
+check_os
 
 editioncheck() 
 {
@@ -146,12 +170,20 @@ APP_POSTFIX_DOMAINS_CF='/etc/postfix/mysql-virtual_domains.cf'
 APP_POSTFIX_EMAIL2EMAIL_CF='/etc/postfix/mysql-virtual_email2email.cf'
 APP_POSTFIX_FORWARDINGS_CF='/etc/postfix/mysql-virtual_forwardings.cf'
 APP_POSTFIX_MAILBOXES_CF='/etc/postfix/mysql-virtual_mailboxes.cf'
-## pure-ftpd
-APP_PUREFTP_CF='/etc/pure-ftpd/pureftpd-mysql.conf'
-APP_PUREFTPDB_CF='/etc/pure-ftpd/db/mysql.conf'
-## powerdns
-APP_POWERDNS_CF='/etc/powerdns/pdns.conf'
 
+if [ \${OSNAME} = 'ubuntu' ] || [ \${OSNAME} = 'debian' ]; then 
+  ## pure-ftpd
+  APP_PUREFTP_CF='/etc/pure-ftpd/pureftpd-mysql.conf'
+  APP_PUREFTPDB_CF='/etc/pure-ftpd/db/mysql.conf'
+  ## powerdns
+  APP_POWERDNS_CF='/etc/powerdns/pdns.conf'
+elif [ \${OSNAME} = 'centos' ]; then
+  ## pure-ftpd
+  APP_PUREFTP_CF='/etc/pure-ftpd/pureftpd-mysql.conf'
+  APP_PUREFTPDB_CF='/etc/pure-ftpd/pureftpd-mysql.conf'
+  ## powerdns
+  APP_POWERDNS_CF='/etc/pdns/pdns.conf'
+fi
 
 #####################################################################
 ### Generate cert/key/password ###
@@ -299,7 +331,11 @@ updateCPsqlpwd(){
   NEWKEY="MYSQLPassword \${root_mysql_pass}"
   linechange 'MYSQLPassword' \${APP_PUREFTP_CF} "\${NEWKEY}"
   linechange 'MYSQLPassword' \${APP_PUREFTPDB_CF} "\${NEWKEY}"
-  systemctl restart pure-ftpd-mysql.service
+  if [ "${OSNAME}" = 'ubuntu' ] || [ "${OSNAME}" = 'debian' ]; then 
+      systemctl restart pure-ftpd-mysql.service
+  elif [ "${OSNAME}" = 'centos' ]; then 
+      service pure-ftpd restart
+  fi    
   
 #### powerdns
   NEWKEY="gmysql-password=\${root_mysql_pass}"
@@ -394,22 +430,6 @@ EOM
 }
 
 ### Update software
-upgradesw(){
-  if [ "\${PANEL}" = '' ]; then
-      if [ -e /usr/bin/apt-get ]; then
-        sudo apt-get -qq install --upgrade openlitespeed -y
-      fi  
-  fi    
-}
-
-upgrade_os() {
-  if [ -e /usr/bin/apt-get ]; then
-    sudo apt-get -qq update
-    sudo apt-get -qq --yes -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" upgrade
-    sudo apt-get -qq --yes -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" dist-upgrade
-  fi
-}
-
 upgrade_cyberpanel() {
     if [ -e /tmp/upgrade.py ]; then
       sudo rm -rf /tmp/upgrade.py
@@ -471,10 +491,17 @@ beforessh(){
 
 deleteinstancesh(){
   if [ ! -f \${HMPATH}/afterssh.sh ]; then
-    sudo rm -f /var/lib/cloud/scripts/per-instance/per-instance.sh
+    sudo rm -f \${CLOUDPERINSTPATH}/per-instance.sh
   fi
   if [ "\$1" = '-f' ]; then 
-    sudo rm -f /var/lib/cloud/scripts/per-instance/per-instance.sh
+    sudo rm -f \${CLOUDPERINSTPATH}/per-instance.sh
+  fi
+}
+
+addtohosts(){
+  if [ -d /home/ubuntu ]; then
+    NEWKEY="127.0.0.1 localhost $(hostname)"
+    linechange '127.0.0.1' /etc/hosts "${NEWKEY}"
   fi
 }
 
@@ -608,6 +635,7 @@ maincloud(){
     litespeedpasswordfile
     doimgversionct
     genlswspwd
+    addtohosts
     gen_selfsigned_cert
     lscpd_cert_update
     web_admin_update
@@ -626,7 +654,9 @@ maincloud(){
     updateCPpwdfile
     filepermission_update
     renewblowfish
-    installfirewalld
+    if [ "\${OSNAME}" != 'centos' ]; then 
+        installfirewalld
+    fi    
   elif [ "\${APPLICATION}" = 'PYTHON' ]; then
     updatesecretkey
   elif [ "\${APPLICATION}" = 'NONE' ]; then
@@ -644,8 +674,8 @@ maincloud(){
 }
 
 EOF
-  if [ -e "/var/lib/cloud/scripts/per-instance/main-per-instance.sh" ]; then
-    rm -f /var/lib/cloud/scripts/per-instance/main-per-instance.sh
+  if [ -e "${CLDINITPATH}/main-per-instance.sh" ]; then
+    rm -f ${CLDINITPATH}/main-per-instance.sh
   fi
   cat << EOM > /var/lib/cloud/scripts/per-instance/main-per-instance.sh
 #!/usr/bin/env bash
@@ -657,20 +687,17 @@ EOF
 # *********************************************************************/
 . /var/lib/cloud/scripts/per-instance/per-instance.sh
 maincloud
-upgrade_os
 deleteinstancesh
 rm -f /var/lib/cloud/scripts/per-instance/main-per-instance.sh
 EOM
 
-chmod 777 /var/lib/cloud/scripts/per-instance/per-instance.sh
-chmod 777 /var/lib/cloud/scripts/per-instance/main-per-instance.sh
-
+chmod 777 ${CLDINITPATH}/per-instance.sh
+chmod 777 ${CLDINITPATH}/main-per-instance.sh
 }
 
-
 cleanup (){
-  # IF CyberPanel is installed we need to remove firewalld or it will not allow ssh access
-  if [ -d /usr/local/CyberCP ]; then
+  # IF CyberPanel is installed on Ubuntu we need to remove firewalld
+  if [ -d /usr/local/CyberCP ] && [ "${OSNAME}" != 'centos' ]; then
     sudo apt-get remove firewalld -y > /dev/null 2>&1
   fi
 
@@ -695,6 +722,13 @@ cleanup (){
   rm -f /var/log/syslog*
   rm -f /var/log/btmp*
   rm -f /var/log/wtmp*
+  rm -f /var/log/yum.log*
+  rm -f /var/log/secure
+  rm -f /var/log/messages
+  rm -f /var/log/dmesg
+  rm -f /var/log/audit/audit.log
+  rm -f /var/log/maillog
+  rm -f /var/tuned/tuned.log
   #aws
   rm -f /var/log/amazon/ssm/*
   #component log
@@ -709,6 +743,11 @@ cleanup (){
   rm -rf /usr/local/lsws/logs/*
   rm -f /root/.mysql_history
   rm -f /var/log/php*.log
+  rm -f /var/log/installLogs.txt
+  #Cyberpanel
+  rm -f /var/log/anaconda/*
+  rm -f /usr/local/lscp/logs/*
+  rm -f /usr/local/lscp/cyberpanel/logs/*
   #key
   rm -f /root/.ssh/authorized_keys
   rm -f /root/.ssh/cyberpanel*
