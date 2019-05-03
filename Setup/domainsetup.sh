@@ -196,7 +196,6 @@ aptgetupgrade() {
     echo -ne '#############             (66%)\r'
     DEBIAN_FRONTEND='noninteractive' apt-get -y -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' dist-upgrade > /dev/null 2>&1
     echo -ne '####################      (99%)\r'
-    apt-get autoremove -y > /dev/null 2>&1
     apt-get clean > /dev/null 2>&1
     apt-get autoclean > /dev/null 2>&1
     echo -ne '#######################   (100%)\r'
