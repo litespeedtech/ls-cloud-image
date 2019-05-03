@@ -7,22 +7,65 @@ function echoY
     shift
     echo -e "\033[38;5;148m$FLAG\033[39m$@"
 }
+function echoB()
+{
+    FLAG=$1
+    shift
+    echo -e "\033[1;4;94m$FLAG\033[0m$@"
+}
+function echoG
+{
+    FLAG=$1
+    shift
+    echo -e "\033[32m$FLAG\033[0m$@"
+}
+
+function echoBOLD
+{
+    FLAG=$1
+    shift
+    echo -e "\033[1m$FLAG\033[0m$@"
+}
+
+function echoCYAN
+{
+    FLAG=$1
+    shift
+    echo -e "\033[1;36m$FLAG\033[0m$@"
+}
+
+RAM=$(free -m | awk 'NR==2{printf "%s/%sMB (%.2f%%)\n", $3,$2,$3*100/$2 }')
+LOAD=$(uptime | awk -F'[a-z]:' '{ print $2}')
+DISK=$(df -h | awk '$NF=="/"{printf "%d/%dGB (%s)\n", $3,$2,$5}')
+CPU=$(grep 'cpu ' /proc/stat | awk '{usage=($2+$4)*100/($2+$4+$5)} END {print usage "%"}')
+
 MYIP=$(ip -4 route get 8.8.8.8 | awk {'print $7'} | tr -d '\n')
 #MYIP=$(curl -s ifconfig.me)
+
+clear
 cat <<EOF
 ********************************************************************************
-Welcome to One-Click OpenLiteSpeed Django Server.
+
+$(echoCYAN Welcome to One-Click OpenLiteSpeed Django Server.')
 To keep this Droplet secure, the firewalld is enabled.
 All ports are BLOCKED except 22 (SSH), 80 (HTTP) and 443 (HTTPS).
 
 The Django OLS One-Click Quick start guide:
-* https://docs.litespeedtech.com/cloud/django
+* $(echoB 'https://docs.litespeedtech.com/cloud/django')
+
 In a web browser, you can view:
-* The sample node site: http://$MYIP/python/
+* The sample node site: $(echoY "http://$MYIP/python/")
 * The sample node site: http://$MYIP/python/admin/
+
 On the server:
 * You can get the Web Admin admin password with the following command:
    $(echoY "cat /root/.litespeed_password")
+
+System Status:
+  $(echo "Load :")$(echoG "$LOAD")
+  $(echo "CPU  :") $(echoG "$CPU")
+  $(echo "RAM  :") $(echoG "$RAM")
+  $(echo "Disk :") $(echoG "$DISK")
 
 ********************************************************************************
 EOF

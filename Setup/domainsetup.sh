@@ -176,7 +176,7 @@ endsetup(){
 aptupgradelist() {
     PACKAGE=$(cat ${UPDATELIST} | awk '{print $1}' | sed -n 2p)
     SECURITY=$(cat ${UPDATELIST} | awk '{print $1}' | sed -n 3p)
-    if [ "${PACKAGE}" = '0' ] || [ "${SECURITY}" = '0' ]; then 
+    if [ "${PACKAGE}" = '0' ] && [ "${SECURITY}" = '0' ]; then 
         UPDATE='FALSE'    
     fi    
 }

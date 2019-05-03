@@ -748,6 +748,7 @@ cleanup (){
   rm -f /var/log/anaconda/*
   rm -f /usr/local/lscp/logs/*
   rm -f /usr/local/lscp/cyberpanel/logs/*
+  rm -rf  /usr/local/CyberCP/.idea/*
   #key
   rm -f /root/.ssh/authorized_keys
   rm -f /root/.ssh/cyberpanel*
