@@ -238,8 +238,8 @@ csrconf
 linechange(){
   LINENUM=\$(grep -n "\${1}" \${2} | cut -d: -f 1)
   if [ -n "\$LINENUM" ] && [ "\$LINENUM" -eq "\$LINENUM" ] 2>/dev/null; then
-    sudo sed -i "\${LINENUM}d" \${2}
-    sudo sed -i "\${LINENUM}i\${3}" \${2}
+    sed -i "\${LINENUM}d" \${2}
+    sed -i "\${LINENUM}i\${3}" \${2}
   fi  
 }
 
