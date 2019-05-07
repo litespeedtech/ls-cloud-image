@@ -136,7 +136,8 @@ oshmpath()
     PUBIP=\$(curl -H "Metadata-Flavor: Google" http://metadata/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip)    
   else
     HMPATH='/root'
-    PUBIP=\$(ifconfig eth0 | grep 'inet '| awk '{printf \$2}')
+    #PUBIP=\$(ifconfig eth0 | grep 'inet '| awk '{printf \$2}')
+    PUBIP=\$(ip -4 route get 8.8.8.8 | awk {'print \$7'} | tr -d '\n')
   fi    
 }
 oshmpath

@@ -191,3 +191,5 @@ main()
     vscheck
 }
 main
+rm -- "$0"
+exit 0
