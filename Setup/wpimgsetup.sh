@@ -199,8 +199,8 @@ installpkg(){
         apt-get update > /dev/null 2>&1
         apt-get -y install certbot > /dev/null 2>&1
 
-    if [ -e /usr/bin/certbot ]; then 
-        echoG "Install CertBot finished" 
+    fi [ -e /usr/bin/certbot ]; then 
+    echoG "Install CertBot finished" 
 
     ### Mariadb 10.3
     SQLDBVER=$(/usr/bin/mysql -V)
