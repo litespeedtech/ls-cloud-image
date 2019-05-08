@@ -363,37 +363,35 @@ replacelitenerip(){
 #for LINENUM in \$(grep -n 'map.*Example.*\\*' \${LSHTTPDCFPATH} | cut -d: -f 1)
 for LINENUM in \$(grep -n 'map' \${LSHTTPDCFPATH} | cut -d: -f 1)
   do
-    NEWDBPWD="  map                     Example \${PUBIP}"
+    NEWDBPWD="  map                     wordpress \${PUBIP}"
+#    NEWDBPWD="  map                     Example \${PUBIP}"
     sed -i "\${LINENUM}s/.*/\${NEWDBPWD}/" \${LSHTTPDCFPATH}
   done  
 }
 
 updatesqlpwd(){
 mysql -uroot -p\${ori_root_mysql_pass} \\
-### For MySQL 5.7.5 and earlier or MariaDB 10.1.20 and earlier,
       -e "SET PASSWORD FOR 'root'@'localhost' = PASSWORD('\${root_mysql_pass}');"
-### For MySQL 5.7.6 and later or MariaDB 10.1.20 and later 
-#      -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '\${root_mysql_pass}'"
 mysql -uroot -p\${root_mysql_pass} \\
-      -e "ALTER USER 'wordpress'@'localhost' IDENTIFIED BY '\${wordpress_mysql_pass}'"
+      -e "SET PASSWORD FOR 'wordpress'@'localhost' = PASSWORD('\${wordpress_mysql_pass}');"
 mysql -uroot -p\${root_mysql_pass} \\
       -e "GRANT ALL PRIVILEGES ON wordpress.* TO wordpress@localhost"
-mysql -uroot -p\${root_mysql_pass} \\
-      -e "ALTER USER 'debian-sys-maint'@'localhost' IDENTIFIED BY '\${debian_sys_maint_mysql_pass}'"
+#mysql -uroot -p\${root_mysql_pass} \\
+#      -e "ALTER USER 'debian-sys-maint'@'localhost' IDENTIFIED BY '\${debian_sys_maint_mysql_pass}'"
 
-cat > /etc/mysql/debian.cnf <<EOM
-# Automatically generated for Debian scripts. DO NOT TOUCH!
-[client]
-host     = localhost
-user     = debian-sys-maint
-password = \${debian_sys_maint_mysql_pass}
-socket   = /var/run/mysqld/mysqld.sock
-[mysql_upgrade]
-host     = localhost
-user     = debian-sys-maint
-password = \${debian_sys_maint_mysql_pass}
-socket   = /var/run/mysqld/mysqld.sock
-EOM
+#cat > /etc/mysql/debian.cnf <<EOM
+### Automatically generated for Debian scripts. DO NOT TOUCH!
+#[client]
+#host     = localhost
+#user     = debian-sys-maint
+#password = \${debian_sys_maint_mysql_pass}
+#socket   = /var/run/mysqld/mysqld.sock
+#[mysql_upgrade]
+#host     = localhost
+#user     = debian-sys-maint
+#password = \${debian_sys_maint_mysql_pass}
+#socket   = /var/run/mysqld/mysqld.sock
+#EOM
 }
 
 renewwpsalt(){

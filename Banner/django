@@ -46,7 +46,7 @@ clear
 cat <<EOF
 ********************************************************************************
 
-$(echoCYAN Welcome to One-Click OpenLiteSpeed Django Server.')
+$(echoCYAN 'Welcome to One-Click OpenLiteSpeed Django Server.')
 To keep this Droplet secure, the firewalld is enabled.
 All ports are BLOCKED except 22 (SSH), 80 (HTTP) and 443 (HTTPS).
 
