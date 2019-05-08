@@ -30,7 +30,11 @@ EDITION=''
 LSDIR='/usr/local/lsws'
 CONTEXTPATH="\${LSDIR}/Example"
 LSHTTPDCFPATH="\${LSDIR}/conf/httpd_config.conf"
-LSEXAMCFPATH="\${LSDIR}/conf/vhosts/Example/vhconf.conf"
+if [ -e "\${LSDIR}/conf/vhosts/wordpress/vhconf.conf" ]; then 
+    LSVHCFPATH="\${LSDIR}/conf/vhosts/wordpress/vhconf.conf"
+else 
+    LSVHCFPATH="\${LSDIR}/conf/vhosts/Example/vhconf.conf"
+fi
 CLOUDPERINSTPATH='/var/lib/cloud/scripts/per-instance'
 WPCT='noneclassified'
 OSNAME=''
@@ -94,7 +98,7 @@ pathupdate()
     WPCT="\${PROVIDER}_ols_cyberpanel"
   elif [ "\${PANEL}" = '' ]; then
     PHPMYPATH='/var/www/phpmyadmin'  
-    DOCPATH=\$(grep 'docRoot' \${LSEXAMCFPATH} | awk '{print \$2}')
+    DOCPATH=\$(grep 'docRoot' \${LSVHCFPATH} | awk '{print \$2}')
     echo \${DOCPATH} | grep 'old' > /dev/null
     if [ \$? -eq 0 ]; then
       DOCPATH=\${DOCPATH::-5}
@@ -104,13 +108,13 @@ pathupdate()
       VHROOTURL=\$(echo \${DOCPATH} | sed 's/\$VH_ROOT\\///')
       DOCPATH="\${LSDIR}/Example/\${VHROOTURL}/"
     fi 
-    if [ -f '/usr/bin/node' ] && [ "\$(grep -n 'appType.*node' \${LSEXAMCFPATH})" != '' ]; then
+    if [ -f '/usr/bin/node' ] && [ "\$(grep -n 'appType.*node' \${LSVHCFPATH})" != '' ]; then
       APPLICATION='NODE'
       WPCT="\${PROVIDER}_ols_node"
-    elif [ -f '/usr/bin/ruby' ] && [ "\$(grep -n 'appType.*rails' \${LSEXAMCFPATH})" != '' ]; then
+    elif [ -f '/usr/bin/ruby' ] && [ "\$(grep -n 'appType.*rails' \${LSVHCFPATH})" != '' ]; then
       APPLICATION='RUBY'
       WPCT="\${PROVIDER}_ols_ruby"
-    elif [ -f '/usr/bin/python3' ] && [ "\$(grep -n 'appType.*wsgi' \${LSEXAMCFPATH})" != '' ]; then
+    elif [ -f '/usr/bin/python3' ] && [ "\$(grep -n 'appType.*wsgi' \${LSVHCFPATH})" != '' ]; then
       APPLICATION='PYTHON'
       CONTEXTPATH="\${LSDIR}/Example/demo/demo/settings.py"
       WPCT="\${PROVIDER}_ols_python"
@@ -121,7 +125,7 @@ pathupdate()
   fi 
   PHPMYCFPATH="\${PHPMYPATH}/config.inc.php"
   if [ -f "\${DOCPATH}/wp-config.php" ]; then 
-    WPCFPATH="\${DOCPATH}/wp-config.php"
+    WPCFPATH="\${DOCPATH}wp-config.php"
   fi
 
 }
@@ -149,13 +153,15 @@ doimgversionct()
 
 dbpasswordfile()
 {
-  if [ ! -e "\${HMPATH}/.db_password" ]; then 
-    touch "\${HMPATH}/.db_password"
-    DBPASSPATH="\${HMPATH}/.db_password"
-  else
-    DBPASSPATH="\${HMPATH}/.db_password"
-    ori_root_mysql_pass=\$(grep 'root_mysql_pass' \${DBPASSPATH} | awk -F'=' '{print \$2}' | tr -d '"')  
-  fi
+  if [ "\${APPLICATION}" = 'NONE' ] || [ "\${PANEL}" = 'cyber' ]; then
+    if [ ! -e "\${HMPATH}/.db_password" ]; then 
+      touch "\${HMPATH}/.db_password"
+      DBPASSPATH="\${HMPATH}/.db_password"
+    else
+      DBPASSPATH="\${HMPATH}/.db_password"
+      ori_root_mysql_pass=\$(grep 'root_mysql_pass' \${DBPASSPATH} | awk -F'=' '{print \$2}' | tr -d '"')  
+    fi
+  fi  
 }
 litespeedpasswordfile()
 {
@@ -364,7 +370,10 @@ for LINENUM in \$(grep -n 'map' \${LSHTTPDCFPATH} | cut -d: -f 1)
 
 updatesqlpwd(){
 mysql -uroot -p\${ori_root_mysql_pass} \\
-      -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '\${root_mysql_pass}'"
+### For MySQL 5.7.5 and earlier or MariaDB 10.1.20 and earlier,
+      -e "SET PASSWORD FOR 'root'@'localhost' = PASSWORD('\${root_mysql_pass}');"
+### For MySQL 5.7.6 and later or MariaDB 10.1.20 and later 
+#      -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '\${root_mysql_pass}'"
 mysql -uroot -p\${root_mysql_pass} \\
       -e "ALTER USER 'wordpress'@'localhost' IDENTIFIED BY '\${wordpress_mysql_pass}'"
 mysql -uroot -p\${root_mysql_pass} \\
@@ -443,11 +452,11 @@ upgrade_cyberpanel() {
 ###prevent hijacking
 afterssh(){
   NEWKEY="docRoot                   \${DOCPATH}"
-  linechange 'docRoot' \${LSEXAMCFPATH} "\${NEWKEY}"
+  linechange 'docRoot' \${LSVHCFPATH} "\${NEWKEY}"
 
-  if [ \$(grep 'R.*/index.html.*R' \${LSEXAMCFPATH} | wc -l) -ne '0' ]; then
-    LINENUM=\$(grep -n 'R.*/index.html.*R' \${LSEXAMCFPATH} | tail -1 | cut -d: -f 1)
-    sudo sed -i "\${LINENUM}d" \${LSEXAMCFPATH}
+  if [ \$(grep 'R.*/index.html.*R' \${LSVHCFPATH} | wc -l) -ne '0' ]; then
+    LINENUM=\$(grep -n 'R.*/index.html.*R' \${LSVHCFPATH} | tail -1 | cut -d: -f 1)
+    sudo sed -i "\${LINENUM}d" \${LSVHCFPATH}
   fi
   if [ \${PROVIDER} = 'google' ]; then 
       \${HMPATH}='/home/ubuntu'
@@ -477,13 +486,13 @@ sudo chmod a+x \${HMPATH}/afterssh.sh
 beforessh(){
   if [ -d \${DOCPATH::-1}.old ]; then
     NEWKEY="docRoot                   \${DOCPATH::-1}.old/"
-    linechange 'docRoot' \${LSEXAMCFPATH} "\${NEWKEY}"
+    linechange 'docRoot' \${LSVHCFPATH} "\${NEWKEY}"
   fi
 
-  if [ \$(grep 'R.*/index.html.*R' \${LSEXAMCFPATH} | wc -l) -eq '0' ]; then
+  if [ \$(grep 'R.*/index.html.*R' \${LSVHCFPATH} | wc -l) -eq '0' ]; then
     NEWKEY='RewriteRule ^(.*)\$ http://%{SERVER_NAME}/index.html [R,L]'
-    LINENUM=\$(grep -n '}' \${LSEXAMCFPATH} | tail -1 | cut -d: -f 1)
-    sed -i "\${LINENUM}i\${NEWKEY}" \${LSEXAMCFPATH}
+    LINENUM=\$(grep -n '}' \${LSVHCFPATH} | tail -1 | cut -d: -f 1)
+    sed -i "\${LINENUM}i\${NEWKEY}" \${LSVHCFPATH}
   fi  
   sudo service lsws restart
   echo "\${HMPATH}/afterssh.sh" >> /etc/profile
@@ -640,12 +649,13 @@ maincloud(){
     gen_selfsigned_cert
     lscpd_cert_update
     web_admin_update
+    dbpasswordfile
     gensqlpwd
     gensaltpwd
     gensecretkey
     set_tmp
   if [ "\${PANEL}" = 'cyber' ]; then
-    dbpasswordfile
+    #dbpasswordfile
     panel_admin_update
     panel_sshkey_update
     panel_IP_update
@@ -661,7 +671,7 @@ maincloud(){
   elif [ "\${APPLICATION}" = 'PYTHON' ]; then
     updatesecretkey
   elif [ "\${APPLICATION}" = 'NONE' ]; then
-    dbpasswordfile
+    #dbpasswordfile
     renewwppwd
     updatesqlpwd
     updatepwdfile
