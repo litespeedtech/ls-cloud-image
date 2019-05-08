@@ -10,7 +10,7 @@ MY_DOMAIN2=''
 DOCHM='/var/www/html'
 LSWSHM='/usr/local/lsws'
 WEBCF="${LSWSHM}/conf/httpd_config.conf"
-WEBVHCF="${LSWSHM}/conf/vhosts/Example/vhconf.conf"
+WEBVHCF="${LSWSHM}/conf/vhosts/wordpress/vhconf.conf"
 UPDATELIST='/var/lib/update-notifier/updates-available'
 WWW='FALSE'
 UPDATE='TRUE'
@@ -93,13 +93,13 @@ domainadd(){
         duplicateck ${MY_DOMAIN2} ${WEBCF}
         if [ ${?} = 1 ]; then 
             #my_domain is domain wih www, and my_domain2 is domain without www, both added into listener.
-            sed -i 's|Example '${MY_IP}'|Example '${MY_IP}', '${MY_DOMAIN}', '${MY_DOMAIN2}' |g' ${WEBCF}
+            sed -i 's|wordpress '${MY_IP}'|wordpress '${MY_IP}', '${MY_DOMAIN}', '${MY_DOMAIN2}' |g' ${WEBCF}
         fi
     else
         duplicateck ${MY_DOMAIN} ${WEBCF}
         if [ ${?} = 1 ]; then
             #and if domain is not started with www. consider it as sub-domain
-            sed -i 's|Example '${MY_IP}'|Example '${MY_IP}', '${MY_DOMAIN}'|g' ${WEBCF}
+            sed -i 's|wordpress '${MY_IP}'|wordpress '${MY_IP}', '${MY_DOMAIN}'|g' ${WEBCF}
         fi    
     fi
     ${LSWSHM}/bin/lswsctrl restart > /dev/null

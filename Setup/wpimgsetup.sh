@@ -10,12 +10,13 @@ DOCHM='/var/www/html'
 PHPCONF='/var/www/phpmyadmin'
 LSWSCONF="${LSWSFD}/conf/httpd_config.conf"
 WPVHCONF="${LSWSFD}/conf/vhosts/wordpress/vhconf.conf"
-EXAMPLECONF="${LSWSFD}/conf/vhosts/Example/vhconf.conf"
+EXAMPLECONF="${LSWSFD}/conf/vhosts/wordpress/vhconf.conf"
 PHPINICONF="${LSWSFD}/lsphp73/etc/php/7.3/litespeed/php.ini"
 MEMCACHECONF='/etc/memcached.conf'
 REDISSERVICE='/lib/systemd/system/redis-server.service'
 REDISCONF='/etc/redis/redis.conf'
 WPCONSTCONF="${DOCHM}/wp-content/plugins/litespeed-cache/data/const.default.ini"
+MARIADBCNF='/etc/mysql/mariadb.conf.d/60-server.cnf'
 PHPVER=73
 USER='www-data'
 GROUP='www-data'
@@ -110,6 +111,26 @@ prepare(){
     changeowner
 }
 
+### Upgrade
+systemupgrade() {
+    if [ "${OSNAME}" = 'ubuntu' ] || [ "${OSNAME}" = 'debian' ]; then 
+        apt-get update > /dev/null 2>&1
+        echo -ne '#####                     (33%)\r'
+        DEBIAN_FRONTEND='noninteractive' apt-get -y -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' upgrade > /dev/null 2>&1
+        echo -ne '#############             (66%)\r'
+        DEBIAN_FRONTEND='noninteractive' apt-get -y -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' dist-upgrade > /dev/null 2>&1
+        echo -ne '####################      (99%)\r'
+        apt-get clean > /dev/null 2>&1
+        apt-get autoclean > /dev/null 2>&1
+        echo -ne '#######################   (100%)\r'
+    else
+        echo -ne '#                         (5%)\r'
+        yum update -y > /dev/null 2>&1
+        echo -ne '#######################   (100%)\r'
+    fi    
+}
+
+
 ### Start
 installolswp(){
     echo 'Y' | bash <( curl -k https://raw.githubusercontent.com/litespeedtech/ols1clk/master/ols1clk.sh ) \
@@ -169,6 +190,28 @@ installpkg(){
         echoG 'move phpmyadmin config'
         mv ${PHPCONF}/config.sample.inc.php ${PHPCONF}/config.inc.php
     fi    
+    ### CertBot
+    if [ "${OSNAME}" = 'centos' ]; then 
+        yum -y install certbot  > /dev/null 2>&1
+    else 
+        add-apt-repository universe > /dev/null 2>&1
+        echo -ne '\n' | add-apt-repository ppa:certbot/certbot > /dev/null 2>&1
+        apt-get update > /dev/null 2>&1
+        apt-get -y install certbot > /dev/null 2>&1
+
+    if [ -e /usr/bin/certbot ]; then 
+        echoG "Install CertBot finished" 
+
+    ### Mariadb 10.3
+    SQLDBVER=$(/usr/bin/mysql -V)
+    echo ${SQLDBVER} | grep -e "MariaDB\|10.3" > /dev/null 2>&1
+    if [ $? = 0 ]; then 
+        echoG "Mariadb 10.3 installed"
+    else
+       apt -y remove mariadb-server-10.* > /dev/null 2>&1
+       apt -y install mariadb-server-10.3 > /dev/null 2>&1   
+       echoG "Mariadb 10.3 installed"
+    fi        
 }
 
 configols(){
@@ -274,11 +317,51 @@ configmysql(){
     else
         mysql -u root -p${EXISTSQLPASS} \     
             -e "update mysql.user set authentication_string=password('${root_mysql_pass}') where user='root';" 
-    fi    
+    fi   
+
+    if [ ! -e ${MARIADBCNF} ]; then 
+    touch ${MARIADBCNF}
+    cat > ${MARIADBCNF} <<END 
+[mysqld]
+sql_mode="NO_ENGINE_SUBSTITUTION,NO_AUTO_CREATE_USER"
+END
+    fi
+
 }
+
+
 
 configwp(){
     echoG 'Setting WordPress'
+### Install popular WP plugins
+    for PLUGIN in ${PLUGINLIST}; do
+        echoG "Install ${PLUGIN}"
+        wget -q -P ${DOCHM}/wp-content/plugins/ https://downloads.wordpress.org/plugin/${PLUGIN}
+        if [ $? = 0 ]; then
+            unzip -qq -o ${DOCHM}/wp-content/plugins/${PLUGIN} -d ${DOCHM}/wp-content/plugins/
+        else
+            echoR "${PLUGINLIST} FAILED to download"
+        fi
+    done
+    rm -f ${DOCHM}/wp-content/plugins/*.zip
+
+    if [ ! -f ${DOCHM}/.htaccess ]; then 
+        touch ${DOCHM}/.htaccess
+    fi   
+    cat << EOM > ${DOCHM}/.htaccess
+# BEGIN WordPress
+<IfModule mod_rewrite.c>
+RewriteEngine On
+RewriteBase /
+RewriteRule ^index\.php$ - [L]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . /index.php [L]
+</IfModule>
+
+# END WordPress
+EOM
+
 ###  LSCACHE read DATA 
     cat << EOM > "${WPCONSTCONF}" 
 ; This is the default LSCWP configuration file
@@ -356,34 +439,7 @@ w
 q
 END
     fi
-### Install popular WP plugins
-    for PLUGIN in ${PLUGINLIST}; do
-        echoG "Install ${PLUGIN}"
-        wget -q -P ${DOCHM}/wp-content/plugins/ https://downloads.wordpress.org/plugin/${PLUGIN}
-        if [ $? = 0 ]; then
-            unzip -qq -o ${DOCHM}/wp-content/plugins/${PLUGIN} -d ${DOCHM}/wp-content/plugins/
-        else
-            echoR "${PLUGINLIST} FAILED to download"
-        fi
-    done
-    rm -f ${DOCHM}/wp-content/plugins/*.zip
 
-    if [ ! -f ${DOCHM}/.htaccess ]; then 
-        touch ${DOCHM}/.htaccess
-    fi   
-    cat << EOM > ${DOCHM}/.htaccess
-# BEGIN WordPress
-<IfModule mod_rewrite.c>
-RewriteEngine On
-RewriteBase /
-RewriteRule ^index\.php$ - [L]
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule . /index.php [L]
-</IfModule>
-
-# END WordPress
-EOM
     service lsws restart   
 }
 
@@ -438,6 +494,7 @@ rmdummy(){
 main(){
     START_TIME="$(date -u +%s)"
     prepare
+    systemupgrade
     installolswp
     confpath
     installpkg
