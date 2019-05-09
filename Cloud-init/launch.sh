@@ -467,11 +467,11 @@ aftersshsetup(){
   if [ \${PROVIDER} = 'google' ]; then 
       \${HMPATH}='/home/ubuntu'
   fi   
-  if [ -e '\${HMPATH}/afterssh.sh' ]; then
-    sudo rm -rf \${HMPATH}/afterssh.sh
+  if [ -e '/opt/afterssh.sh' ]; then
+    sudo rm -rf /opt/afterssh.sh
   fi
  
-  sudo cat << EOM > \${HMPATH}/afterssh.sh
+  sudo cat << EOM > /opt/afterssh.sh
 #!/bin/bash
 source \${CLOUDPERINSTPATH}/per-instance.sh >> /dev/null 2>&1
 afterssh
@@ -493,7 +493,7 @@ beforessh(){
     sed -i "\${LINENUM}i\${NEWKEY}" \${LSVHCFPATH}
   fi  
   sudo service lsws restart
-  echo "\${HMPATH}/afterssh.sh" >> /etc/profile
+  echo "/opt/afterssh.sh" >> /etc/profile
   echo "/opt/domainsetup.sh" >> /etc/profile
 }
 

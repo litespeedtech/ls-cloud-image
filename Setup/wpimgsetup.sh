@@ -6,7 +6,8 @@
 # @Version: 1.0
 # *********************************************************************/
 LSWSFD='/usr/local/lsws'
-DOCHM='/var/www/html'
+DOCHM='/var/www/html.old'
+DOCLAND='/var/www/html'
 PHPCONF='/var/www/phpmyadmin'
 LSWSCONF="${LSWSFD}/conf/httpd_config.conf"
 WPVHCONF="${LSWSFD}/conf/vhosts/wordpress/vhconf.conf"
@@ -115,7 +116,7 @@ changeowner(){
 }
 
 prepare(){
-    mkdir -p "${DOCHM}.old"
+    mkdir -p "${DOCLAND}"
     changeowner
 }
 
@@ -213,7 +214,7 @@ installpkg(){
     fi
     ### Mariadb 10.3
     SQLDBVER=$(/usr/bin/mysql -V)
-    echo ${SQLDBVER} | grep -e "MariaDB\|10.3" > /dev/null 2>&1
+    echo ${SQLDBVER} | grep 'MariaDB' | grep '10.3' > /dev/null 2>&1
     if [ $? = 0 ]; then 
         echoG "Mariadb 10.3 installed"
     else
@@ -226,17 +227,21 @@ installpkg(){
 configols(){
     echoG 'Setting Web Server config'
     ### Change user to www-data
-    sed -i "s/nobody/${USER}/g" ${LSWSCONF}
-    sed -i "s/nogroup/${GROUP}/g" ${LSWSCONF}
+    if [ "${OSNAME}" = 'ubuntu' ] || [ "${OSNAME}" = 'debian' ]; then 
+        sed -i "s/nobody/${USER}/g" ${LSWSCONF}
+        sed -i "s/nogroup/${GROUP}/g" ${LSWSCONF}
+    fi    
     if [ "${OSNAME}" = 'centos' ]; then 
         yum -y install --reinstall openlitespeed > /dev/null 2>&1
     else    
         apt-get -y install --reinstall openlitespeed > /dev/null 2>&1
     fi    
-
+   ### Change wordpress virtualhost root to /var/www/html
+    NEWKEY='  vhRoot                  /var/www/html'
+    linechange 'www/html' ${LSWSCONF} "${NEWKEY}"
     ### change doc root to landing page, setup phpmyadmin context
     cat > ${WPVHCONF} <<END 
-docRoot                   ${DOCHM}.old/
+docRoot                   ${DOCLAND}/
 
 index  {
   useServer               0
@@ -273,7 +278,7 @@ END
 landingpg(){
     echoG 'Setting Landing Page'
     curl -s https://raw.githubusercontent.com/litespeedtech/ls-cloud-image/master/Static/wp-landing.html \
-    -o ${DOCHM}.old/index.html
+    -o ${DOCLAND}/index.html
 }
 
 configphp(){

@@ -5,7 +5,7 @@
 # @Copyright: (c) 2018-2020
 # @Version: 1.0
 # *********************************************************************/
-DOCROOT='/var/www/html'
+DOCROOT='/var/www/html.old'
 PLUGINLIST="litespeed-cache.zip all-in-one-seo-pack.zip all-in-one-wp-migration.zip google-analytics-for-wordpress.zip jetpack.zip wp-mail-smtp.zip"
 THEME='twentynineteen'
 USER='www-data'
@@ -17,6 +17,8 @@ check_os()
 {
     if [ -f /etc/redhat-release ] ; then
         OSNAME=centos
+        USER='nobody'
+        GROUP='nobody'
     elif [ -f /etc/lsb-release ] ; then
         OSNAME=ubuntu    
     elif [ -f /etc/debian_version ] ; then

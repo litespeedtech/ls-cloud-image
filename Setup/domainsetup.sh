@@ -262,9 +262,11 @@ main(){
             END_TIME="$(date -u +%s)"
             ELAPSED="$((${END_TIME}-${START_TIME}))"
             echoY "***Total of ${ELAPSED} seconds to finish process***"
+            echoG 'Your system is up to date'
         fi    
-    fi 
-    echoG 'Your system is up to date'
+    else
+        echoG 'Your system is up to date'
+    fi    
     endsetup
 }
 main
