@@ -52,15 +52,11 @@ cked()
     else
         echoG "no ed, ready to install"
         if [ "${OSNAME}" = 'ubuntu' ] || [ "${OSNAME}" = 'debian' ]; then  
-            apt-get install ed -y
+            apt-get install ed -y > /dev/null 2>&1
         elif [ "${OSNAME}" = 'centos' ]; then    
-            yum install ed -y
+            yum install ed -y > /dev/null 2>&1
         fi    
     fi    
-}
-
-changeowner(){
-  chown -R ${USER}:${GROUP} /var/www
 }
 
 ### ENV
@@ -68,6 +64,14 @@ check_os()
 {
     if [ -f /etc/redhat-release ] ; then
         OSNAME=centos
+        USER='nobody'
+        GROUP='nobody'
+        PHPINICONF="${LSWSFD}/lsphp73/etc/php.ini"
+        MARIADBCNF='/etc/my.cnf.d/60-server.cnf'
+        REDISSERVICE='/lib/systemd/system/redis.service'
+        REDISCONF='/etc/redis.conf'
+        MEMCACHESERVICE='/etc/systemd/system/memcached.service'
+        MEMCACHECONF='/etc/sysconfig/memcached'
     elif [ -f /etc/lsb-release ] ; then
         OSNAME=ubuntu    
     elif [ -f /etc/debian_version ] ; then
@@ -105,9 +109,13 @@ oshmpath()
 oshmpath
 DBPASSPATH="${HMPATH}/.db_password"
 
+
+changeowner(){
+  chown -R ${USER}:${GROUP} /var/www
+}
+
 prepare(){
     mkdir -p "${DOCHM}.old"
-    mkdir -p "${PHPMYPATH}"
     changeowner
 }
 
@@ -177,7 +185,7 @@ installpkg(){
     systemctl start memcached > /dev/null 2>&1
     systemctl enable memcached > /dev/null 2>&1
     ### Redis
-    systemctl start redis   
+    systemctl start redis > /dev/null 2>&1 
     ### phpmyadmin
     if [ ! -f ${PHPCONF}/changelog.php ]; then 
         cd /tmp/ 
@@ -283,19 +291,49 @@ configphp(){
 configobject(){
    echoG 'Setting Object Cache'
     ### Memcached Unix Socket
-    service memcached stop
-    cat >> "${MEMCACHECONF}" <<END 
+    service memcached stop > /dev/null 2>&1
+    if [ "${OSNAME}" = 'centos' ]; then 
+        cat >> "${MEMCACHESERVICE}" <<END 
+[Unit]
+Description=Memcached
+Before=httpd.service
+After=network.target
+
+[Service]
+User=${USER}
+Group=${GROUP}
+Type=simple
+EnvironmentFile=-/etc/sysconfig/memcached
+ExecStart=/usr/bin/memcached -u \$USER -p \$PORT -m \$CACHESIZE -c \$MAXCONN \$OPTIONS
+
+[Install]
+WantedBy=multi-user.target
+END
+        cat > "${MEMCACHECONF}" <<END 
+PORT="11211"
+USER="${USER}"
+MAXCONN="1024"
+CACHESIZE="64"
+OPTIONS="-s /var/www/memcached.sock -a 0770 -U 0 -l 127.0.0.1"
+END
+    ### SELINUX permissive Mode
+        semanage permissive -a memcached_t
+        setsebool -P httpd_can_network_memcache 1
+
+    else
+        cat >> "${MEMCACHECONF}" <<END 
 -s /var/www/memcached.sock
 -a 0770
 -p /tmp/memcached.pid
 END
-    NEWKEY="-u ${USER}"
-    linechange '\-u memcache' ${MEMCACHECONF} "${NEWKEY}"
+        NEWKEY="-u ${USER}"
+        linechange '\-u memcache' ${MEMCACHECONF} "${NEWKEY}"
+    fi    
     systemctl daemon-reload > /dev/null 2>&1
-    service memcached start
+    service memcached start > /dev/null 2>&1
 
     ### Redis Unix Socket
-    service redis stop
+    service redis stop > /dev/null 2>&1
     NEWKEY="Group=${GROUP}"
     linechange 'Group=' ${REDISSERVICE} "${NEWKEY}"  
     cat >> "${REDISCONF}" <<END 
@@ -303,7 +341,7 @@ unixsocket /var/run/redis/redis-server.sock
 unixsocketperm 775
 END
     systemctl daemon-reload > /dev/null 2>&1
-    service redis-server start
+    service redis start > /dev/null 2>&1
 }
 
 configmysql(){
@@ -457,22 +495,34 @@ EOM
 
 firewalladd(){
     echoG 'Setting Firewall'
-    ufw status verbose | grep inactive > /dev/null 2>&1
-    if [ $? = 0 ]; then 
-        ufw allow 80 > /dev/null 2>&1
-        ufw allow 443 > /dev/null 2>&1
-        ufw allow 22 > /dev/null 2>&1
-        echo "y" | ufw enable > /dev/null 2>&1
-        echoG "ufw rules setup success"  
-    else
-        echoG "ufw already enabled"    
+    if [ "${OSNAME}" = 'centos' ]; then 
+        if [ ! -e /usr/sbin/firewalld ]; then 
+            yum -y install firewalld > /dev/null 2>&1
+        fi
+        service firewalld start 
+        systemctl enable firewalld
+        firewall-cmd --permanent --add-port=80/tcp > /dev/null 2>&1
+        firewall-cmd --permanent --add-port=443/tcp > /dev/null 2>&1
+        firewall-cmd --permanent --add-port=22/tcp > /dev/null 2>&1
+        firewall-cmd --reload
+    else 
+        ufw status verbose | grep inactive > /dev/null 2>&1
+        if [ $? = 0 ]; then 
+            ufw allow 80 > /dev/null 2>&1
+            ufw allow 443 > /dev/null 2>&1
+            ufw allow 22 > /dev/null 2>&1
+            echo "y" | ufw enable > /dev/null 2>&1
+            echoG "ufw rules setup success"  
+        else
+            echoG "ufw already enabled"    
+        fi
     fi
 }
 
 statusck(){
-    for ITEM in lsws memcached redis mariadb ufw
+    for ITEM in lsws memcached redis mariadb
     do 
-        service ${ITEM} status | grep active > /dev/null 2>&1
+        service ${ITEM} status | grep "active\|running" > /dev/null 2>&1
         if [ $? = 0 ]; then 
             echoG "Process ${ITEM} is active"
         else
@@ -515,6 +565,6 @@ main(){
     echoY "***Total of ${ELAPSED} seconds to finish process***"
 }
 main
-echoG 'Auto remove script script itself'
-rm -- "$0"
+#echoG 'Auto remove script script itself'
+#rm -- "$0"
 exit 0
