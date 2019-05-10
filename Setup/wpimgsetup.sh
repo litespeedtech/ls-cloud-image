@@ -19,6 +19,7 @@ REDISCONF='/etc/redis/redis.conf'
 WPCONSTCONF="${DOCHM}/wp-content/plugins/litespeed-cache/data/const.default.ini"
 MARIADBCNF='/etc/mysql/mariadb.conf.d/60-server.cnf'
 PHPVER=73
+FIREWALLLIST="22 80 443"
 USER='www-data'
 GROUP='www-data'
 THEME='twentynineteen'
@@ -59,6 +60,11 @@ cked()
         fi    
     fi    
 }
+
+cksqlver(){
+    SQLDBVER=$(/usr/bin/mysql -V)
+}
+
 
 ### ENV
 check_os()
@@ -122,6 +128,7 @@ prepare(){
 
 ### Upgrade
 systemupgrade() {
+    echoG 'Updating system'
     if [ "${OSNAME}" = 'ubuntu' ] || [ "${OSNAME}" = 'debian' ]; then 
         apt-get update > /dev/null 2>&1
         echo -ne '#####                     (33%)\r'
@@ -196,10 +203,10 @@ installpkg(){
         rm -f phpMyAdmin-latest-all-languages.zip
         echoG "move phpmyadmin to ${PHPCONF}"
         mv phpMyAdmin-*-all-languages ${PHPCONF}
-        echoG 'move phpmyadmin config'
         mv ${PHPCONF}/config.sample.inc.php ${PHPCONF}/config.inc.php
     fi    
     ### CertBot
+    echoG "Install CertBot" 
     if [ "${OSNAME}" = 'centos' ]; then 
         yum -y install certbot  > /dev/null 2>&1
     else 
@@ -210,17 +217,28 @@ installpkg(){
 
     fi 
     if [ -e /usr/bin/certbot ]; then 
-        echoG "Install CertBot finished" 
+        echoG 'Install CertBot finished'
+    else 
+        echoR 'Please check CertBot'    
     fi
     ### Mariadb 10.3
-    SQLDBVER=$(/usr/bin/mysql -V)
+    cksqlver
     echo ${SQLDBVER} | grep 'MariaDB' | grep '10.3' > /dev/null 2>&1
     if [ $? = 0 ]; then 
-        echoG "Mariadb 10.3 installed"
+        echoG 'Mariadb 10.3 installed'
     else
-       apt -y remove mariadb-server-10.* > /dev/null 2>&1
-       apt -y install mariadb-server-10.3 > /dev/null 2>&1   
-       echoG "Mariadb 10.3 installed"
+        apt -y remove mariadb-server-10.* > /dev/null 2>&1
+        echoG "Install Mariadb 10.3"
+        DEBIAN_FRONTEND='noninteractive' apt-get -y \
+            -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' \
+            install mariadb-server-10.3 > /dev/null 2>&1
+        cksqlver
+        echo ${SQLDBVER} | grep 'MariaDB' | grep '10.3' > /dev/null 2>&1
+        if [ $? = 0 ]; then 
+            echoG 'Mariadb 10.3 installed'
+        else
+            echoR "Please check Mariadb $(/usr/bin/mysql -V)" 
+        fi      
     fi        
 }
 
@@ -272,13 +290,18 @@ rewrite  {
   autoLoadHtaccess        1
 }
 END
-
+    echoG 'Finish Web Server config'
 }
 
 landingpg(){
     echoG 'Setting Landing Page'
     curl -s https://raw.githubusercontent.com/litespeedtech/ls-cloud-image/master/Static/wp-landing.html \
     -o ${DOCLAND}/index.html
+    if [ -e ${DOCLAND}/index.html ]; then 
+        echoG 'Landing Page finished'
+    else
+        echoR "Please check Landing Page here ${DOCLAND}/index.html"
+    fi    
 }
 
 configphp(){
@@ -291,6 +314,7 @@ configphp(){
 
     NEWKEY='upload_max_filesize = 16M'
     linechange 'upload_max_filesize' ${PHPINICONF} "${NEWKEY}"
+    echoG 'Finish PHP Paremeter'
 }
 
 configobject(){
@@ -347,6 +371,7 @@ unixsocketperm 775
 END
     systemctl daemon-reload > /dev/null 2>&1
     service redis start > /dev/null 2>&1
+    echoG 'Finish Object Cache'
 }
 
 configmysql(){
@@ -370,7 +395,7 @@ configmysql(){
 sql_mode="NO_ENGINE_SUBSTITUTION,NO_AUTO_CREATE_USER"
 END
     fi
-
+    echoG 'Finish DataBase'
 }
 
 
@@ -483,11 +508,13 @@ w
 q
 END
     fi
-
+    echoG 'Finish WordPress'
     service lsws restart   
+
 }
 
 dbpasswordfile(){
+    echoG 'Create db fiile'
     if [ -f ${DBPASSPATH} ]; then 
         echoY "${DBPASSPATH} already exist!, will recreate a new file"
         rm -f ${DBPASSPATH}
@@ -496,6 +523,7 @@ dbpasswordfile(){
     cat >> "${DBPASSPATH}" <<EOM
 root_mysql_pass="${root_mysql_pass}"
 EOM
+    echoG 'Finish db fiile'
 }
 
 firewalladd(){
@@ -506,16 +534,23 @@ firewalladd(){
         fi
         service firewalld start 
         systemctl enable firewalld
-        firewall-cmd --permanent --add-port=80/tcp > /dev/null 2>&1
-        firewall-cmd --permanent --add-port=443/tcp > /dev/null 2>&1
-        firewall-cmd --permanent --add-port=22/tcp > /dev/null 2>&1
+        for PORT in ${FIREWALLLIST}; do 
+            firewall-cmd --permanent --add-port=${PORT}/tcp > /dev/null 2>&1
+        done 
         firewall-cmd --reload
+
+        ufw status | grep '80.*ALLOW'
+        if [ $? = 0 ]; then 
+            echoG 'firewalld rules setup success'
+        else 
+            echoR 'Please check ufw rules'    
+        fi    
     else 
         ufw status verbose | grep inactive > /dev/null 2>&1
         if [ $? = 0 ]; then 
-            ufw allow 80 > /dev/null 2>&1
-            ufw allow 443 > /dev/null 2>&1
-            ufw allow 22 > /dev/null 2>&1
+            for PORT in ${FIREWALLLIST}; do
+                ufw allow ${PORT} > /dev/null 2>&1
+            done    
             echo "y" | ufw enable > /dev/null 2>&1
             echoG "ufw rules setup success"  
         else
@@ -543,7 +578,9 @@ statusck(){
 }
 
 rmdummy(){
+    echoG 'Remove dummy file'
     rm -f "${NOWPATH}/example.csr" "${NOWPATH}/privkey.pem"
+    echoG 'Finished dummy file'
 }
 
 ### Main
@@ -570,6 +607,6 @@ main(){
     echoY "***Total of ${ELAPSED} seconds to finish process***"
 }
 main
-#echoG 'Auto remove script script itself'
+#echoG 'Auto remove script itself'
 #rm -- "$0"
 exit 0

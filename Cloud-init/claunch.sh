@@ -7,28 +7,55 @@
 # *********************************************************************/
 
 CLDINITPATH='/var/lib/cloud/scripts/per-instance'
+BANNERNAME=''
+BANNERDST=''
 
 check_os(){
 if [ -f /etc/redhat-release ] ; then
     OSNAME=centos
+    BANNERDST='/etc/profile.d/99-one-click.sh'
 elif [ -f /etc/lsb-release ] ; then
     OSNAME=ubuntu    
+    BANNERDST='/etc/update-motd.d/99-one-click'
 elif [ -f /etc/debian_version ] ; then
     OSNAME=debian
+    BANNERDST='/etc/update-motd.d/99-one-click'
 fi         
 }
 check_os
 
-setup(){
+setupcloud(){
     ### per-instance.sh
     curl -s https://raw.githubusercontent.com/litespeedtech/ls-cloud-image/master/Cloud-init/per-instance.sh \
     -o ${CLDINITPATH}
     chmod +x ${CLDINITPATH}
-    
+}
+
+setupdomain(){
     ### domainsetup.sh
     curl -s https://raw.githubusercontent.com/litespeedtech/ls-cloud-image/master/Setup/domainsetup.sh \
     -o /opt/domainsetup.sh
     chmod +x /opt/domainsetup.sh
+}    
+setupbanner(){
+    ### 
+    if [ -d /usr/local/CyberCP ]; then 
+        BANNERNAME='cyberpanel'
+    else    
+        if [ -f '/usr/bin/node' ] && [ "$(grep -n 'appType.*node' ${LSVHCFPATH})" != '' ]; then
+            BANNERNAME='nodejs'
+        elif [ -f '/usr/bin/ruby' ] && [ "$(grep -n 'appType.*rails' ${LSVHCFPATH})" != '' ]; then
+            BANNERNAME='ruby'
+        elif [ -f '/usr/bin/python3' ] && [ "$(grep -n 'appType.*wsgi' ${LSVHCFPATH})" != '' ]; then
+            BANNERNAME='django'
+        elif [ -d /var/www/html.old ]; then  
+            BANNERNAME='wordpress'
+        fi    
+    fi
+    
+    curl -s https://raw.githubusercontent.com/litespeedtech/ls-cloud-image/master/Banner/${BANNERNAME} \
+    -o ${BANNERDST}  
+    chmod +x ${BANNERDST}
 }
 cleanup (){
   # IF CyberPanel is installed on Ubuntu we need to remove firewalld
@@ -105,7 +132,13 @@ cleanup (){
   fi
 }
 
-setup
-cleanup
-rm -- "$0"
+mainclaunch(){
+    setupcloud
+    setupdomain
+    setupbanner
+    cleanup
+}
+mainclaunch
+#echoG 'Auto remove script itself'
+#rm -- "$0"
 exit 0
