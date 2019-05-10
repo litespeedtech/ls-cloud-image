@@ -19,14 +19,19 @@ fi
 CLOUDPERINSTPATH='/var/lib/cloud/scripts/per-instance'
 WPCT='noneclassified'
 OSNAME=''
+BANNERNAME=''
+BANNERDST=''
 
 check_os(){
     if [ -f /etc/redhat-release ] ; then
         OSNAME=centos
+        BANNERDST='/etc/profile.d/99-one-click.sh'
     elif [ -f /etc/lsb-release ] ; then
         OSNAME=ubuntu   
+        BANNERDST='/etc/update-motd.d/99-one-click'
     elif [ -f /etc/debian_version ] ; then
         OSNAME=debian
+        BANNERDST='/etc/update-motd.d/99-one-click'
     fi        
 }
 check_os
@@ -40,6 +45,7 @@ editioncheck()
         CPCFPATH="${PANELPATH}/CyberCP/settings.py"
         CPSQLPATH='/etc/cyberpanel/mysqlPassword'
         CPIPPATH='/etc/cyberpanel/machineIP'
+        BANNERNAME='cyberpanel'
     elif [ -d /usr/local/cpanel ]; then
         PANEL='cpanel'
         PANELPATH='/usr/local/cpanel'
@@ -88,17 +94,21 @@ pathupdate()
         if [ -f '/usr/bin/node' ] && [ "$(grep -n 'appType.*node' ${LSVHCFPATH})" != '' ]; then
             APPLICATION='NODE'
             WPCT="${PROVIDER}_ols_node"
+            BANNERNAME='nodejs'
         elif [ -f '/usr/bin/ruby' ] && [ "$(grep -n 'appType.*rails' ${LSVHCFPATH})" != '' ]; then
             APPLICATION='RUBY'
             WPCT="${PROVIDER}_ols_ruby"
+            BANNERNAME='ruby'
         elif [ -f '/usr/bin/python3' ] && [ "$(grep -n 'appType.*wsgi' ${LSVHCFPATH})" != '' ]; then
             APPLICATION='PYTHON'
             CONTEXTPATH="${LSDIR}/Example/demo/demo/settings.py"
             WPCT="${PROVIDER}_ols_python"
+            BANNERNAME='django'
         else
             APPLICATION='NONE' 
             DOCPATH='/var/www/html.old'
             WPCT="${PROVIDER}_ols_wordpress"
+            BANNERNAME='wordpress'
         fi 
     fi
     PHPMYCFPATH="${PHPMYPATH}/config.inc.php"
@@ -127,6 +137,19 @@ oshmpath
 doimgversionct()
 {
     curl "https://wp.api.litespeedtech.com/v?t=image&src=${WPCT}" > /dev/null 2>&1
+}
+
+setupdomain(){
+    ### domainsetup.sh
+    curl -s https://raw.githubusercontent.com/litespeedtech/ls-cloud-image/master/Setup/domainsetup.sh \
+    -o /opt/domainsetup.sh
+    chmod +x /opt/domainsetup.sh
+}    
+setupbanner(){
+    ### Setup banner automatically
+    curl -s https://raw.githubusercontent.com/litespeedtech/ls-cloud-image/master/Banner/${BANNERNAME} \
+    -o ${BANNERDST}  
+    chmod +x ${BANNERDST}
 }
 
 dbpasswordfile()
@@ -580,6 +603,8 @@ set_tmp() {
 }
 
 maincloud(){
+    setupdomain
+    setupbanner
     litespeedpasswordfile
     doimgversionct
     genlswspwd
