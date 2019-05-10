@@ -6,6 +6,17 @@
 # @Version: 1.0
 # *********************************************************************/
 
+### Tools
+echoY() {
+    echo -e "\033[38;5;148m${1}\033[39m"
+}
+echoG() {
+    echo -e "\033[38;5;71m${1}\033[39m"
+}
+echoR()
+{
+    echo -e "\033[38;5;203m${1}\033[39m"
+}
 
 check_os()
 {
@@ -57,9 +68,13 @@ rmdummy(){
 }    
 
 main(){
+    START_TIME="$(date -u +%s)"
     systemupgrade
     installcyberpanel
-    rmdumm
+    rmdummy
+    END_TIME="$(date -u +%s)"
+    ELAPSED="$((${END_TIME}-${START_TIME}))"
+    echoY "***Total of ${ELAPSED} seconds to finish process***"
 }
 
 main
