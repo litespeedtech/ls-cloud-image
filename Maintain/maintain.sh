@@ -6,12 +6,19 @@
 # @Version: 1.0
 # *********************************************************************/
 DOCROOT='/var/www/html.old'
+LSDIR='/usr/local/lsws'
+if [ -e "${LSDIR}/conf/vhosts/wordpress/vhconf.conf" ]; then
+    LSVHCFPATH="${LSDIR}/conf/vhosts/wordpress/vhconf.conf"
+else
+    LSVHCFPATH="${LSDIR}/conf/vhosts/Example/vhconf.conf"
+fi
 PLUGINLIST="litespeed-cache.zip all-in-one-seo-pack.zip all-in-one-wp-migration.zip google-analytics-for-wordpress.zip jetpack.zip wp-mail-smtp.zip"
 THEME='twentynineteen'
 USER='www-data'
 GROUP='www-data'
 WPCONFIG='wordpress'
 TEMPFOLDER='/tmp'
+PANEL=''
 
 check_os()
 {
@@ -26,6 +33,22 @@ check_os()
     fi         
 }
 check_os
+
+check_type(){
+    if [ -d /usr/local/CyberCP ]; then
+        PANEL='cyber'
+    else
+        if [ -f '/usr/bin/node' ] && [ "$(grep -n 'appType.*node' ${LSVHCFPATH})" != '' ]; then
+            APPLICATION='NODE'
+        elif [ -f '/usr/bin/ruby' ] && [ "$(grep -n 'appType.*rails' ${LSVHCFPATH})" != '' ]; then
+            APPLICATION='RUBY'
+        elif [ -f '/usr/bin/python3' ] && [ "$(grep -n 'appType.*wsgi' ${LSVHCFPATH})" != '' ]; then
+            APPLICATION='PYTHON'
+        else
+            APPLICATION='NONE' 
+        fi     
+    fi    
+}
 
 echoG()
 {
@@ -49,13 +72,33 @@ linechange(){
   fi
 }
 
-wordpresscfg()
-{
-  NEWDBPWD="define( 'DB_NAME', '${WPCONFIG}' );"
-  linechange 'DB_NAME' $DOCROOT/wp-config.php "${NEWDBPWD}"
-  NEWDBPWD="define( 'DB_USER', '${WPCONFIG}' );"
-  linechange 'DB_USER' $DOCROOT/wp-config.php "${NEWDBPWD}"
+### Upgrade
+systemupgrade() {
+    echoG 'Updating system'
+    if [ "${OSNAME}" = 'ubuntu' ] || [ "${OSNAME}" = 'debian' ]; then 
+        apt-get update > /dev/null 2>&1
+        echo -ne '#####                     (33%)\r'
+        DEBIAN_FRONTEND='noninteractive' apt-get -y -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' upgrade > /dev/null 2>&1
+        echo -ne '#############             (66%)\r'
+        DEBIAN_FRONTEND='noninteractive' apt-get -y -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' dist-upgrade > /dev/null 2>&1
+        echo -ne '####################      (99%)\r'
+        apt-get clean > /dev/null 2>&1
+        apt-get autoclean > /dev/null 2>&1
+        echo -ne '#######################   (100%)\r'
+    else
+        echo -ne '#                         (5%)\r'
+        yum update -y > /dev/null 2>&1
+        echo -ne '#######################   (100%)\r'
+    fi    
+    echoG 'Finish system update'
+}
 
+wpdocrevover(){
+    if [ -d /var/www/html/ ] && [ -d /var/www/html.land/ ]; then  
+        mv /var/www/html/ ${DOCROOT}/
+        mv /var/www/html.land/ /var/www/html/
+        service lsws restart
+    fi    
 }
 
 vscheck()
@@ -64,7 +107,7 @@ vscheck()
     echoG "Now wordpress version: $VERSION"
 }
 
-bk()
+bkwpconfig()
 {
     if [ -f $DOCROOT/wp-content/plugins/litespeed-cache/data/const.default.ini ]; then
         echoG "copy const.default.ini"
@@ -77,12 +120,7 @@ bk()
         echoG 'copy wp-config.php'
         cp -rp $DOCROOT/wp-config.php $TEMPFOLDER/
     else
-        echo "$DOCROOT/wp-config.php not exist, will copy from wp-config-sample.php"
-        cp $DOCROOT/wp-config-sample.php $DOCROOT/wp-config.php
-        echo "Updating config file"
-        wordpresscfg
-        echo 'copy wp-config.php'
-        cp -rp $DOCROOT/wp-config.php $TEMPFOLDER/
+        echoE "$DOCROOT/wp-config.php not exist"
     fi
 }
 
@@ -123,7 +161,7 @@ installplugin()
     rm -f $DOCROOT/wp-content/plugins/*.zip
 }
 
-mvbk()
+mvwpconfigbk()
 {
     if [ -f $TEMPFOLDER/const.default.ini ]; then
         echoG 'mv back const.default.ini'
@@ -176,22 +214,51 @@ END
 
 chowner()
 {
-   chown -R $USER:$GROUP $DOCROOT/
+   chown -R $USER:$GROUP /var/www/
 }
 
-main()
+cyberupgrade(){
+    echoG 'Start updating cyberpanel'
+    cd
+    rm -f upgrade.py
+    wget http://cyberpanel.net/upgrade.py
+    python upgrade.py
+    echoG 'Finish cyberpanel update'
+}
+
+wpupgrademain()
 {
+    echoG 'Start updating wordpress'
+    wpdocrevover
     vscheck
-    bk
+    bkwpconfig
     rmoldwp
     getlastwp
     installlatestwp
     installplugin
-    mvbk
+    mvwpconfigbk
     cacheenable
     chowner
     vscheck
+    echoG 'Finish wordpress update'
 }
-main
+
+main(){
+    systemupgrade
+    if [ ${PANEL} = 'cyber' ]; then 
+        cyberupgrade
+    else     
+        if [ ${APPLICATION} = 'NODE' ]; then 
+            echo 'Do nothing'
+        elif [ ${APPLICATION} = 'RUBY' ]; then 
+            echo 'Do nothing'
+        elif [ ${APPLICATION} = 'PYTHON' ]; then 
+            echo 'Do nothing'
+        elif [ ${APPLICATION} = 'NONE' ]; then 
+            wpupgrademain
+        fi    
+    fi
+}    
+
 rm -- "$0"
 exit 0
