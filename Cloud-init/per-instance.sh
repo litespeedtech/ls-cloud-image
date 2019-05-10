@@ -133,6 +133,20 @@ oshmpath()
     fi   
 }
 oshmpath
+rmdummy(){
+    if [ "${PANEL}" = 'cyber' ]; then 
+        rm -f /home/cyberpanel.sh
+        rm -rf /home/install*
+        rm -rf /usr/local/CyberCP/.idea/
+        rm -f /etc/profile.d/cyberpanel.sh
+    fi
+    if [ "${OSNAME}" = 'ubuntu' ] || [ "${OSNAME}" = 'debian' ]; then 
+        rm -f /etc/update-motd.d/00-header
+        rm -f /etc/update-motd.d/10-help-text
+        rm -f /etc/update-motd.d/50-landscape-sysinfo
+        rm -f /etc/update-motd.d/51-cloudguest
+    fi
+}
 
 doimgversionct()
 {
@@ -141,15 +155,19 @@ doimgversionct()
 
 setupdomain(){
     ### domainsetup.sh
-    curl -s https://raw.githubusercontent.com/litespeedtech/ls-cloud-image/master/Setup/domainsetup.sh \
-    -o /opt/domainsetup.sh
-    chmod +x /opt/domainsetup.sh
+    if [ ! -e /opt/domainsetup.sh ]; then  
+        curl -s https://raw.githubusercontent.com/litespeedtech/ls-cloud-image/master/Setup/domainsetup.sh \
+        -o /opt/domainsetup.sh
+        chmod +x /opt/domainsetup.sh
+    fi    
 }    
 setupbanner(){
     ### Setup banner automatically
-    curl -s https://raw.githubusercontent.com/litespeedtech/ls-cloud-image/master/Banner/${BANNERNAME} \
-    -o ${BANNERDST}  
-    chmod +x ${BANNERDST}
+    if [ ! -e ${BANNERDST} ]; then  
+        curl -s https://raw.githubusercontent.com/litespeedtech/ls-cloud-image/master/Banner/${BANNERNAME} \
+        -o ${BANNERDST}  
+        chmod +x ${BANNERDST}
+    fi
 }
 
 dbpasswordfile()
@@ -616,6 +634,7 @@ maincloud(){
     gensqlpwd
     gensaltpwd
     gensecretkey
+    rmdummy
     set_tmp
     if [ "${PANEL}" = 'cyber' ]; then
         #dbpasswordfile
