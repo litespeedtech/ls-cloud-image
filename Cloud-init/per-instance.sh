@@ -134,12 +134,6 @@ oshmpath()
 }
 oshmpath
 rmdummy(){
-    if [ "${PANEL}" = 'cyber' ]; then 
-        rm -f /home/cyberpanel.sh
-        rm -rf /home/install*
-        rm -rf /usr/local/CyberCP/.idea/
-        rm -f /etc/profile.d/cyberpanel.sh
-    fi
     if [ "${OSNAME}" = 'ubuntu' ] || [ "${OSNAME}" = 'debian' ]; then 
         rm -f /etc/update-motd.d/00-header
         rm -f /etc/update-motd.d/10-help-text
@@ -482,10 +476,13 @@ EOM
     sudo chmod a+x /opt/afterssh.sh
 }
 
-beforessh(){
-    echo "/opt/afterssh.sh" >> /etc/profile
+addprofile(){
+    if [ "${BANNERNAME}" = 'wordpress' ]; then 
+        echo "/opt/afterssh.sh" >> /etc/profile
+    fi    
     echo "/opt/domainsetup.sh" >> /etc/profile
 }
+
 
 addtohosts(){
     if [ -d /home/ubuntu ]; then
@@ -635,6 +632,7 @@ maincloud(){
     gensaltpwd
     gensecretkey
     rmdummy
+    addprofile
     set_tmp
     if [ "${PANEL}" = 'cyber' ]; then
         #dbpasswordfile
@@ -661,7 +659,6 @@ maincloud(){
         renewwpsalt
         update_phpmyadmin
         renewblowfish
-        beforessh
         aftersshsetup
     fi
 }

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # /********************************************************************
-# LiteSpeed Cloud Script
+# LiteSpeed WordPress setup Script
 # @Author:   LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
 # @Copyright: (c) 2019-2020
 # @Version: 1.0
