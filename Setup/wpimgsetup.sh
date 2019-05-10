@@ -580,6 +580,12 @@ statusck(){
 rmdummy(){
     echoG 'Remove dummy file'
     rm -f "${NOWPATH}/example.csr" "${NOWPATH}/privkey.pem"
+    if [ "${OSNAME}" = 'ubuntu' ] || [ "${OSNAME}" = 'debian' ]; then 
+        rm -f /etc/update-motd.d/00-header
+        rm -f /etc/update-motd.d/10-help-text
+        rm -f /etc/update-motd.d/50-landscape-sysinfo
+        rm -f /etc/update-motd.d/51-cloudguest
+    fi
     echoG 'Finished dummy file'
 }
 

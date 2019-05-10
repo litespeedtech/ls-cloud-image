@@ -22,8 +22,8 @@ check_os
 setupcloud(){
     ### per-instance.sh
     curl -s https://raw.githubusercontent.com/litespeedtech/ls-cloud-image/master/Cloud-init/per-instance.sh \
-    -o ${CLDINITPATH}
-    chmod 755 ${CLDINITPATH}
+    -o ${CLDINITPATH}/per-instance.sh
+    chmod 755 ${CLDINITPATH}/per-instance.sh
 }
 
 cleanup (){
@@ -91,6 +91,7 @@ cleanup (){
     rm -f /home/ubuntu/.ssh/authorized_keys   
     rm -f /home/ubuntu/.litespeed_password
   fi  
+  rm -f /root/.bash_history
   if [ "$(dmidecode -s bios-vendor)" = 'Google' ]; then
     allhmfolder=$(ls /home/)
     for i in ${allhmfolder[@]}; do
