@@ -532,27 +532,32 @@ firewalladd(){
         if [ ! -e /usr/sbin/firewalld ]; then 
             yum -y install firewalld > /dev/null 2>&1
         fi
-        service firewalld start 
-        systemctl enable firewalld
+        service firewalld start  > /dev/null 2>&1
+        systemctl enable firewalld > /dev/null 2>&1
         for PORT in ${FIREWALLLIST}; do 
             firewall-cmd --permanent --add-port=${PORT}/tcp > /dev/null 2>&1
         done 
-        firewall-cmd --reload
-
-        ufw status | grep '80.*ALLOW'
+        firewall-cmd --reload > /dev/null 2>&1
+        firewall-cmd --list-all | grep 80 > /dev/null 2>&1
         if [ $? = 0 ]; then 
             echoG 'firewalld rules setup success'
         else 
-            echoR 'Please check ufw rules'    
-        fi    
-    else 
+            echoR 'Please check firewalld rules'    
+        fi         
+     else 
         ufw status verbose | grep inactive > /dev/null 2>&1
         if [ $? = 0 ]; then 
             for PORT in ${FIREWALLLIST}; do
                 ufw allow ${PORT} > /dev/null 2>&1
             done    
             echo "y" | ufw enable > /dev/null 2>&1
-            echoG "ufw rules setup success"  
+            
+            ufw status | grep '80.*ALLOW' > /dev/null 2>&1
+            if [ $? = 0 ]; then 
+                echoG 'firewalld rules setup success'
+            else 
+                echoR 'Please check ufw rules'    
+            fi    
         else
             echoG "ufw already enabled"    
         fi

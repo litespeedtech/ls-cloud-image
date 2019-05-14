@@ -473,7 +473,7 @@ mv /var/www/html.old/ /var/www/html/
 service lsws restart
 sudo rm -f '/opt/afterssh.sh'
 EOM
-    sudo chmod a+x /opt/afterssh.sh
+    sudo chmod 755 /opt/afterssh.sh
 }
 
 addprofile(){
