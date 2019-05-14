@@ -152,6 +152,10 @@ setupdomain(){
     if [ ! -e /opt/domainsetup.sh ]; then  
         curl -s https://raw.githubusercontent.com/litespeedtech/ls-cloud-image/master/Setup/domainsetup.sh \
         -o /opt/domainsetup.sh
+        if [ $? != 0 ];  then 
+            ### Use LiteSpeed backup repo
+            curl -s https://cloud.litespeed.sh/Setup/domainsetup.sh -o /opt/domainsetup.sh
+        fi    
         chmod +x /opt/domainsetup.sh
     fi    
 }    
@@ -160,6 +164,11 @@ setupbanner(){
     if [ ! -e ${BANNERDST} ]; then  
         curl -s https://raw.githubusercontent.com/litespeedtech/ls-cloud-image/master/Banner/${BANNERNAME} \
         -o ${BANNERDST}  
+
+        if [ $? != 0 ];  then 
+            ### Use LiteSpeed backup repo
+            curl -s https://cloud.litespeed.sh/Banner/${BANNERNAME} -o ${BANNERDST}  
+        fi  
         chmod +x ${BANNERDST}
     fi
 }
@@ -462,16 +471,12 @@ upgrade_cyberpanel() {
 ###prevent hijacking
 
 aftersshsetup(){
-    if [ -e '/opt/afterssh.sh' ]; then
-        sudo rm -rf /opt/afterssh.sh
-    fi
-    sudo cat << EOM > /opt/afterssh.sh
+    sudo cat << EOM > /etc/profile.d/afterssh.sh
 #!/bin/bash
-sed -i '/afterssh.sh/d' /etc/profile
 mv /var/www/html/ /var/www/html.land/
 mv /var/www/html.old/ /var/www/html/
 service lsws restart
-sudo rm -f '/opt/afterssh.sh'
+sudo rm -f '/etc/profile.d/afterssh.sh'
 EOM
     sudo chmod 755 /opt/afterssh.sh
 }
