@@ -200,11 +200,10 @@ RewriteRule (.*) https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
         fi
     else 
         ### Rewrite in rewrite tab
-        sed '/^  logLevel                0/a\ \ rules                   <<<END_rules \
+        sed -i '/^  logLevel                0/a\ \ rules                   <<<END_rules \
 RewriteCond %{SERVER_PORT} 80\nRewriteRule (.*) https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]\
 \ \ END_rules' ${LSVHCFPATH}   
     fi    
-
     echoG "Force HTTPS rules has been added..."
 }
 
