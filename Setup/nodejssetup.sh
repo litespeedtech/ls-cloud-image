@@ -101,43 +101,9 @@ installols(){
 installpkg(){
     echoG 'Install packages'
     if [ "${OSNAME}" = 'centos' ]; then 
-        yum install python36-devel -y > /dev/null 2>&1
-        yum install python36-pip -y > /dev/null 2>&1
-        yum groupinstall "Development Tools" -y > /dev/null 2>&1
-        yum install wget -y > /dev/null 2>&1
-        pip3 install virtualenv > /dev/null 2>&1
-        ### Install latest sqlite version
-        echoG 'Install latest sqlite'
-        LASTSQLV=$(curl -s https://www.sqlite.org/download.html | grep '/sqlite-autoconf.*gz' | awk -F "'" '{print $4}')
-        wget -q https://www.sqlite.org/${LASTSQLV} -P /opt/
-        cd /opt/
-        tar -zxf sqlite-autoconf-*.tar.gz
-        rm -f sqlite-autoconf-*.tar.gz
-        cd sqlite-autoconf-*
-        echoG 'Compiling from source code'
-        ./configure > /dev/null 2>&1
-        if [ -e Makefile ]; then 
-            make && sudo make install > /dev/null 2>&1
-            if [ -e sqlite3 ]; then 
-                echoG 'Make success, replacing sqlite bin file'
-                mv /usr/bin/sqlite3 /usr/bin/sqlite3.bk
-                mv sqlite3 /usr/bin/
-                ### export lib
-                export LD_LIBRARY_PATH="/usr/local/lib"
-                echo 'export LD_LIBRARY_PATH="/usr/local/lib"' >> /etc/profile
-                echoG 'Finished sqlite3 compile'
-            else
-                echoR 'Make Failed'    
-            fi
-        else 
-            echoR 'Configure Failed'   
-        fi     
+echo 'to be done'
     else 
-        apt-get install python3-pip -y > /dev/null 2>&1
-        apt-get install python3-dev -y > /dev/null 2>&1
-        apt-get install virtualenv -y > /dev/null 2>&1
-        apt-get install socat -y > /dev/null 2>&1
-        apt-get install build-essential -y > /dev/null 2>&1
+echo 'to be done'
     fi 
 
     ### CertBot
@@ -161,177 +127,21 @@ installpkg(){
 }
 
 installwsgi(){
-    echoG 'Build wsgi'
-    curl http://www.litespeedtech.com/packages/lsapi/${WSGINAME}.tgz -so /opt/${WSGINAME}.tgz
-    tar zxf /opt/${WSGINAME}.tgz -C /opt/
-    cd /opt/${WSGINAME}/
-    python3 ./configure.py | grep -i Done > /dev/null 2>&1
-    if [ $? = 0 ]; then  
-        make > /dev/null 2>&1
-        if [ -e 'lswsgi' ]; then 
-            cp lswsgi ${LSWSFD}/fcgi-bin/    
-            echoG 'Finish Build wsgi'
-            cd /opt
-            rm -rf /opt/${WSGINAME}*
-        else
-            echoR 'Failed to Make' 
-        fi    
-    else
-        echoR 'Failed to configure'    
-    fi
+    echo 'to be done'
 }
 
 configols(){
     echoG 'Setting Web Server config'
     ### change doc root to landing page, setup phpmyadmin context
     cat > ${LSWSVHCONF} <<END 
-docRoot                   \$VH_ROOT/html/
-enableGzip                1
-
-errorlog \$VH_ROOT/logs/error.log {
-  useServer               1
-  logLevel                DEBUG
-  rollingSize             10M
-}
-
-accesslog \$VH_ROOT/logs/access.log {
-  useServer               0
-  rollingSize             10M
-  keepDays                30
-  compressArchive         0
-}
-
-index  {
-  useServer               0
-  indexFiles              index.html, index.php
-  autoIndex               0
-  autoIndexURI            /_autoindex/default.php
-}
-
-errorpage 404 {
-  url                     /error404.html
-}
-
-expires  {
-  enableExpires           1
-}
-
-accessControl  {
-  allow                   *
-}
-
-realm SampleProtectedArea {
-
-  userDB  {
-    location              conf/vhosts/Example/htpasswd
-    maxCacheSize          200
-    cacheTimeout          60
-  }
-
-  groupDB  {
-    location              conf/vhosts/Example/htgroup
-    maxCacheSize          200
-    cacheTimeout          60
-  }
-}
-
-context / {
-  type                    appserver
-  location                ${VHDOCROOT}/${PROJNAME}/
-  binPath                 ${LSWSFD}/fcgi-bin/lswsgi
-  appType                 wsgi
-  startupFile             ${PROJNAME}/wsgi.py
-  env                     PYTHONHOME=${VHDOCROOT}/
-  addDefaultCharset       off
-}
-
-rewrite  {
-  enable                  1
-  autoLoadHtaccess        1
-  logLevel                0
-}
-
+echo 'to be done'
 END
     echoG 'Finish Web Server config'
     service lsws restart
 }
 
-djangosetup(){
-    echoG 'Setting django venv'
-    virtualenv --system-site-packages -p python3 ${VHDOCROOT} > /dev/null 2>&1
-    if [ $? = 1 ]; then 
-        echoR 'Create virtualenv failed'
-    fi    
-    echoG 'Source'
-    source ${VHDOCROOT}/bin/activate
-    ### Install Django
-    if [ "${OSNAME}" = 'centos' ]; then 
-        ### Currently CentOS 7 + 2.2 have 500 error 
-        pip3 install -I django==2.1.8> /dev/null 2>&1
-    elif [ "${OSNAME}" = 'ubuntu' ] || [ "${OSNAME}" = 'debian' ]; then 
-        pip3 install -I django > /dev/null 2>&1
-    fi 
-    cd ${VHDOCROOT}
-    echoG 'Start project'
-    django-admin startproject ${PROJNAME}
-    cd ${DEMOPROJECT}
-    echoG 'Start app'
-    python3 manage.py startapp ${PROJAPPNAME}
- 
-    ### Update Settings
-    echoG 'update settings'
-    NEWKEY="ALLOWED_HOSTS = ['*']"
-    linechange 'ALLOWED_HOST' ${DEMOSETTINGS} "${NEWKEY}"
-    
-    cat >> ${DEMOSETTINGS} <<END 
-STATIC_ROOT = '${DEMOPROJECT}/public/static'
-END
-    ### Collect static files
-    echoG 'Collect files'
-    mkdir -p ${DEMOPROJECT}/public/static
-    python manage.py collectstatic > /dev/null 2>&1
-    python manage.py migrate > /dev/null 2>&1
-
-    ### Demo view
-    echoG 'update views'
-    cat > "${DEMOPROJECT}/${PROJAPPNAME}/views.py" <<END 
-from django.shortcuts import render
-from django.http import HttpResponse
-
-def index(request):
-    return HttpResponse("Hello, world!")
-END
-
-    ### Demo Urls
-    echoG 'Update URLs'
-    cat > "${DEMOPROJECT}/${PROJNAME}/urls.py" <<END 
-"""demo URL Configuration
-
-The \`urlpatterns\` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/2.1/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
-"""
-from django.contrib import admin
-from django.urls import path
-from app import views
-
-urlpatterns = [
-    path('', views.index, name='index'),
-    path('admin/', admin.site.urls),
-]
-END
-    ### Exit venv
-    deactivate
-    echoG 'Finish django'
+nodejssetup(){
+echo 'to be done'
 }
 
 firewalladd(){
@@ -385,7 +195,7 @@ main(){
     installols
     installpkg
     installwsgi
-    djangosetup
+    nodejssetup
     configols
     changeowner
     firewalladd

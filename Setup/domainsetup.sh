@@ -157,9 +157,9 @@ emailinput(){
 
 certbothook(){
     sed -i 's/0.*/&  --deploy-hook "\/usr\/local\/lsws\/bin\/lswsctrl restart"/g' ${BOTCRON}
-    grep 'restart' ${BOTCRON}
+    grep 'restart' ${BOTCRON} > /dev/null 2>&1
     if [ $? = 0 ]; then 
-        echoG 'certbot hook update success'
+        echoG 'Certbot hook update success'
     else 
         echoY 'Please check certbot crond'
     fi        

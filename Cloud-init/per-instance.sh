@@ -482,12 +482,12 @@ mv /var/www/html.old/ /var/www/html/
 service lsws restart
 sudo rm -f '/etc/profile.d/afterssh.sh'
 EOM
-    sudo chmod 755 /opt/afterssh.sh
+    sudo chmod 755 /etc/profile.d/afterssh.sh
 }
 
 addprofile(){
     if [ "${BANNERNAME}" = 'wordpress' ]; then 
-        echo "/opt/afterssh.sh" >> /etc/profile
+        echo "/etc/profile.d/afterssh.sh" >> /etc/profile
     fi    
     echo "/opt/domainsetup.sh" >> /etc/profile
 }
