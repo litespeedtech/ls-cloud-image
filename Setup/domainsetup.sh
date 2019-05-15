@@ -8,10 +8,17 @@
 MY_DOMAIN=''
 MY_DOMAIN2=''
 DOCHM='/var/www/html'
-LSWSHM='/usr/local/lsws'
-WEBCF="${LSWSHM}/conf/httpd_config.conf"
-WEBVHCF="${LSWSHM}/conf/vhosts/wordpress/vhconf.conf"
+LSDIR='/usr/local/lsws'
+WEBCF="${LSDIR}/conf/httpd_config.conf"
+if [ -e "${LSDIR}/conf/vhosts/wordpress/vhconf.conf" ]; then
+    VHNAME='wordpress'
+else
+    VHNAME='Example'
+    DOCHM="${LSDIR}/${VHNAME}/html"
+fi
+LSVHCFPATH="${LSDIR}/conf/vhosts/${VHNAME}/vhconf.conf"
 UPDATELIST='/var/lib/update-notifier/updates-available'
+BOTCRON='/etc/cron.d/certbot'
 WWW='FALSE'
 UPDATE='TRUE'
 OSNAME=''
@@ -93,34 +100,47 @@ domainadd(){
         duplicateck ${MY_DOMAIN2} ${WEBCF}
         if [ ${?} = 1 ]; then 
             #my_domain is domain wih www, and my_domain2 is domain without www, both added into listener.
-            sed -i 's|wordpress '${MY_IP}'|wordpress '${MY_IP}', '${MY_DOMAIN}', '${MY_DOMAIN2}' |g' ${WEBCF}
+            if [ "${VHNAME}" = 'wordpress' ]; then 
+                sed -i 's|wordpress '${MY_IP}'|wordpress '${MY_IP}', '${MY_DOMAIN}', '${MY_DOMAIN2}' |g' ${WEBCF}
+            else
+                sed -i 's|Example '${MY_IP}'|Example '${MY_IP}', '${MY_DOMAIN}', '${MY_DOMAIN2}' |g' ${WEBCF}   
+            fi      
         fi
     else
         duplicateck ${MY_DOMAIN} ${WEBCF}
         if [ ${?} = 1 ]; then
             #and if domain is not started with www. consider it as sub-domain
-            sed -i 's|wordpress '${MY_IP}'|wordpress '${MY_IP}', '${MY_DOMAIN}'|g' ${WEBCF}
+            if [ "${VHNAME}" = 'wordpress' ]; then 
+                sed -i 's|wordpress '${MY_IP}'|wordpress '${MY_IP}', '${MY_DOMAIN}'|g' ${WEBCF}
+            else
+                sed -i 's|Example '${MY_IP}'|Example '${MY_IP}', '${MY_DOMAIN}'|g' ${WEBCF}   
+            fi
         fi    
     fi
-    ${LSWSHM}/bin/lswsctrl restart > /dev/null
+    ${LSDIR}/bin/lswsctrl restart > /dev/null
     echoG "\nDomain has been added into OpenLiteSpeed listener.\n"
 }
 
 domainverify(){
-    echo "test" > ${DOCHM}/script-check.html
-    if curl -s http://${MY_DOMAIN}/script-check.html | grep -q 'test'; then
+    if [ -e /usr/bin/host ]; then 
+        CKCMD='host -t a'
+    elif [ -e /usr/bin/dig ]; then 
+        CKCMD='dig +short'
+    fi    
+    ${CKCMD} ${MY_DOMAIN} | grep "${MY_IP}" > /dev/null 2>&1
+    if [ $? = 0 ]; then
         echoG "${MY_DOMAIN} check pass..."
     else
         echo "${MY_DOMAIN} inaccessible, please verify."; exit 1    
     fi
     if [ ${WWW} = 'TRUE' ]; then
-        if curl -s http://${MY_DOMAIN2}/script-check.html | grep -q 'test'; then    
+        ${CKCMD} ${MY_DOMAIN2} | grep "${MY_IP}" > /dev/null 2>&1
+        if [ $? = 0 ]; then 
             echoG "${MY_DOMAIN2} check pass..."   
         else
             echo "${MY_DOMAIN2} inaccessible, please verify."; exit 1    
         fi    
     fi
-    rm -f ${DOCHM}/script-check.html
 }
 
 emailinput(){
@@ -135,6 +155,16 @@ emailinput(){
     fi  
 }
 
+certbothook(){
+    sed -i 's/0.*/&  --deploy-hook "\/usr\/local\/lsws\/bin\/lswsctrl restart"/g' ${BOTCRON}
+    grep 'restart' ${BOTCRON}
+    if [ $? = 0 ]; then 
+        echoG 'certbot hook update success'
+    else 
+        echoY 'Please check certbot crond'
+    fi        
+}
+
 lecertapply(){
     if [ ${WWW} = 'TRUE' ]; then
         certbot certonly --non-interactive --agree-tos -m ${EMAIL} --webroot -w ${DOCHM} -d ${MY_DOMAIN} -d ${MY_DOMAIN2}
@@ -146,7 +176,7 @@ lecertapply(){
             keyFile                 /etc/letsencrypt/live/${MY_DOMAIN}/privkey.pem
             certFile                /etc/letsencrypt/live/${MY_DOMAIN}/fullchain.pem
             certChain               1
-        }" >> ${WEBVHCF}
+        }" >> ${LSVHCFPATH}
 
         echoG "\ncertificate has been successfully installed..."
     else
@@ -156,17 +186,26 @@ lecertapply(){
 }
 
 force_https() {
-    duplicateck "RewriteCond %{HTTPS} on" "${DOCHM}/.htaccess"
-    if [ ${?} = 1 ]; then 
-        echo "$(echo '
+    ### Rewrite in htaccess file
+    if [ "${VHNAME}" = 'wordpress' ]; then 
+        duplicateck "RewriteCond %{HTTPS} on" "${DOCHM}/.htaccess"
+        if [ ${?} = 1 ]; then 
+            echo "$(echo '
 ### Forcing HTTPS rule start       
 RewriteEngine On
 RewriteCond %{SERVER_PORT} 80
 RewriteRule (.*) https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
 ### Forcing HTTPS rule end
-        ' | cat - ${DOCHM}/.htaccess)" > ${DOCHM}/.htaccess
-        echoG "Force HTTPS rules has been added..."
-    fi
+            ' | cat - ${DOCHM}/.htaccess)" > ${DOCHM}/.htaccess
+        fi
+    else 
+        ### Rewrite in rewrite tab
+        sed '/^  logLevel                0/a\ \ rules                   <<<END_rules \
+RewriteCond %{SERVER_PORT} 80\nRewriteRule (.*) https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]\
+\ \ END_rules' ${LSVHCFPATH}   
+    fi    
+
+    echoG "Force HTTPS rules has been added..."
 }
 
 endsetup(){
@@ -188,7 +227,6 @@ yumupgradelist(){
     fi    
 }
 
-
 aptgetupgrade() {
     apt-get update > /dev/null 2>&1
     echo -ne '#####                     (33%)\r'
@@ -208,7 +246,7 @@ yumupgrade(){
 }
 
 main(){
-    if [ -d ${DOCHM}/wp-admin ]; then
+    if [ ! -d /usr/local/CyberCP ]; then
         domainhelp
         i=1
         while [ ${i} -eq 1 ]; do
@@ -232,13 +270,15 @@ main(){
                     lecertapply
                     i=$(($i-1))
                 fi
-            done    
+            done   
+            echoG 'Update certbot cronjob hook'
+            certbothook 
             printf "%s"   "Do you wish to force HTTPS rewrite rule for this domain? [y/N]"
             read TMP_YN
             if [[ "${TMP_YN}" =~ ^(y|Y) ]]; then
                 force_https
             fi
-            ${LSWSHM}/bin/lswsctrl restart > /dev/null
+            ${LSDIR}/bin/lswsctrl restart > /dev/null
         fi    
         echoG "\nEnjoy your accelarated WordPress with OpenLiteSpeed."
     fi   

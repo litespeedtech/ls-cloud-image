@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 # /********************************************************************
-# LiteSpeed Django setup Script
+# LiteSpeed NodeJS setup Script
 # @Author:   LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
 # @Copyright: (c) 2019-2020
 # @Version: 1.0
 # *********************************************************************/
+
 LSWSFD='/usr/local/lsws'
 PHPVER=73
 USER='nobody'
@@ -232,12 +233,6 @@ realm SampleProtectedArea {
     maxCacheSize          200
     cacheTimeout          60
   }
-}
-
-context /.well-known/ {
-  location                ${VHDOCROOT}/
-  allowBrowse             1
-  addDefaultCharset       off
 }
 
 context / {

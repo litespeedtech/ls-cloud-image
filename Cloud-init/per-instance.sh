@@ -101,7 +101,7 @@ pathupdate()
             BANNERNAME='ruby'
         elif [ -f '/usr/bin/python3' ] && [ "$(grep -n 'appType.*wsgi' ${LSVHCFPATH})" != '' ]; then
             APPLICATION='PYTHON'
-            CONTEXTPATH="${LSDIR}/Example/demo/demo/settings.py"
+            CONTEXTPATH="${LSDIR}/Example/html/demo/demo/settings.py"
             WPCT="${PROVIDER}_ols_python"
             BANNERNAME='django'
         else
@@ -381,13 +381,17 @@ renewwppwd(){
 
 ### Listener '*' to 'IP'
 replacelitenerip(){
-    #for LINENUM in $(grep -n 'map.*Example.*\*' ${LSHTTPDCFPATH} | cut -d: -f 1)
-    for LINENUM in $(grep -n 'map' ${LSHTTPDCFPATH} | cut -d: -f 1)
-    do
-        NEWDBPWD="  map                     wordpress ${PUBIP}"
-        #    NEWDBPWD="  map                     Example ${PUBIP}"
-        sed -i "${LINENUM}s/.*/${NEWDBPWD}/" ${LSHTTPDCFPATH}
-    done 
+    if [ "${PANEL}" = '' ]; then 
+        for LINENUM in $(grep -n 'map' ${LSHTTPDCFPATH} | cut -d: -f 1)
+        do
+            if [ -e /var/www/html ] || [ -e /var/www/html.old ]; then 
+                NEWDBPWD="  map                     wordpress ${PUBIP}"
+            else     
+                NEWDBPWD="  map                     Example ${PUBIP}"
+            fi    
+            sed -i "${LINENUM}s/.*/${NEWDBPWD}/" ${LSHTTPDCFPATH}
+        done 
+    fi    
 }
 
 updatesqlpwd(){
@@ -632,6 +636,7 @@ maincloud(){
     gen_selfsigned_cert
     lscpd_cert_update
     web_admin_update
+    replacelitenerip
     dbpasswordfile
     gensqlpwd
     gensaltpwd
@@ -640,7 +645,6 @@ maincloud(){
     addprofile
     set_tmp
     if [ "${PANEL}" = 'cyber' ]; then
-        #dbpasswordfile
         panel_admin_update
         panel_sshkey_update
         panel_IP_update
@@ -656,11 +660,9 @@ maincloud(){
     elif [ "${APPLICATION}" = 'PYTHON' ]; then
         updatesecretkey
     elif [ "${APPLICATION}" = 'NONE' ]; then
-        #dbpasswordfile
         updatesqlpwd
         renewwppwd
         updatepwdfile
-        replacelitenerip
         renewwpsalt
         update_phpmyadmin
         renewblowfish
