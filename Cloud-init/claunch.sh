@@ -23,7 +23,7 @@ setupcloud(){
     ### per-instance.sh
     cat > ${CLDINITPATH}/per-instance.sh <<END 
 #!/bin/bash    
-/bin/bash <( curl -sk https://raw.githubusercontent.com/litespeedtech/ls-cloud-image/master/Cloud-init/per-instance.sh )
+bash <( curl -sk https://raw.githubusercontent.com/litespeedtech/ls-cloud-image/master/Cloud-init/per-instance.sh )
 if [ \$? != 0 ];  then  
     ### Use LiteSpeed backup repo
     /bin/bash <( curl -sk https://cloud.litespeed.sh/Cloud-init/per-instance.sh )
