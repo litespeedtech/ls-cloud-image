@@ -58,7 +58,7 @@ In a web browser, you can view:
 
 On the server:
 * You can get the Web Admin admin password with the following command:
-   $(echoY "cat /root/.litespeed_password")
+   $(echoY "cat .litespeed_password")
 
 System Status:
   $(echo "Load :")$(echoG "$LOAD")
