@@ -261,7 +261,7 @@ END
     service lsws restart
 }
 
-djangosetup(){
+appsetup(){
     echoG 'Setting django venv'
     virtualenv --system-site-packages -p python3 ${VHDOCROOT} > /dev/null 2>&1
     if [ $? = 1 ]; then 
@@ -390,7 +390,7 @@ main(){
     installols
     installpkg
     installwsgi
-    djangosetup
+    appsetup
     configols
     changeowner
     firewalladd

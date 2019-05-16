@@ -13,12 +13,9 @@ GROUP='nogroup'
 FIREWALLLIST="22 80 443"
 LSWSCONF="${LSWSFD}/conf/httpd_config.conf"
 LSWSVHCONF="${LSWSFD}/conf/vhosts/Example/vhconf.conf"
-WSGINAME='wsgi-lsapi-1.4'
-PROJNAME='demo'
-PROJAPPNAME='app'
+PROJNAME='node'
 VHDOCROOT='/usr/local/lsws/Example/html'
 DEMOPROJECT="${VHDOCROOT}/${PROJNAME}"
-DEMOSETTINGS="${DEMOPROJECT}/${PROJNAME}/settings.py"
 ALLERRORS=0
 
 ### Tools
@@ -100,11 +97,15 @@ installols(){
 
 installpkg(){
     echoG 'Install packages'
+    ### Install nodejs with version 10 by using EPEL repository
+    curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash - > /dev/null 2>&1
     if [ "${OSNAME}" = 'centos' ]; then 
-echo 'to be done'
+        yum install nodejs -y > /dev/null 2>&1
     else 
-echo 'to be done'
+        apt-get install nodejs -y > /dev/null 2>&1
     fi 
+    echoG "NodeJS: $(node --version)"
+    echoG "NPM:    $(npm --version)"
 
     ### CertBot
     echoG "Install CertBot" 
@@ -126,22 +127,106 @@ echo 'to be done'
     echoG 'Finish packages'
 }
 
-installwsgi(){
-    echo 'to be done'
-}
-
 configols(){
-    echoG 'Setting Web Server config'
+   echoG 'Setting Web Server config'
     ### change doc root to landing page, setup phpmyadmin context
     cat > ${LSWSVHCONF} <<END 
-echo 'to be done'
+docRoot                   \$VH_ROOT/html/
+enableGzip                1
+
+errorlog \$VH_ROOT/logs/error.log {
+  useServer               1
+  logLevel                DEBUG
+  rollingSize             10M
+}
+
+accesslog \$VH_ROOT/logs/access.log {
+  useServer               0
+  rollingSize             10M
+  keepDays                30
+  compressArchive         0
+}
+
+index  {
+  useServer               0
+  indexFiles              index.html, index.php
+  autoIndex               0
+  autoIndexURI            /_autoindex/default.php
+}
+
+errorpage 404 {
+  url                     /error404.html
+}
+
+expires  {
+  enableExpires           1
+}
+
+accessControl  {
+  allow                   *
+}
+
+realm SampleProtectedArea {
+
+  userDB  {
+    location              conf/vhosts/Example/htpasswd
+    maxCacheSize          200
+    cacheTimeout          60
+  }
+
+  groupDB  {
+    location              conf/vhosts/Example/htgroup
+    maxCacheSize          200
+    cacheTimeout          60
+  }
+}
+
+context /.well-known/ {
+  location                ${VHDOCROOT}/
+  allowBrowse             1
+  addDefaultCharset       off
+}
+
+context / {
+  type                    appserver
+  location                ${VHDOCROOT}/${PROJNAME}/
+  binPath                 /usr/bin/node
+  appType                 node
+  addDefaultCharset       off
+}
+
+rewrite  {
+  enable                  1
+  autoLoadHtaccess        1
+  logLevel                0
+}
+
 END
     echoG 'Finish Web Server config'
     service lsws restart
 }
 
-nodejssetup(){
-echo 'to be done'
+
+appsetup(){
+    ### Create project folder
+    mkdir -p ${DEMOPROJECT}
+    cat > "${DEMOPROJECT}/app.js" <<END 
+const http = require('http');
+
+const hostname = '127.0.0.1';
+const port = 3000;
+
+const server = http.createServer((req, res) => {
+  res.statusCode = 200;
+  res.setHeader('Content-Type', 'text/plain');
+  res.end('Hello World! Form OpenLiteSpeed NodeJS\n');
+});
+
+server.listen(port, hostname, () => {
+  console.log(\`Server running at http://${hostname}:${port}/\`);
+});
+END
+
 }
 
 firewalladd(){
@@ -194,8 +279,7 @@ main(){
     systemupgrade
     installols
     installpkg
-    installwsgi
-    nodejssetup
+    appsetup
     configols
     changeowner
     firewalladd
