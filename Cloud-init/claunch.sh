@@ -21,8 +21,10 @@ check_os
 
 setupcloud(){
     ### per-instance.sh
-    curl -s https://raw.githubusercontent.com/litespeedtech/ls-cloud-image/master/Cloud-init/per-instance.sh \
-    -o ${CLDINITPATH}/per-instance.sh
+    cat > ${CLDINITPATH}/per-instance.sh <<END 
+#!/bin/bash    
+bash <( curl -sk https://raw.githubusercontent.com/litespeedtech/ls-cloud-image/master/Cloud-init/per-instance.sh )
+END
     chmod 755 ${CLDINITPATH}/per-instance.sh
 }
 

@@ -486,9 +486,6 @@ EOM
 }
 
 addprofile(){
-    if [ "${BANNERNAME}" = 'wordpress' ]; then 
-        echo "/etc/profile.d/afterssh.sh" >> /etc/profile
-    fi    
     echo "/opt/domainsetup.sh" >> /etc/profile
 }
 
