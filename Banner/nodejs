@@ -54,7 +54,7 @@ The Node.js OLS One-Click Quickstart guide:
 * $(echoB 'https://docs.litespeedtech.com/cloud/nodejs')
 
 In a web browser, you can view:
-* The sample node site: $(echoY "http://$MYIP/node/")
+* The sample node site: $(echoY "http://$MYIP/")
 
 On the server:
 * You can get the Web Admin admin password with the following command:

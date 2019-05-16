@@ -54,8 +54,8 @@ The Django OLS One-Click Quick start guide:
 * $(echoB 'https://docs.litespeedtech.com/cloud/django')
 
 In a web browser, you can view:
-* The sample node site: $(echoY "http://$MYIP/python/")
-* The sample node site: http://$MYIP/python/admin/
+* The sample Django site: $(echoY "http://$MYIP/")
+* The sample Django admin page: http://$MYIP/admin/
 
 On the server:
 * You can get the Web Admin admin password with the following command:
