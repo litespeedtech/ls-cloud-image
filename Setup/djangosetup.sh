@@ -19,6 +19,7 @@ VHDOCROOT='/usr/local/lsws/Example/html'
 DEMOPROJECT="${VHDOCROOT}/${PROJNAME}"
 DEMOSETTINGS="${DEMOPROJECT}/${PROJNAME}/settings.py"
 ALLERRORS=0
+NOWPATH=$(pwd)
 
 ### Tools
 echoY() {

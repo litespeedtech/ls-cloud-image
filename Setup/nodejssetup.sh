@@ -17,6 +17,7 @@ PROJNAME='node'
 VHDOCROOT='/usr/local/lsws/Example/html'
 DEMOPROJECT="${VHDOCROOT}/${PROJNAME}"
 ALLERRORS=0
+NOWPATH=$(pwd)
 
 ### Tools
 echoY() {

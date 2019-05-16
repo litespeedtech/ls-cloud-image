@@ -62,6 +62,7 @@ cleanup (){
   rm -f /var/log/audit/audit.log
   rm -f /var/log/maillog
   rm -f /var/tuned/tuned.log
+  rm -f /var/log/fontconfig.log
   #aws
   rm -f /var/log/amazon/ssm/*
   #component log

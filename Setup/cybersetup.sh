@@ -6,6 +6,8 @@
 # @Version: 1.0
 # *********************************************************************/
 
+NOWPATH=$(pwd)
+
 ### Tools
 echoY() {
     echo -e "\033[38;5;148m${1}\033[39m"
@@ -61,8 +63,8 @@ installcyberpanel(){
 }   
 
 rmdummy(){
-    rm -f /home/cyberpanel.sh
-    rm -rf /home/install*
+    rm -f ${NOWPATH}/cyberpanel.sh
+    rm -rf ${NOWPATH}/install*
     rm -rf /usr/local/CyberCP/.idea/
     rm -f /etc/profile.d/cyberpanel.sh
 }    
