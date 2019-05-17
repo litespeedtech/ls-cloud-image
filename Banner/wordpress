@@ -42,6 +42,11 @@ CPU=$(grep 'cpu ' /proc/stat | awk '{usage=($2+$4)*100/($2+$4+$5)} END {print us
 MYIP=$(ip -4 route get 8.8.8.8 | awk {'print $7'} | tr -d '\n')
 #MYIP=$(curl -s ifconfig.me)
 
+if [ -e /home/ubuntu ]; then 
+    HMUBUNTU='/home/ubuntu/' 
+else
+    HMUBUNTU=''
+fi
 clear
 cat <<EOF
 ********************************************************************************
@@ -60,9 +65,9 @@ In a web browser, you can view:
 On the server:
 * The default web root is located at /var/www/html
 * You can get the MySQL root password and MySQL WordPress user password with command:
-   $(echoY "cat .db_password")
+   $(echoY "cat ${HMUBUNTU}.db_password")
 * You can get the Web Admin admin password with the following command:
-   $(echoY "cat .litespeed_password")
+   $(echoY "cat ${HMUBUNTU}.litespeed_password")
 * The WordPress Cache plugin, LSCache, is located at
    /var/www/html/wp-content/plugins/litespeed-cache
 * The phpMyAdmin is located at /var/www/phpmyadmin

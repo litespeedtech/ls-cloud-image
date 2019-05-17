@@ -276,6 +276,8 @@ context /phpmyadmin/ {
   }
 
   rewrite  {
+    enable                0
+    inherit               0
 
   }
   addDefaultCharset       off

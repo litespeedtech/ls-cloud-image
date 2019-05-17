@@ -594,6 +594,12 @@ update_phpmyadmin() {
     fi
 }
 
+phpmyadminfix(){
+    if [ ${BANNERNAME} = 'wordpress' ]; then 
+        sed -i "/^  rewrite/a\ \ \ \ \enable                0\n \ \ \ \inherit               0" ${LSVHCFPATH}           
+    fi 
+}
+
 set_tmp() {
     if ! $(cat /proc/mounts | grep -q '/dev/loop0 /tmp'); then
         # Create Loop device
@@ -662,6 +668,7 @@ maincloud(){
         updatepwdfile
         renewwpsalt
         update_phpmyadmin
+        phpmyadminfix
         renewblowfish
         aftersshsetup
     fi
