@@ -75,9 +75,9 @@ In a web browser, you can view:
 
 On the server:
 * You can get the CyberPanel admin password with the following command:
-  $(echoY 'sudo cat ${HMUBUNTU}.litespeed_password')
+  $(echoY "sudo cat ${HMUBUNTU}.litespeed_password")
 * You can get the Mysql cyberpanel user password with the following command:
-  $(echoY 'sudo cat ${HMUBUNTU}.db_password')
+  $(echoY "sudo cat ${HMUBUNTU}.db_password")
 
 System Status:
   $(echo "Load :")$(echoG "$LOAD")

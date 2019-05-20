@@ -188,6 +188,8 @@ installpkg(){
         apt-get -y install memcached > /dev/null 2>&1
         echoG 'Install Redis'
         apt-get -y install redis > /dev/null 2>&1
+        echoG 'Install Postfix'
+        DEBIAN_FRONTEND='noninteractive' apt-get -y -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' install postfix > /dev/null 2>&1
     fi
     ### Memcache
     systemctl start memcached > /dev/null 2>&1
