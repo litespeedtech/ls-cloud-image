@@ -477,16 +477,16 @@ upgrade_cyberpanel() {
 aftersshsetup(){
     sudo cat << EOM > /etc/profile.d/afterssh.sh
 #!/bin/bash
-mv /var/www/html/ /var/www/html.land/
-mv /var/www/html.old/ /var/www/html/
-service lsws restart
+sudo mv /var/www/html/ /var/www/html.land/
+sudo mv /var/www/html.old/ /var/www/html/
+sudo service lsws restart
 sudo rm -f '/etc/profile.d/afterssh.sh'
 EOM
     sudo chmod 755 /etc/profile.d/afterssh.sh
 }
 
 addprofile(){
-    echo "/opt/domainsetup.sh" >> /etc/profile
+    echo "sudo /opt/domainsetup.sh" >> /etc/profile
 }
 
 
@@ -596,7 +596,10 @@ update_phpmyadmin() {
 
 phpmyadminfix(){
     if [ ${BANNERNAME} = 'wordpress' ]; then 
-        sed -i "/^  rewrite/a\ \ \ \ \enable                0\n \ \ \ \inherit               0" ${LSVHCFPATH}           
+        grep '    enable' ${LSVHCFPATH}
+        if [ $? = 0 ]; then 
+            sed -i "/^  rewrite/a\ \ \ \ \enable                0\n \ \ \ \inherit               0" ${LSVHCFPATH}           
+        fi    
     fi 
 }
 
@@ -676,6 +679,3 @@ maincloud(){
 
 maincloud
 rm -f ${CLOUDPERINSTPATH}/per-instance.sh
-
-
-
