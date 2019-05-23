@@ -66,8 +66,10 @@ editioncheck
 
 providerck()
 {
-    if [ "$(sudo cat /sys/devices/virtual/dmi/id/product_uuid | cut -c 1-3)" = 'EC2' ] && [ -d /home/ubuntu ]; then
-        PROVIDER='aws'
+    if [ -e /sys/devices/virtual/dmi/id/product_uuid ]; then 
+        if [ "$(sudo cat /sys/devices/virtual/dmi/id/product_uuid | cut -c 1-3)" = 'EC2' ]; then
+            PROVIDER='aws'
+        fi    
     elif [ "$(dmidecode -s bios-vendor)" = 'Google' ];then
         PROVIDER='google'     
     elif [ "$(dmidecode -s bios-vendor)" = 'DigitalOcean' ];then
