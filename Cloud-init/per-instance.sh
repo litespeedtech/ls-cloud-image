@@ -610,7 +610,7 @@ phpmyadminfix(){
 }
 
 set_tmp() {
-    if [ ${OSNAME} = ubuntu ] then 
+    if [ ${OSNAME} = ubuntu ]; then 
         if ! $(cat /proc/mounts | grep -q '/dev/loop0 /tmp'); then
             # Create Loop device
             dd if=/dev/zero of=/usr/.tempdisk bs=100M count=15 > /dev/null 2>&1
