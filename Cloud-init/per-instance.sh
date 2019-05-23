@@ -602,39 +602,41 @@ update_phpmyadmin() {
 
 phpmyadminfix(){
     if [ ${BANNERNAME} = 'wordpress' ]; then 
-        grep '    enable' ${LSVHCFPATH}
-        if [ $? = 0 ]; then 
+        grep -q '    enable' ${LSVHCFPATH}
+        if [ $? != 0 ]; then 
             sed -i "/^  rewrite/a\ \ \ \ \enable                0\n \ \ \ \inherit               0" ${LSVHCFPATH}           
         fi    
     fi 
 }
 
 set_tmp() {
-    if ! $(cat /proc/mounts | grep -q '/dev/loop0 /tmp'); then
-        # Create Loop device
-        dd if=/dev/zero of=/usr/.tempdisk bs=100M count=15 > /dev/null 2>&1
-        mkfs.ext4 /usr/.tempdisk > /dev/null 2>&1
+    if [ ${OSNAME} = ubuntu ] then 
+        if ! $(cat /proc/mounts | grep -q '/dev/loop0 /tmp'); then
+            # Create Loop device
+            dd if=/dev/zero of=/usr/.tempdisk bs=100M count=15 > /dev/null 2>&1
+            mkfs.ext4 /usr/.tempdisk > /dev/null 2>&1
 
-        # backup data
-        mkdir -p /usr/.tmpbak/ > /dev/null 2>&1
-        cp -pr /tmp/* /usr/.tmpbak/
+            # backup data
+            mkdir -p /usr/.tmpbak/ > /dev/null 2>&1
+            cp -pr /tmp/* /usr/.tmpbak/
 
-        # mount loop
-        mount -o loop,rw,nodev,nosuid,noexec,nofail /usr/.tempdisk /tmp > /dev/null 2>&1
+            # mount loop
+            mount -o loop,rw,nodev,nosuid,noexec,nofail /usr/.tempdisk /tmp > /dev/null 2>&1
 
-        # make sure permissions are correct
-        chmod 1777 /tmp
+            # make sure permissions are correct
+            chmod 1777 /tmp
 
-        # move tmp files back
-        cp -pr /usr/.tmpbak/* /tmp/
-        rm -rf /usr/.tmpbak
+            # move tmp files back
+            cp -pr /usr/.tmpbak/* /tmp/
+            rm -rf /usr/.tmpbak
 
-        # bind mount var/tmp
-        mount --bind /tmp /var/tmp > /dev/null 2>&1
+            # bind mount var/tmp
+            mount --bind /tmp /var/tmp > /dev/null 2>&1
 
-        # setup fstab entries
-        echo '/usr/.tempdisk /tmp ext4 loop,rw,noexec,nosuid,nodev,nofail 0 0' >> /etc/fstab
-        echo '/tmp /var/tmp none bind 0 0' >> /etc/fstab
+            # setup fstab entries
+            echo '/usr/.tempdisk /tmp ext4 loop,rw,noexec,nosuid,nodev,nofail 0 0' >> /etc/fstab
+            echo '/tmp /var/tmp none bind 0 0' >> /etc/fstab
+        fi
     fi
 }
 
