@@ -72,6 +72,10 @@ providerck()
         PROVIDER='google'     
     elif [ "$(dmidecode -s bios-vendor)" = 'DigitalOcean' ];then
         PROVIDER='do'
+    elif [ -e /root/StackScript ]; then 
+        if grep -q 'linode' /root/StackScript; then 
+            PROVIDER='linode'
+        fi
     else
         PROVIDER='undefined' 
     fi
