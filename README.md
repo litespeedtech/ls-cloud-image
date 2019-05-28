@@ -1,4 +1,9 @@
 # ls-cloud-image
+[<img src="https://img.shields.io/github/contributors/litespeedtech/ls-cloud-image.svg">](https://github.com/litespeedtech/ls-cloud-image/graphs/contributors) 
+[<img src="https://img.shields.io/badge/Made%20with-BASH-orange.svg">](https://en.wikipedia.org/wiki/Bash_(Unix_shell)) 
+[<img src="https://img.shields.io/badge/slack-LiteSpeed-blue.svg?logo=slack">](https://goo.gl/FG9S4N) 
+[<img src="https://img.shields.io/twitter/follow/litespeedtech.svg?label=Follow&style=social">](https://twitter.com/litespeedtech)
+
 ## Build Your Own Image
 To build free, high-performance WordPress, Cyberpanel, etc. images:
 

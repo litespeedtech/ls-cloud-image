@@ -66,10 +66,8 @@ editioncheck
 
 providerck()
 {
-    if [ -e /sys/devices/virtual/dmi/id/product_uuid ]; then 
-        if [ "$(sudo cat /sys/devices/virtual/dmi/id/product_uuid | cut -c 1-3)" = 'EC2' ]; then
-            PROVIDER='aws'
-        fi    
+    if [ -e /sys/devices/virtual/dmi/id/product_uuid ] && [ "$(sudo cat /sys/devices/virtual/dmi/id/product_uuid | cut -c 1-3)" = 'EC2' ]; then
+        PROVIDER='aws'    
     elif [ "$(dmidecode -s bios-vendor)" = 'Google' ];then
         PROVIDER='google'     
     elif [ "$(dmidecode -s bios-vendor)" = 'DigitalOcean' ];then
@@ -610,7 +608,7 @@ phpmyadminfix(){
 }
 
 set_tmp() {
-    if [ ${OSNAME} = ubuntu ]; then 
+    if [ ${OSNAME} = 'ubuntu' ]; then 
         if ! $(cat /proc/mounts | grep -q '/dev/loop0 /tmp'); then
             # Create Loop device
             dd if=/dev/zero of=/usr/.tempdisk bs=100M count=15 > /dev/null 2>&1
