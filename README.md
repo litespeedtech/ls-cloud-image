@@ -17,3 +17,8 @@ To build free, high-performance WordPress, Cyberpanel, etc. images:
 
 ## Launch an Existing Image
 Look [here](https://docs.litespeedtech.com/cloud/index.html) if you are interested in launching existing images from popular cloud platforms
+
+| Cloud  | ![](wp_50.svg) | ![](cyberpanel_50.svg) | ![](django_50.svg) | ![](nodejs_50.svg) |
+| ------------- | ------------- | ------------- | ------------- |
+| [DigitalOcean](https://marketplace.digitalocean.com/category/blogs-and-forums)  | [Launch](https://cloud.digitalocean.com/droplets/new?image=openlitespeed-wp-18-04&utm_source=openlitespeed&utm_campaign=openlitespeed-wp)  | [Launch](https://cloud.digitalocean.com/droplets/new?image=cyberpanel-18-04&utm_source=cyberpanel&utm_campaign=cyberpanel) | [Launch](https://cloud.digitalocean.com/droplets/new?image=openlitespeed-django-18-04&utm_source=openlitespeed&utm_campaign=openlitespeed-django) | [Launch](https://cloud.digitalocean.com/droplets/new?image=openlitespeed-node-18-04&utm_source=openlitespeed&utm_campaign=openlitespeed-node) |
+|[AWS](https://aws.amazon.com/marketplace/search/results?x=0&y=0&searchTerms=litespeed)|[Launch](https://aws.amazon.com/marketplace/pp/B07KSC2QQN)|[Launch](https://aws.amazon.com/marketplace/pp/B07MPZQ4PS)|[Launch](https://aws.amazon.com/marketplace/pp/B07MZ6VVRD)|[Launch](https://aws.amazon.com/marketplace/pp/B07MZ393TM)|
