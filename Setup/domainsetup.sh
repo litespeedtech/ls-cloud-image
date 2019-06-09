@@ -83,7 +83,7 @@ domaininput(){
     exit
     fi
     echo -e "The domain you put is: \e[31m${MY_DOMAIN}\e[39m"
-    printf "%s"  "Please verify it is correct. [y/N]"
+    printf "%s"  "Please verify it is correct. [y/N] "
 }
 
 duplicateck(){
@@ -122,21 +122,16 @@ domainadd(){
 }
 
 domainverify(){
-    if [ -e /usr/bin/host ]; then 
-        CKCMD='host -t a'
-    elif [ -e /usr/bin/dig ]; then 
-        CKCMD='dig +short'
-    fi    
-    ${CKCMD} ${MY_DOMAIN} | grep "${MY_IP}" > /dev/null 2>&1
+    curl -I http://${MY_DOMAIN}/phpmyadmin/ > /dev/null 2>&1
     if [ $? = 0 ]; then
-        echoG "${MY_DOMAIN} check pass..."
+        echoG "${MY_DOMAIN} check PASS"
     else
         echo "${MY_DOMAIN} inaccessible, please verify."; exit 1    
     fi
     if [ ${WWW} = 'TRUE' ]; then
-        ${CKCMD} ${MY_DOMAIN2} | grep "${MY_IP}" > /dev/null 2>&1
+        curl -I http://${MY_DOMAIN2}/phpmyadmin/ > /dev/null 2>&1
         if [ $? = 0 ]; then 
-            echoG "${MY_DOMAIN2} check pass..."   
+            echoG "${MY_DOMAIN2} check PASS"   
         else
             echo "${MY_DOMAIN2} inaccessible, please verify."; exit 1    
         fi    
@@ -145,11 +140,12 @@ domainverify(){
 
 emailinput(){
     #ask user e-mail for LE
-    printf "%s" "Please enter your E-mail:"
+    CKREG="^[a-z0-9!#\$%&'*+/=?^_\`{|}~-]+(\.[a-z0-9!#$%&'*+/=?^_\`{|}~-]+)*@([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+[a-z0-9]([a-z0-9-]*[a-z0-9])?\$"
+    printf "%s" "Please enter your E-mail: "
     read EMAIL
-    if echo "${EMAIL}" | grep '^[a-zA-Z0-9]*@[a-zA-Z0-9]*\.[a-zA-Z0-9]*$' >/dev/null; then
+    if [[ ${EMAIL} =~ ${CKREG} ]] ; then
       echo -e "The E-mail you entered is: \e[31m${EMAIL}\e[39m"
-      printf "%s"  "Please verify it is correct: [y/N]"
+      printf "%s"  "Please verify it is correct: [y/N] "
     else
       echo -e "\nPlease enter a valid E-mail, exit setup\n"; exit 1
     fi  
