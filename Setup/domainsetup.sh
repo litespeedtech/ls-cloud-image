@@ -122,14 +122,14 @@ domainadd(){
 }
 
 domainverify(){
-    curl -I http://${MY_DOMAIN}/phpmyadmin/ > /dev/null 2>&1
+    curl -Is http://${MY_DOMAIN}/ | grep -i LiteSpeed > /dev/null 2>&1
     if [ $? = 0 ]; then
         echoG "${MY_DOMAIN} check PASS"
     else
         echo "${MY_DOMAIN} inaccessible, please verify."; exit 1    
     fi
     if [ ${WWW} = 'TRUE' ]; then
-        curl -I http://${MY_DOMAIN2}/phpmyadmin/ > /dev/null 2>&1
+        curl -Is http://${MY_DOMAIN2}/ grep -i LiteSpeed > /dev/null 2>&1
         if [ $? = 0 ]; then 
             echoG "${MY_DOMAIN2} check PASS"   
         else
