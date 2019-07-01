@@ -129,7 +129,7 @@ domainverify(){
         echo "${MY_DOMAIN} inaccessible, please verify."; exit 1    
     fi
     if [ ${WWW} = 'TRUE' ]; then
-        curl -Is http://${MY_DOMAIN2}/ grep -i LiteSpeed > /dev/null 2>&1
+        curl -Is http://${MY_DOMAIN2}/ | grep -i LiteSpeed > /dev/null 2>&1
         if [ $? = 0 ]; then 
             echoG "${MY_DOMAIN2} check PASS"   
         else
