@@ -7,14 +7,13 @@
 # *********************************************************************/
 MY_DOMAIN=''
 MY_DOMAIN2=''
-DOCHM='/var/www/html'
+WWW_PATH='/var/www'
 LSDIR='/usr/local/lsws'
 WEBCF="${LSDIR}/conf/httpd_config.conf"
 VHDIR="${LSDIR}/conf/vhosts"
 EMAIL='localhost'
 WWW='FALSE'
 BOTCRON='/etc/cron.d/certbot'
-WPCONSTCONF="${DOCHM}/wp-content/plugins/litespeed-cache/data/const.default.ini"
 PLUGINLIST="litespeed-cache.zip all-in-one-seo-pack.zip all-in-one-wp-migration.zip \
 google-analytics-for-wordpress.zip jetpack.zip wp-mail-smtp.zip"
 CKREG="^[a-z0-9!#\$%&'*+/=?^_\`{|}~-]+(\.[a-z0-9!#$%&'*+/=?^_\`{|}~-]+)*\
@@ -83,6 +82,9 @@ check_root(){
         exit 2
     fi
 }
+check_process(){
+    ps aux | grep ${1} | grep -v grep >/dev/null 2>&1
+}
 install_ed() {
     if [ -f /bin/ed ]; then
         echoG "ed exist"
@@ -103,9 +105,6 @@ create_file(){
 create_folder(){
     if [ ! -d "${1}" ]; then
         mkdir ${1}
-    else
-        echoR "Directory already exist, exit..."
-        exit 1
     fi
 }
 change_owner() {
@@ -134,7 +133,7 @@ install_wp() {
         if [ ! -f /usr/bin/wp ]; then
             install_wp_cli
         fi
-        export WP_CLI_CACHE_DIR=/var/www/.wp-cli/
+        export WP_CLI_CACHE_DIR=${WWW_PATH}/.wp-cli/
         wp core download --path=${DOCHM} --allow-root --quiet
         wp core config --dbname=${WP_DB} --dbuser=${WP_USER} --dbpass=${WP_PASS} \
             --dbhost=localhost --dbprefix=wp_ --path=${DOCHM} --allow-root --quiet
@@ -195,15 +194,20 @@ check_install_wp() {
         read TMP_YN
     fi    
     if [[ "${TMP_YN}" =~ ^(y|Y) ]] || [ ${WORDPRESS} = 'ON' ]; then
-        if [ ! -f ${DOCHM}/wp-config.php ]; then
-            install_wp
+        check_process 'mysqld'
+        if [ ${?} = 0 ]; then
+            if [ ! -f ${DOCHM}/wp-config.php ]; then
+                install_wp
+            else
+                echoR 'WordPress existed, skip!'    
+            fi    
         else
-            echoR 'WordPress existed, skip!'    
-        fi    
+            echoR 'Skip wordpress installation due to no environment'
+        fi                
     fi
 }
 check_duplicate() {
-    grep "${1}" ${2} >/dev/null 2>&1
+    grep -w "${1}" ${2} >/dev/null 2>&1
 }
 restart_lsws(){
     ${LSDIR}/bin/lswsctrl restart >/dev/null
@@ -259,7 +263,7 @@ retryTimeout            0
 persistConn             1
 respBuffer              0
 autoStart               1
-path                    /usr/local/lsws/${PHPVER}/bin/lsphp
+path                    ${LSDIR}/${PHPVER}/bin/lsphp
 backlog                 100
 instances               1
 extUser                 ${USER}
@@ -278,8 +282,8 @@ autoLoadHtaccess        1
 }
 
 vhssl  {
-keyFile                 /usr/local/lsws/conf/example.key
-certFile                /usr/local/lsws/conf/example.crt
+keyFile                 ${LSDIR}/conf/example.key
+certFile                ${LSDIR}/conf/example.crt
 certChain               1
 }
 EOF
@@ -298,8 +302,8 @@ set_server_conf() {
     fi
     echo "
 virtualhost ${MY_DOMAIN} {
-vhRoot                  /var/www/\$VH_NAME
-configFile              /usr/local/lsws/conf/vhosts/${MY_DOMAIN}/vhconf.conf
+vhRoot                  ${WWW_PATH}/\$VH_NAME
+configFile              ${VHDIR}/${MY_DOMAIN}/vhconf.conf
 allowSymbolLink         1
 enableScript            1
 restrained              1
@@ -307,20 +311,21 @@ restrained              1
     if [ ${WWW} = 'TRUE' ]; then
         sed -i 's|virtualhost '${MY_DOMAIN}'|virtualhost '${MY_DOMAIN2}'|g' ${WEBCF}
         sed -i 's|map       '${MY_DOMAIN}'|map       '${MY_DOMAIN2}'|g' ${WEBCF}
-        sed -i 's|/var/www/$VH_NAME|/var/www/'${MY_DOMAIN}'|g' ${WEBCF}
+        sed -i 's|'${WWW_PATH}'/$VH_NAME|'${WWW_PATH}'/'${MY_DOMAIN}'|g' ${WEBCF}
     fi
     restart_lsws
 }
 update_vh_conf(){
     #replace user input email for locahost
     sed -i 's|localhost|'${EMAIL}'|g' ${VHDIR}/${MY_DOMAIN}/vhconf.conf
-    sed -i 's|/usr/local/lsws/conf/example.key|/etc/letsencrypt/live/'${MY_DOMAIN}'/privkey.pem|g' ${VHDIR}/${MY_DOMAIN}/vhconf.conf
-    sed -i 's|/usr/local/lsws/conf/example.crt|/etc/letsencrypt/live/'${MY_DOMAIN}'/fullchain.pem|g' ${VHDIR}/${MY_DOMAIN}/vhconf.conf
+    sed -i 's|'${LSDIR}'/conf/example.key|/etc/letsencrypt/live/'${MY_DOMAIN}'/privkey.pem|g' ${VHDIR}/${MY_DOMAIN}/vhconf.conf
+    sed -i 's|'${LSDIR}'/conf/example.crt|/etc/letsencrypt/live/'${MY_DOMAIN}'/fullchain.pem|g' ${VHDIR}/${MY_DOMAIN}/vhconf.conf
     restart_lsws
     echoG "\ncertificate has been successfully installed..."  
 }
 main_set_vh(){
-    DOCHM="/var/www/${1}"
+    create_folder ${WWW_PATH}
+    DOCHM="${WWW_PATH}/${1}"
     if [ ${DOMAIN_SKIP} = 'OFF' ]; then
         set_vh_conf
         set_server_conf
@@ -380,7 +385,7 @@ apply_lecert() {
 }
 hook_certbot() {
     sed -i 's/0.*/&  --deploy-hook "\/usr\/local\/lsws\/bin\/lswsctrl restart"/g' ${BOTCRON}
-    grep 'restart' ${BOTCRON} >/dev/null 2>&1
+    check_duplicate 'restart' ${BOTCRON}
     if [ ${?} = 0 ]; then
         echoG 'Certbot hook update success'
     else
@@ -435,7 +440,7 @@ domain_input(){
   		    echo -e "Please enter your domain: e.g. www.domain.com or sub.domain.com"
   	        printf "%s" "Your domain: "
   	        read MY_DOMAIN
-  	        echoG "The domain you put is: \e[31m${MY_DOMAIN}\e[39m"
+  	        echo "The domain you put is: \e[31m${MY_DOMAIN}\e[39m"
   	        printf "%s" "Please verify it is correct. [y/N]: "
   	        read TMP_YN
   	        if [[ "${TMP_YN}" =~ ^(y|Y) ]]; then
@@ -518,5 +523,5 @@ while [ ! -z "${1}" ]; do
     shift
 done
 main
-echoG 'Setup setup finished!'
+echoG 'Setup finished!'
 exit 0
