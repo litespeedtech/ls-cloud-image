@@ -32,13 +32,13 @@ FORCE_HTTPS='OFF'
 WORDPRESS='OFF'
 
 echoR() {
-  echo -e "\e[31m${1}\e[39m"
+    echo -e "\e[31m${1}\e[39m"
 }
 echoG() {
-  echo -e "\e[32m${1}\e[39m"
+    echo -e "\e[32m${1}\e[39m"
 }
 echoY() {
-  echo -e "\e[33m${1}\e[39m"
+    echo -e "\e[33m${1}\e[39m"
 }
 echoB() {
     echo -e "\033[1;4;94m${1}\033[0m"
@@ -109,12 +109,12 @@ install_ed() {
     if [ -f /bin/ed ]; then
         echoG "ed exist"
     else
-	    echoG "no ed, ready to install"
-	    if [ "${OSNAME}" = 'ubuntu' ] || [ "${OSNAME}" = 'debian' ]; then
-	        apt-get install ed -y >/dev/null 2>&1
-	    elif [ "${OSNAME}" = 'centos' ]; then
-	        yum install ed -y >/dev/null 2>&1
-	    fi
+        echoG "no ed, ready to install"
+        if [ "${OSNAME}" = 'ubuntu' ] || [ "${OSNAME}" = 'debian' ]; then
+            apt-get install ed -y >/dev/null 2>&1
+        elif [ "${OSNAME}" = 'centos' ]; then
+            yum install ed -y >/dev/null 2>&1
+        fi
     fi
 }
 create_file(){
@@ -154,10 +154,10 @@ install_wp() {
     gen_password
     mysql -uroot -p${ROOT_PASS} -e "create database ${WP_DB};"
     if [ ${?} = 0 ]; then
-	    mysql -uroot -p${ROOT_PASS} -e "CREATE USER '${WP_USER}'@'localhost' IDENTIFIED BY '${WP_PASS}';"
-	    mysql -uroot -p${ROOT_PASS} -e "GRANT ALL PRIVILEGES ON * . * TO '${WP_USER}'@'localhost';"
-	    mysql -uroot -p${ROOT_PASS} -e "FLUSH PRIVILEGES;"
-  	    rm -f ${DOCHM}/index.php
+        mysql -uroot -p${ROOT_PASS} -e "CREATE USER '${WP_USER}'@'localhost' IDENTIFIED BY '${WP_PASS}';"
+        mysql -uroot -p${ROOT_PASS} -e "GRANT ALL PRIVILEGES ON * . * TO '${WP_USER}'@'localhost';"
+        mysql -uroot -p${ROOT_PASS} -e "FLUSH PRIVILEGES;"
+        rm -f ${DOCHM}/index.php
         if [ ! -f /usr/bin/wp ]; then
             install_wp_cli
         fi
@@ -165,12 +165,12 @@ install_wp() {
         wp core download --path=${DOCHM} --allow-root --quiet
         wp core config --dbname=${WP_DB} --dbuser=${WP_USER} --dbpass=${WP_PASS} \
             --dbhost=localhost --dbprefix=wp_ --path=${DOCHM} --allow-root --quiet
-	    config_wp
-	    change_owner
+        config_wp
+        change_owner
 	    echoG "WP downloaded, please access your domain to complete the setup."
     else
-	    echoR "something went wrong when create new database, please proceed to manual installtion."
-	    exit 2
+        echoR "something went wrong when create new database, please proceed to manual installtion."
+        exit 2
     fi
 }
 config_wp() {
@@ -383,12 +383,12 @@ input_email() {
     if [ ${SILENT} = 'OFF' ]; then
     	i=1
     	while [ ${i} -eq 1 ]; do
-		    printf "%s" "Please enter your E-mail: "
-		    read EMAIL
+            printf "%s" "Please enter your E-mail: "
+            read EMAIL
 	        echoG "The E-mail you entered is: ${EMAIL}"
 	        printf "%s" "Please verify it is correct. [y/N]: "
 	        read TMP_YN
-	        if [[ "${TMP_YN}" =~ ^(y|Y) ]]; then
+            if [[ "${TMP_YN}" =~ ^(y|Y) ]]; then
                 i=$(($i-1))
             fi    
 	    done
@@ -453,8 +453,8 @@ check_empty(){
     fi
 }
 check_www_domain(){
-	CHECK_WWW=$(echo "${1}" | cut -c1-4)
-	if [[ ${CHECK_WWW} == www. ]]; then
+    CHECK_WWW=$(echo "${1}" | cut -c1-4)
+    if [[ ${CHECK_WWW} == www. ]]; then
         WWW='TRUE'
         MY_DOMAIN2=$(echo "${1}" | cut -c 5-)
     else
@@ -462,20 +462,20 @@ check_www_domain(){
     fi
 }
 domain_input(){
-	if [ ${SILENT} = 'OFF' ]; then
-	    i=1
-	    while [ ${i} -eq 1 ]; do
-  		    echo -e "Please enter your domain: e.g. www.domain.com or sub.domain.com"
-  	        printf "%s" "Your domain: "
-  	        read MY_DOMAIN
-  	        echoG "The domain you put is: ${MY_DOMAIN}"
-  	        printf "%s" "Please verify it is correct. [y/N]: "
-  	        read TMP_YN
-  	        if [[ "${TMP_YN}" =~ ^(y|Y) ]]; then
-  	            i=$(($i-1))
-  	        fi    
+    if [ ${SILENT} = 'OFF' ]; then
+        i=1
+        while [ ${i} -eq 1 ]; do
+            echo -e "Please enter your domain: e.g. www.domain.com or sub.domain.com"
+            printf "%s" "Your domain: "
+            read MY_DOMAIN
+            echoG "The domain you put is: ${MY_DOMAIN}"
+            printf "%s" "Please verify it is correct. [y/N]: "
+            read TMP_YN
+            if [[ "${TMP_YN}" =~ ^(y|Y) ]]; then
+                i=$(($i-1))
+            fi    
         done
-	fi
+    fi
     check_empty ${MY_DOMAIN}
     check_duplicate ${MY_DOMAIN} ${WEBCF}
     if [ ${?} = 0 ]; then
@@ -513,7 +513,7 @@ main() {
     domain_input
     main_set_vh ${MY_DOMAIN}
     issue_cert
-	check_install_wp
+    check_install_wp
     force_https
 }
 
