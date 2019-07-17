@@ -76,6 +76,26 @@ check_os() {
         OSNAME=debian
     fi
 }
+check_provider()
+{
+    if [ "$(sudo cat /sys/devices/virtual/dmi/id/product_uuid | cut -c 1-3)" = 'EC2' ]; then 
+        PROVIDER='aws'
+    elif [ "$(dmidecode -s bios-vendor)" = 'Google' ];then
+        PROVIDER='google'      
+    else
+        PROVIDER='undefined'  
+    fi
+}
+check_home_path()
+{
+    if [ ${PROVIDER} = 'aws' ] && [ -d /home/ubuntu ]; then 
+        HM_PATH='/home/ubuntu'
+    elif [ ${PROVIDER} = 'google' ] && [ -d /home/ubuntu ]; then 
+        HM_PATH='/home/ubuntu'  
+    else
+        HM_PATH='/root'
+    fi    
+}
 check_root(){
     if [ $(id -u) -ne 0 ]; then
         echoR "Please run this script as root user or use sudo"
@@ -110,6 +130,14 @@ create_folder(){
 change_owner() {
     chown -R ${USER}:${GROUP} ${DOCHM}
 }
+line_insert(){
+    LINENUM=$(grep -n "${1}" ${2} | cut -d: -f 1)
+    ADDNUM=${4:-0} 
+    if [ -n "$LINENUM" ] && [ "$LINENUM" -eq "$LINENUM" ] 2>/dev/null; then
+        LINENUM=$((${LINENUM}+${4}))
+        sed -i "${LINENUM}i${3}" ${2}
+    fi  
+}
 install_wp_cli() {
     curl -sO https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
     chmod +x wp-cli.phar
@@ -117,7 +145,7 @@ install_wp_cli() {
     ln -s ${LSDIR}/${PHPVER}/bin/php /usr/bin/php
 }
 gen_password(){
-    ROOT_PASS=$(cat /root/.db_password | head -n 1 | awk -F '"' '{print $2}')
+    ROOT_PASS=$(cat ${HM_PATH}/.db_password | head -n 1 | awk -F '"' '{print $2}')
     WP_DB=$(echo "${MY_DOMAIN}" | sed -e 's/\.//g; s/-//g')
     WP_USER=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 8; echo '')
     WP_PASS=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 48; echo '')
@@ -202,7 +230,7 @@ check_install_wp() {
                 echoR 'WordPress existed, skip!'    
             fi    
         else
-            echoR 'Skip wordpress installation due to no environment'
+            echoR 'Skip wordpress installation due to no MySQL environment'
         fi                
     fi
 }
@@ -294,33 +322,33 @@ EOF
 }
 set_server_conf() {
     if [ ${WWW} = 'TRUE' ]; then
-        sed -i 's|secure                  0|secure                  0\nmap       '${MY_DOMAIN}' '${MY_DOMAIN}', '${MY_DOMAIN2}'|g' ${WEBCF}
-        sed -i 's|secure                  1|secure                  1\nmap       '${MY_DOMAIN}' '${MY_DOMAIN}', '${MY_DOMAIN2}'|g' ${WEBCF}
+        NEWKEY="map                     ${MY_DOMAIN2} ${MY_DOMAIN}, ${MY_DOMAIN2}"
+        local TEMP_DOMAIN=${MY_DOMAIN2}
     else
-        sed -i 's|secure                  0|secure                  0\nmap       '${MY_DOMAIN}' '${MY_DOMAIN}'|g' ${WEBCF}
-        sed -i 's|secure                  1|secure                  1\nmap       '${MY_DOMAIN}' '${MY_DOMAIN}'|g' ${WEBCF}
+        NEWKEY="map                     ${MY_DOMAIN} ${MY_DOMAIN}"    
+        local TEMP_DOMAIN=${MY_DOMAIN}
+    fi
+    check_duplicate ":80\|:443" ${WEBCF}
+    if [ ${?} = 0 ]; then
+        line_insert ":80$"  ${WEBCF} "${NEWKEY}" 2
+        line_insert ":443$" ${WEBCF} "${NEWKEY}" 2
+    else
+        echoR 'No 80 or 443 port detected, skip listener setup.'    
     fi
     echo "
-virtualhost ${MY_DOMAIN} {
-vhRoot                  ${WWW_PATH}/\$VH_NAME
+virtualhost ${TEMP_DOMAIN} {
+vhRoot                  ${WWW_PATH}/${MY_DOMAIN}
 configFile              ${VHDIR}/${MY_DOMAIN}/vhconf.conf
 allowSymbolLink         1
 enableScript            1
 restrained              1
 }" >>${WEBCF}
-    if [ ${WWW} = 'TRUE' ]; then
-        sed -i 's|virtualhost '${MY_DOMAIN}'|virtualhost '${MY_DOMAIN2}'|g' ${WEBCF}
-        sed -i 's|map       '${MY_DOMAIN}'|map       '${MY_DOMAIN2}'|g' ${WEBCF}
-        sed -i 's|'${WWW_PATH}'/$VH_NAME|'${WWW_PATH}'/'${MY_DOMAIN}'|g' ${WEBCF}
-    fi
-    restart_lsws
 }
 update_vh_conf(){
     #replace user input email for locahost
     sed -i 's|localhost|'${EMAIL}'|g' ${VHDIR}/${MY_DOMAIN}/vhconf.conf
     sed -i 's|'${LSDIR}'/conf/example.key|/etc/letsencrypt/live/'${MY_DOMAIN}'/privkey.pem|g' ${VHDIR}/${MY_DOMAIN}/vhconf.conf
     sed -i 's|'${LSDIR}'/conf/example.crt|/etc/letsencrypt/live/'${MY_DOMAIN}'/fullchain.pem|g' ${VHDIR}/${MY_DOMAIN}/vhconf.conf
-    restart_lsws
     echoG "\ncertificate has been successfully installed..."  
 }
 main_set_vh(){
@@ -329,7 +357,7 @@ main_set_vh(){
     if [ ${DOMAIN_SKIP} = 'OFF' ]; then
         set_vh_conf
         set_server_conf
-        ${LSDIR}/bin/lswsctrl restart >/dev/null
+        restart_lsws
         echoG "Vhost created success!"
     fi    
 }
@@ -357,7 +385,7 @@ input_email() {
     	while [ ${i} -eq 1 ]; do
 		    printf "%s" "Please enter your E-mail: "
 		    read EMAIL
-	        echoG "The E-mail you entered is: \e[31m${EMAIL}\e[39m"
+	        echoG "The E-mail you entered is: ${EMAIL}"
 	        printf "%s" "Please verify it is correct. [y/N]: "
 	        read TMP_YN
 	        if [[ "${TMP_YN}" =~ ^(y|Y) ]]; then
@@ -440,7 +468,7 @@ domain_input(){
   		    echo -e "Please enter your domain: e.g. www.domain.com or sub.domain.com"
   	        printf "%s" "Your domain: "
   	        read MY_DOMAIN
-  	        echo "The domain you put is: \e[31m${MY_DOMAIN}\e[39m"
+  	        echoG "The domain you put is: ${MY_DOMAIN}"
   	        printf "%s" "Please verify it is correct. [y/N]: "
   	        read TMP_YN
   	        if [[ "${TMP_YN}" =~ ^(y|Y) ]]; then
@@ -479,12 +507,14 @@ issue_cert(){
 }
 main() {
     check_root
+    check_provider
+    check_home_path
     check_os
     domain_input
     main_set_vh ${MY_DOMAIN}
     issue_cert
-    force_https
 	check_install_wp
+    force_https
 }
 
 while [ ! -z "${1}" ]; do
