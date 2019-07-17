@@ -62,7 +62,11 @@ show_help() {
         echoY "If you need to install cert manually later, please check:" 
         echoB "https://docs.litespeedtech.com/cloud/OPT-LETSHTTPS/"
         echo ''
-    ;;    
+    ;;  
+    "3")
+        echo "Please make sure you have ${HM_PATH}/.db_password file with content:"
+        echoY 'root_mysql_pass="YOUR_DB_PASSWORD"'
+    ;;  
     esac
 }
 check_os() {
@@ -151,26 +155,30 @@ gen_password(){
     WP_PASS=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 48; echo '')
 }
 install_wp() {
-    gen_password
-    mysql -uroot -p${ROOT_PASS} -e "create database ${WP_DB};"
-    if [ ${?} = 0 ]; then
-        mysql -uroot -p${ROOT_PASS} -e "CREATE USER '${WP_USER}'@'localhost' IDENTIFIED BY '${WP_PASS}';"
-        mysql -uroot -p${ROOT_PASS} -e "GRANT ALL PRIVILEGES ON * . * TO '${WP_USER}'@'localhost';"
-        mysql -uroot -p${ROOT_PASS} -e "FLUSH PRIVILEGES;"
-        rm -f ${DOCHM}/index.php
-        if [ ! -f /usr/bin/wp ]; then
-            install_wp_cli
+    if [ -e ${HM_PATH}/.db_password ]; then
+        gen_password
+        mysql -uroot -p${ROOT_PASS} -e "create database ${WP_DB};"
+        if [ ${?} = 0 ]; then
+            mysql -uroot -p${ROOT_PASS} -e "CREATE USER '${WP_USER}'@'localhost' IDENTIFIED BY '${WP_PASS}';"
+            mysql -uroot -p${ROOT_PASS} -e "GRANT ALL PRIVILEGES ON * . * TO '${WP_USER}'@'localhost';"
+            mysql -uroot -p${ROOT_PASS} -e "FLUSH PRIVILEGES;"
+            rm -f ${DOCHM}/index.php
+            if [ ! -f /usr/bin/wp ]; then
+                install_wp_cli
+            fi
+            export WP_CLI_CACHE_DIR=${WWW_PATH}/.wp-cli/
+            wp core download --path=${DOCHM} --allow-root --quiet
+            wp core config --dbname=${WP_DB} --dbuser=${WP_USER} --dbpass=${WP_PASS} \
+                --dbhost=localhost --dbprefix=wp_ --path=${DOCHM} --allow-root --quiet
+            config_wp
+            change_owner
+            echoG "WP downloaded, please access your domain to complete the setup."
+        else
+            echoR "something went wrong when create new database, please proceed to manual installtion."
         fi
-        export WP_CLI_CACHE_DIR=${WWW_PATH}/.wp-cli/
-        wp core download --path=${DOCHM} --allow-root --quiet
-        wp core config --dbname=${WP_DB} --dbuser=${WP_USER} --dbpass=${WP_PASS} \
-            --dbhost=localhost --dbprefix=wp_ --path=${DOCHM} --allow-root --quiet
-        config_wp
-        change_owner
-	    echoG "WP downloaded, please access your domain to complete the setup."
     else
-        echoR "something went wrong when create new database, please proceed to manual installtion."
-        exit 2
+        echoR "No DataBase Password, skip!"  
+        show_help 3
     fi
 }
 config_wp() {
@@ -230,7 +238,7 @@ check_install_wp() {
                 echoR 'WordPress existed, skip!'    
             fi    
         else
-            echoR 'Skip wordpress installation due to no MySQL environment'
+            echoR 'No MySQL environment, skip!'
         fi                
     fi
 }
@@ -317,7 +325,7 @@ certChain               1
 EOF
         chown -R lsadm:lsadm ${VHDIR}/*
     else
-        echoR "targeted file already exist, skip!"
+        echoR "Targeted file already exist, skip!"
     fi
 }
 set_server_conf() {
@@ -333,7 +341,7 @@ set_server_conf() {
         line_insert ":80$"  ${WEBCF} "${NEWKEY}" 2
         line_insert ":443$" ${WEBCF} "${NEWKEY}" 2
     else
-        echoR 'No 80 or 443 port detected, skip listener setup.'    
+        echoR 'No 80 or 443 port detected, listener setup skip!'    
     fi
     echo "
 virtualhost ${TEMP_DOMAIN} {
@@ -366,7 +374,7 @@ verify_domain() {
     if [ ${?} = 0 ]; then
         echoG "${MY_DOMAIN} check PASS"
     else
-        echoR "${MY_DOMAIN} inaccessible, skip."
+        echoR "${MY_DOMAIN} inaccessible, skip!"
         DOMAIN_PASS='OFF'
     fi
     if [ ${WWW} = 'TRUE' ]; then
@@ -374,7 +382,7 @@ verify_domain() {
         if [ ${?} = 0 ]; then
             echoG "${MY_DOMAIN2} check PASS"
         else
-            echoR "${MY_DOMAIN2} inaccessible, skip."
+            echoR "${MY_DOMAIN2} inaccessible, skip!"
             DOMAIN_PASS='OFF'
         fi
     fi
@@ -385,9 +393,9 @@ input_email() {
     	while [ ${i} -eq 1 ]; do
             printf "%s" "Please enter your E-mail: "
             read EMAIL
-	        echoG "The E-mail you entered is: ${EMAIL}"
-	        printf "%s" "Please verify it is correct. [y/N]: "
-	        read TMP_YN
+            echoG "The E-mail you entered is: ${EMAIL}"
+            printf "%s" "Please verify it is correct. [y/N]: "
+            read TMP_YN
             if [[ "${TMP_YN}" =~ ^(y|Y) ]]; then
                 i=$(($i-1))
             fi    
@@ -442,7 +450,7 @@ RewriteRule (.*) https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
             restart_lsws
             echoG "Force HTTPS rules added success!" 
         else
-            echoR "Rules already existed, skip!"
+            echoR "Force HTTPS rules already existed, skip!"
         fi
     fi 
 }
