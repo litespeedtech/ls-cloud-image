@@ -3,7 +3,7 @@
 # LiteSpeed domain setup Script
 # @Author:   LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
 # @Copyright: (c) 2019-2020
-# @Version: 1.0.2
+# @Version: 1.0.3
 # *********************************************************************/
 MY_DOMAIN=''
 MY_DOMAIN2=''
@@ -39,10 +39,10 @@ check_os(){
         OSNAME=debian
     fi         
 }
-check_os
+
 providerck()
 {
-  if [ "$(sudo cat /sys/devices/virtual/dmi/id/product_uuid | cut -c 1-3)" = 'EC2' ] && [ -d /home/ubuntu ]; then 
+  if [ "$(sudo cat /sys/devices/virtual/dmi/id/product_uuid | cut -c 1-3)" = 'EC2' ]; then 
     PROVIDER='aws'
   elif [ "$(dmidecode -s bios-vendor)" = 'Google' ];then
     PROVIDER='google'      
@@ -52,20 +52,19 @@ providerck()
     PROVIDER='undefined'  
   fi
 }
-providerck
 
-ipget()
+get_ip()
 {
-  if [ ${PROVIDER} = 'aws' ] && [ -d /home/ubuntu ]; then 
+  if [ ${PROVIDER} = 'aws' ]; then 
     MY_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4) 
-  elif [ ${PROVIDER} = 'google' ] && [ -d /home/ubuntu ]; then 
-    MY_IP=$(curl -s -H "Metadata-Flavor: Google" http://metadata/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip)    
+  elif [ ${PROVIDER} = 'google' ]; then 
+    MY_IP=$(curl -s -H "Metadata-Flavor: Google" \
+    http://metadata/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip)    
   else
     MY_IP=$(ifconfig eth0 | grep 'inet '| awk '{printf $2}')
     #MY_IP=$(ip -4 route get 8.8.8.8 | awk {'print $7'} | tr -d '\n')
   fi    
 }
-ipget
 
 domainhelp(){
     echo -e "\nIn order for WordPress to work properly, please enter a valid domain."
@@ -75,6 +74,11 @@ domainhelp(){
     echo -e "\n(If you are using top level (root) domain, please include it with \033[38;5;71mwww.\033[39m so both www and root domain will be added)"
     echo -e "(ex. www.domain.com or sub.domain.com). Do not include http/s.\n"
 }
+
+restart_lsws(){
+    ${LSDIR}/bin/lswsctrl restart >/dev/null
+}   
+
 domaininput(){
     printf "%s" "Your domain: "
     read MY_DOMAIN
@@ -96,7 +100,6 @@ domainadd(){
         WWW='TRUE'
         #check if domain starts with www.
         MY_DOMAIN2=$(echo ${MY_DOMAIN} | cut -c 5-)
-
         duplicateck ${MY_DOMAIN2} ${WEBCF}
         if [ ${?} = 1 ]; then 
             #my_domain is domain wih www, and my_domain2 is domain without www, both added into listener.
@@ -117,7 +120,7 @@ domainadd(){
             fi
         fi    
     fi
-    ${LSDIR}/bin/lswsctrl restart > /dev/null
+    restart_lsws
     echoG "\nDomain has been added into OpenLiteSpeed listener.\n"
 }
 
@@ -138,8 +141,19 @@ domainverify(){
     fi
 }
 
+main_domain_setup(){
+    domainhelp
+    i=1
+    while [ ${i} -eq 1 ]; do
+        domaininput
+        read TMP_YN
+        if [[ "${TMP_YN}" =~ ^(y|Y) ]]; then
+            domainadd
+            i=$(($i-1))
+        fi
+    done    
+}
 emailinput(){
-    #ask user e-mail for LE
     CKREG="^[a-z0-9!#\$%&'*+/=?^_\`{|}~-]+(\.[a-z0-9!#$%&'*+/=?^_\`{|}~-]+)*@([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+[a-z0-9]([a-z0-9-]*[a-z0-9])?\$"
     printf "%s" "Please enter your E-mail: "
     read EMAIL
@@ -182,7 +196,6 @@ lecertapply(){
 }
 
 force_https() {
-    ### Rewrite in htaccess file
     if [ "${VHNAME}" = 'wordpress' ]; then 
         duplicateck "RewriteCond %{HTTPS} on" "${DOCHM}/.htaccess"
         if [ ${?} = 1 ]; then 
@@ -239,44 +252,33 @@ yumupgrade(){
     yum update -y > /dev/null 2>&1
     echo -ne '#######################   (100%)\r'
 }
-
-main(){
-    if [ ! -d /usr/local/CyberCP ]; then
-        domainhelp
+main_cert_setup(){
+    printf "%s"   "Do you wish to issue a Let's encrypt certificate for this domain? [y/N]"
+    read TMP_YN
+    if [[ "${TMP_YN}" =~ ^(y|Y) ]]; then
+    #in case www domain , check both root domain and www domain accessibility.
+        domainverify
         i=1
-        while [ ${i} -eq 1 ]; do
-            domaininput
+        while [ ${i} -eq 1 ]; do 
+            emailinput
             read TMP_YN
             if [[ "${TMP_YN}" =~ ^(y|Y) ]]; then
-                domainadd
+                lecertapply
                 i=$(($i-1))
             fi
-        done    
-        printf "%s"   "Do you wish to issue a Let's encrypt certificate for this domain? [y/N]"
+        done   
+        echoG 'Update certbot cronjob hook'
+        certbothook 
+        printf "%s"   "Do you wish to force HTTPS rewrite rule for this domain? [y/N]"
         read TMP_YN
         if [[ "${TMP_YN}" =~ ^(y|Y) ]]; then
-        #in case www domain , check both root domain and www domain accessibility.
-            domainverify
-            i=1
-            while [ ${i} -eq 1 ]; do 
-                emailinput
-                read TMP_YN
-                if [[ "${TMP_YN}" =~ ^(y|Y) ]]; then
-                    lecertapply
-                    i=$(($i-1))
-                fi
-            done   
-            echoG 'Update certbot cronjob hook'
-            certbothook 
-            printf "%s"   "Do you wish to force HTTPS rewrite rule for this domain? [y/N]"
-            read TMP_YN
-            if [[ "${TMP_YN}" =~ ^(y|Y) ]]; then
-                force_https
-            fi
-            ${LSDIR}/bin/lswsctrl restart > /dev/null
-        fi    
-        echoG "\nEnjoy your accelarated WordPress with OpenLiteSpeed."
-    fi   
+            force_https
+        fi
+        restart_lsws
+    fi        
+}
+
+main_upgrade(){
     if [ "${OSNAME}" = 'ubuntu' ]; then 
         aptupgradelist
     else
@@ -286,7 +288,7 @@ main(){
         printf "%s"   "Do you wish to update the system which include the web server? [Y/n]"
         read TMP_YN
         if [[ ! "${TMP_YN}" =~ ^(n|N) ]]; then
-            START_TIME="$(date -u +%s)"
+            #START_TIME="$(date -u +%s)"
             echoG "Update Starting..." 
             if [ "${OSNAME}" = 'ubuntu' ]; then 
                 aptgetupgrade
@@ -294,14 +296,26 @@ main(){
                 yumupgrade
             fi    
             echoG "\nUpdate complete" 
-            END_TIME="$(date -u +%s)"
-            ELAPSED="$((${END_TIME}-${START_TIME}))"
-            echoY "***Total of ${ELAPSED} seconds to finish process***"
+            #END_TIME="$(date -u +%s)"
+            #ELAPSED="$((${END_TIME}-${START_TIME}))"
+            #echoY "***Total of ${ELAPSED} seconds to finish process***"
             echoG 'Your system is up to date'
         fi    
     else
         echoG 'Your system is up to date'
-    fi    
+    fi        
+}
+
+main(){
+    check_os
+    providerck
+    get_ip
+    if [ ! -d /usr/local/CyberCP ]; then
+        main_domain_setup
+        main_cert_setup
+        echoG "\nEnjoy your accelarated OpenLiteSpeed server."
+    fi   
+    main_upgrade
     endsetup
 }
 main

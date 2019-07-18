@@ -17,9 +17,29 @@ elif [ -f /etc/debian_version ] ; then
     OSNAME=debian
 fi         
 }
-check_os
 
-setupcloud(){
+check_root(){
+    if [ $(id -u) -ne 0 ]; then
+        echoR "Please run this script as root user or use sudo"
+        exit 1
+    fi
+}
+
+install_cloud_pkg(){
+    if [ ! -d ${CLDINITPATH} ]; then
+        mkdir -p ${CLDINITPATH}
+    fi    
+    which cloud-init >/dev/null 2>&1
+    if [ ${?} = 1 ]; then
+        if [ ${OSNAME} = 'ubuntu' ]; then
+            apt-get install cloud-init -y >/dev/null 2>&1
+        else
+            yum install cloud-init -y >/dev/null 2>&1
+        fi    
+    fi    
+}
+
+setup_cloud(){
     ### per-instance.sh
     cat > ${CLDINITPATH}/per-instance.sh <<END 
 #!/bin/bash    
@@ -105,11 +125,12 @@ cleanup (){
   fi
 }
 
-mainclaunch(){
-    setupcloud
+main_claunch(){
+    check_os
+    check_root
+    install_cloud_pkg
+    setup_cloud
     cleanup
 }
-mainclaunch
-#echoG 'Auto remove script itself'
-#rm -- "$0"
+main_claunch
 exit 0
