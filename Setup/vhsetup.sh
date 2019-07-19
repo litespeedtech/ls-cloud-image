@@ -336,12 +336,13 @@ set_server_conf() {
         NEWKEY="map                     ${MY_DOMAIN} ${MY_DOMAIN}"    
         local TEMP_DOMAIN=${MY_DOMAIN}
     fi
-    check_duplicate ":80\|:443" ${WEBCF}
-    if [ ${?} = 0 ]; then
-        line_insert ":80$"  ${WEBCF} "${NEWKEY}" 2
-        line_insert ":443$" ${WEBCF} "${NEWKEY}" 2
+    PORT_ARR=$(grep "address.*:[0-9]"  ${WEBCF} | awk '{print substr($2,3)}')
+    if [  ${#PORT_ARR[@]} != 0 ]; then
+        for PORT in ${PORT_ARR[@]}; do 
+            line_insert ":${PORT}$"  ${WEBCF} "${NEWKEY}" 2
+        done
     else
-        echoR 'No 80 or 443 port detected, listener setup skip!'    
+        echoR 'No listener port detected, listener setup skip!'    
     fi
     echo "
 virtualhost ${TEMP_DOMAIN} {
