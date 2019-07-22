@@ -42,8 +42,15 @@ install_cloud_pkg(){
 setup_cloud(){
     ### per-instance.sh
     cat > ${CLDINITPATH}/per-instance.sh <<END 
-#!/bin/bash    
-/bin/bash <( curl -sk https://raw.githubusercontent.com/litespeedtech/ls-cloud-image/master/Cloud-init/per-instance.sh || curl -sk https://cloud.litespeed.sh/Cloud-init/per-instance.sh)
+#!/bin/bash
+MAIN_URL='https://raw.githubusercontent.com/litespeedtech/ls-cloud-image/master/Cloud-init/per-instance.sh'
+BACK_URL='https://cloud.litespeed.sh/Cloud-init/per-instance.sh'
+STATUS_CODE=\$(curl --write-out %{http_code} -sk --output /dev/null \${MAIN_URL})
+if [[ "\${STATUS_CODE}" = 200 ]]; then
+    /bin/bash <( curl -sk \${MAIN_URL} )
+else    
+    /bin/bash <( curl -sk \${BACK_URL} )
+fi    
 END
     chmod 755 ${CLDINITPATH}/per-instance.sh
 }
