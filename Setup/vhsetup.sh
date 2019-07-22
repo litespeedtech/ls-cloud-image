@@ -390,15 +390,14 @@ verify_domain() {
 }
 input_email() {
     if [ ${SILENT} = 'OFF' ]; then
-    	i=1
-    	while [ ${i} -eq 1 ]; do
+    	while true; do
             printf "%s" "Please enter your E-mail: "
             read EMAIL
             echoG "The E-mail you entered is: ${EMAIL}"
             printf "%s" "Please verify it is correct. [y/N]: "
             read TMP_YN
             if [[ "${TMP_YN}" =~ ^(y|Y) ]]; then
-                i=$(($i-1))
+                break
             fi    
 	    done
     fi
@@ -472,8 +471,7 @@ check_www_domain(){
 }
 domain_input(){
     if [ ${SILENT} = 'OFF' ]; then
-        i=1
-        while [ ${i} -eq 1 ]; do
+        while true; do
             echo -e "Please enter your domain: e.g. www.domain.com or sub.domain.com"
             printf "%s" "Your domain: "
             read MY_DOMAIN
@@ -481,7 +479,7 @@ domain_input(){
             printf "%s" "Please verify it is correct. [y/N]: "
             read TMP_YN
             if [[ "${TMP_YN}" =~ ^(y|Y) ]]; then
-                i=$(($i-1))
+                break
             fi    
         done
     fi

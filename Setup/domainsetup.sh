@@ -143,13 +143,12 @@ domainverify(){
 
 main_domain_setup(){
     domainhelp
-    i=1
-    while [ ${i} -eq 1 ]; do
+    while true; do
         domaininput
         read TMP_YN
         if [[ "${TMP_YN}" =~ ^(y|Y) ]]; then
             domainadd
-            i=$(($i-1))
+            break
         fi
     done    
 }
@@ -258,13 +257,12 @@ main_cert_setup(){
     if [[ "${TMP_YN}" =~ ^(y|Y) ]]; then
     #in case www domain , check both root domain and www domain accessibility.
         domainverify
-        i=1
-        while [ ${i} -eq 1 ]; do 
+        while true; do 
             emailinput
             read TMP_YN
             if [[ "${TMP_YN}" =~ ^(y|Y) ]]; then
                 lecertapply
-                i=$(($i-1))
+                break
             fi
         done   
         echoG 'Update certbot cronjob hook'
