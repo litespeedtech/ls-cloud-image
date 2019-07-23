@@ -62,9 +62,8 @@ get_ip()
   elif [ ${PROVIDER} = 'google' ]; then 
     MY_IP=$(curl -s -H "Metadata-Flavor: Google" \
     http://metadata/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip)    
-  elif [ ${PROVIDER} = 'aliyun' ] && [ -d /home/ubuntu ]; then
-        HMPATH='/home/ubuntu'
-        PUBIP=$(curl http://100.100.100.200/latest/meta-data/eipv4)   
+  elif [ ${PROVIDER} = 'aliyun' ]; then
+    MYIP=$(curl http://100.100.100.200/latest/meta-data/eipv4)   
   else
     MY_IP=$(ifconfig eth0 | grep 'inet '| awk '{printf $2}')
     #MY_IP=$(ip -4 route get 8.8.8.8 | awk {'print $7'} | tr -d '\n')

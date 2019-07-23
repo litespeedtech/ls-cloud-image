@@ -85,8 +85,8 @@ providerck()
     PROVIDER='google'      
   elif [ "\$(dmidecode -s bios-vendor)" = 'DigitalOcean' ];then
     PROVIDER='do'
-  elif [ "$(dmidecode -s system-product-name | cut -c 1-7)" = 'Alibaba' ];then
-    PROVIDER='aliyun'   
+  elif [ "\$(dmidecode -s system-product-name | cut -c 1-7)" = 'Alibaba' ];then
+    PROVIDER='aliyun'  
   else
     PROVIDER='undefined'  
   fi
@@ -140,9 +140,9 @@ oshmpath()
   elif [ \${PROVIDER} = 'google' ] && [ -d /home/ubuntu ]; then 
     HMPATH='/home/ubuntu'
     PUBIP=\$(curl -H "Metadata-Flavor: Google" http://metadata/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip)    
-  elif [ ${PROVIDER} = 'aliyun' ] && [ -d /home/ubuntu ]; then
+  elif [ \${PROVIDER} = 'aliyun' ] && [ -d /home/ubuntu ]; then
     HMPATH='/home/ubuntu'
-    PUBIP=$(curl http://100.100.100.200/latest/meta-data/eipv4)   
+    PUBIP=\$(curl http://100.100.100.200/latest/meta-data/eipv4)
   else
     HMPATH='/root'
     #PUBIP=\$(ifconfig eth0 | grep 'inet '| awk '{printf \$2}')
