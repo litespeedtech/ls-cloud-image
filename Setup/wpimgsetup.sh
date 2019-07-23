@@ -75,7 +75,7 @@ check_os()
         GROUP='nobody'
         PHPINICONF="${LSWSFD}/lsphp73/etc/php.ini"
         MARIADBCNF='/etc/my.cnf.d/60-server.cnf'
-        REDISSERVICE='/lib/systemd/system/redis.service'
+        REDISSERVICE='/lib/systemd/system/redis-server.service'
         REDISCONF='/etc/redis.conf'
         MEMCACHESERVICE='/etc/systemd/system/memcached.service'
         MEMCACHECONF='/etc/sysconfig/memcached'
