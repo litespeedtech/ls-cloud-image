@@ -85,7 +85,9 @@ check_provider()
     if [ "$(sudo cat /sys/devices/virtual/dmi/id/product_uuid | cut -c 1-3)" = 'EC2' ]; then 
         PROVIDER='aws'
     elif [ "$(dmidecode -s bios-vendor)" = 'Google' ];then
-        PROVIDER='google'      
+        PROVIDER='google'
+    elif [ "$(dmidecode -s system-product-name | cut -c 1-7)" = 'Alibaba' ];then
+        PROVIDER='aliyun'  
     else
         PROVIDER='undefined'  
     fi
@@ -96,6 +98,8 @@ check_home_path()
         HM_PATH='/home/ubuntu'
     elif [ ${PROVIDER} = 'google' ] && [ -d /home/ubuntu ]; then 
         HM_PATH='/home/ubuntu'  
+    elif [ ${PROVIDER} = 'aliyun' ] && [ -d /home/ubuntu ]; then
+        HM_PATH='/home/ubuntu'
     else
         HM_PATH='/root'
     fi    
