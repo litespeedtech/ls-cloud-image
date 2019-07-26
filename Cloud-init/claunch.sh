@@ -46,11 +46,7 @@ setup_cloud(){
 MAIN_URL='https://raw.githubusercontent.com/litespeedtech/ls-cloud-image/master/Cloud-init/per-instance.sh'
 BACK_URL='https://cloud.litespeed.sh/Cloud-init/per-instance.sh'
 STATUS_CODE=\$(curl --write-out %{http_code} -sk --output /dev/null \${MAIN_URL})
-if [[ "\${STATUS_CODE}" = 200 ]]; then
-    /bin/bash <( curl -sk \${MAIN_URL} )
-else    
-    /bin/bash <( curl -sk \${BACK_URL} )
-fi    
+[[ "\${STATUS_CODE}" = 200 ]] && /bin/bash <( curl -sk \${MAIN_URL} ) || /bin/bash <( curl -sk \${BACK_URL} )
 END
     chmod 755 ${CLDINITPATH}/per-instance.sh
 }
