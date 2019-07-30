@@ -88,51 +88,46 @@ check_os()
 check_os
 providerck()
 {
-  if [ "$(sudo cat /sys/devices/virtual/dmi/id/product_uuid | cut -c 1-3)" = 'EC2' ] && [ -d /home/ubuntu ]; then 
-    PROVIDER='aws'
-  elif [ "$(dmidecode -s bios-vendor)" = 'Google' ];then
-    PROVIDER='google'      
-  elif [ "$(dmidecode -s bios-vendor)" = 'DigitalOcean' ];then
-    PROVIDER='do'
-  elif [ "$(dmidecode -s system-product-name | cut -c 1-7)" = 'Alibaba' ];then
-    PROVIDER='aliyun'
-  else
-    PROVIDER='undefined'  
-  fi
+    if [ "$(sudo cat /sys/devices/virtual/dmi/id/product_uuid | cut -c 1-3)" = 'EC2' ] && [ -d /home/ubuntu ]; then 
+        PROVIDER='aws'
+    elif [ "$(dmidecode -s bios-vendor)" = 'Google' ];then
+        PROVIDER='google'      
+    elif [ "$(dmidecode -s bios-vendor)" = 'DigitalOcean' ];then
+        PROVIDER='do'
+    elif [ "$(dmidecode -s system-product-name | cut -c 1-7)" = 'Alibaba' ];then
+        PROVIDER='aliyun'
+    else
+        PROVIDER='undefined'  
+    fi
 }
 providerck
 oshmpath()
 {
-  if [ ${PROVIDER} = 'aws' ] && [ -d /home/ubuntu ]; then 
-    HMPATH='/home/ubuntu'
-    PUBIP=$(curl http://169.254.169.254/latest/meta-data/public-ipv4)
-  elif [ ${PROVIDER} = 'google' ] && [ -d /home/ubuntu ]; then 
-    HMPATH='/home/ubuntu'
-    PUBIP=$(curl -H "Metadata-Flavor: Google" http://metadata/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip)    
-  elif [ ${PROVIDER} = 'aliyun' ] && [ -d /home/ubuntu ]; then
-    HMPATH='/home/ubuntu'
-    PUBIP=$(curl http://100.100.100.200/latest/meta-data/eipv4)   
-  else
-    HMPATH='/root'
-    #PUBIP=$(ifconfig eth0 | grep 'inet '| awk '{printf $2}')
-    PUBIP=$(ip -4 route get 8.8.8.8 | awk {'print $7'} | tr -d '\n')
-  fi    
+    if [ ${PROVIDER} = 'aws' ] && [ -d /home/ubuntu ]; then 
+        HMPATH='/home/ubuntu'
+    elif [ ${PROVIDER} = 'google' ] && [ -d /home/ubuntu ]; then 
+        HMPATH='/home/ubuntu'
+    elif [ ${PROVIDER} = 'aliyun' ] && [ -d /home/ubuntu ]; then
+        HMPATH='/home/ubuntu'
+    else
+        HMPATH='/root'
+    fi
 }
 oshmpath
 DBPASSPATH="${HMPATH}/.db_password"
 
 
-changeowner(){
+change_owner(){
   chown -R ${USER}:${GROUP} /var/www
 }
 
 prepare(){
     mkdir -p "${DOCLAND}"
-    changeowner
+    change_owner
 }
 
 ### Upgrade
-systemupgrade() {
+system_upgrade() {
     echoG 'Updating system'
     if [ "${OSNAME}" = 'ubuntu' ] || [ "${OSNAME}" = 'debian' ]; then 
         apt-get update > /dev/null 2>&1
@@ -153,7 +148,7 @@ systemupgrade() {
 
 
 ### Start
-installolswp(){
+install_olswp(){
     echo 'Y' | bash <( curl -k https://raw.githubusercontent.com/litespeedtech/ols1clk/master/ols1clk.sh ) \
     --lsphp ${PHPVER} \
     --wordpress \
@@ -164,7 +159,7 @@ installolswp(){
     --dbpassword wordpress
 }
 
-confpath(){
+conf_path(){
     if [ -f "${LSWSCONF}" ]; then 
         #WPVHCONF = /usr/local/lsws/conf/vhosts/wordpress/vhconf.conf   
         if [ ! -f $(grep 'configFile.*wordpress' "${LSWSCONF}" | awk '{print $2}') ]; then 
@@ -176,7 +171,7 @@ confpath(){
     fi
 }
 
-installpkg(){
+install_pkg(){
     if [ "${OSNAME}" = 'centos' ]; then 
         yum -y install unzip > /dev/null 2>&1
         echoG 'Install lsphp extensions'
@@ -249,7 +244,21 @@ installpkg(){
     fi        
 }
 
-configols(){
+install_cloudinit(){
+    ### Aliyun which cloudinit failed by default on CentOS
+    if [ "${OSNAME}" = 'centos' ] || [ "${PROVIDER}" = 'aliyun' ]; then
+        echoG "Install Cloud-init"
+        yum -y install python-pip > /dev/null 2>&1
+        test -d /etc/cloud && mv /etc/cloud /etc/cloud-old; cd /tmp/
+        wget -q http://ecs-image-utils.oss-cn-hangzhou.aliyuncs.com/cloudinit/ali-cloud-init-latest.tgz
+        tar -zxvf ali-cloud-init-latest.tgz > /dev/null 2>&1
+        OS_VER=$(cat /etc/redhat-release | awk '{printf $4}'| awk -F'.' '{printf $1}')
+        bash /tmp/cloud-init-*/tools/deploy.sh centos ${OS_VER}
+        rm -rf ali-cloud-init-latest.tgz cloud-init-*
+    fi
+}
+
+config_ols(){
     echoG 'Setting Web Server config'
     ### Change user to www-data
     if [ "${OSNAME}" = 'ubuntu' ] || [ "${OSNAME}" = 'debian' ]; then 
@@ -302,7 +311,7 @@ END
     echoG 'Finish Web Server config'
 }
 
-landingpg(){
+landing_pg(){
     echoG 'Setting Landing Page'
     curl -s https://raw.githubusercontent.com/litespeedtech/ls-cloud-image/master/Static/wp-landing.html \
     -o ${DOCLAND}/index.html
@@ -313,7 +322,7 @@ landingpg(){
     fi    
 }
 
-configphp(){
+config_php(){
     echoG 'Updating PHP Paremeter'
     NEWKEY='max_execution_time = 360'
     linechange 'max_execution_time' ${PHPINICONF} "${NEWKEY}"
@@ -399,7 +408,7 @@ END
     echoG 'Finish Object Cache'
 }
 
-configmysql(){
+config_mysql(){
     echoG 'Setting DataBase'
     if [ -f ${DBPASSPATH} ]; then 
         EXISTSQLPASS=$(grep root_mysql_passs ${HMPATH}/.db_password | awk -F '"' '{print $2}'); 
@@ -425,7 +434,7 @@ END
 
 
 
-configwp(){
+config_wp(){
     echoG 'Setting WordPress'
 ### Install popular WP plugins
     for PLUGIN in ${PLUGINLIST}; do
@@ -537,7 +546,7 @@ END
     service lsws restart   
 }
 
-dbpasswordfile(){
+db_password_file(){
     echoG 'Create db fiile'
     if [ -f ${DBPASSPATH} ]; then 
         echoY "${DBPASSPATH} already exist!, will recreate a new file"
@@ -588,7 +597,7 @@ centos_firewall_add(){
     fi         
 }
 
-statusck(){
+status_ck(){
     for ITEM in lsws memcached redis mariadb
     do 
         service ${ITEM} status | grep "active\|running" > /dev/null 2>&1
@@ -606,7 +615,7 @@ statusck(){
     fi        
 }
 
-rmdummy(){
+rm_dummy(){
     echoG 'Remove dummy file'
     rm -f "${NOWPATH}/example.csr" "${NOWPATH}/privkey.pem"
     echoG 'Finished dummy file'
@@ -616,21 +625,22 @@ rmdummy(){
 main(){
     START_TIME="$(date -u +%s)"
     prepare
-    systemupgrade
-    installolswp
-    confpath
-    installpkg
-    landingpg
-    configols
-    configphp
+    system_upgrade
+    install_olswp
+    conf_path
+    install_pkg
+    install_cloudinit
+    landing_pg
+    config_ols
+    config_php
     [[ ${OSNAME} = 'centos' ]] && centos_config_obj || ubuntu_config_obj 
-    configmysql
-    configwp
-    dbpasswordfile
-    changeowner
+    config_mysql
+    config_wp
+    db_password_file
+    change_owner
     [[ ${OSNAME} = 'centos' ]] && centos_firewall_add || ubuntu_firewall_add
-    statusck
-    rmdummy
+    status_ck
+    rm_dummy
     END_TIME="$(date -u +%s)"
     ELAPSED="$((${END_TIME}-${START_TIME}))"
     echoY "***Total of ${ELAPSED} seconds to finish process***"
