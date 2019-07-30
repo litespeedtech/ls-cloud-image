@@ -326,12 +326,38 @@ configphp(){
     echoG 'Finish PHP Paremeter'
 }
 
-configobject(){
+ubuntu_config_obj(){
    echoG 'Setting Object Cache'
     ### Memcached Unix Socket
     service memcached stop > /dev/null 2>&1
-    if [ "${OSNAME}" = 'centos' ]; then 
-        cat >> "${MEMCACHESERVICE}" <<END 
+    cat >> "${MEMCACHECONF}" <<END 
+-s /var/www/memcached.sock
+-a 0770
+-p /tmp/memcached.pid
+END
+    NEWKEY="-u ${USER}"
+    linechange '\-u memcache' ${MEMCACHECONF} "${NEWKEY}"  
+    systemctl daemon-reload > /dev/null 2>&1
+    service memcached start > /dev/null 2>&1
+
+    ### Redis Unix Socket
+    service redis-server stop > /dev/null 2>&1
+    NEWKEY="Group=${GROUP}"
+    linechange 'Group=' ${REDISSERVICE} "${NEWKEY}"  
+    cat >> "${REDISCONF}" <<END 
+unixsocket /var/run/redis/redis-server.sock
+unixsocketperm 775
+END
+    systemctl daemon-reload > /dev/null 2>&1
+    service redis-server start > /dev/null 2>&1
+    echoG 'Finish Object Cache'
+}
+
+centos_config_obj(){
+   echoG 'Setting Object Cache'
+    ### Memcached Unix Socket
+    service memcached stop > /dev/null 2>&1 
+    cat >> "${MEMCACHESERVICE}" <<END 
 [Unit]
 Description=Memcached
 Before=httpd.service
@@ -355,18 +381,8 @@ CACHESIZE="64"
 OPTIONS="-s /var/www/memcached.sock -a 0770 -U 0 -l 127.0.0.1"
 END
     ### SELINUX permissive Mode
-        semanage permissive -a memcached_t
-        setsebool -P httpd_can_network_memcache 1
-
-    else
-        cat >> "${MEMCACHECONF}" <<END 
--s /var/www/memcached.sock
--a 0770
--p /tmp/memcached.pid
-END
-        NEWKEY="-u ${USER}"
-        linechange '\-u memcache' ${MEMCACHECONF} "${NEWKEY}"
-    fi    
+    semanage permissive -a memcached_t
+    setsebool -P httpd_can_network_memcache 1
     systemctl daemon-reload > /dev/null 2>&1
     service memcached start > /dev/null 2>&1
 
@@ -519,7 +535,6 @@ END
     fi
     echoG 'Finish WordPress'
     service lsws restart   
-
 }
 
 dbpasswordfile(){
@@ -535,42 +550,42 @@ EOM
     echoG 'Finish db fiile'
 }
 
-firewalladd(){
+ubuntu_firewall_add(){
     echoG 'Setting Firewall'
-    if [ "${OSNAME}" = 'centos' ]; then 
-        if [ ! -e /usr/sbin/firewalld ]; then 
-            yum -y install firewalld > /dev/null 2>&1
-        fi
-        service firewalld start  > /dev/null 2>&1
-        systemctl enable firewalld > /dev/null 2>&1
-        for PORT in ${FIREWALLLIST}; do 
-            firewall-cmd --permanent --add-port=${PORT}/tcp > /dev/null 2>&1
-        done 
-        firewall-cmd --reload > /dev/null 2>&1
-        firewall-cmd --list-all | grep 80 > /dev/null 2>&1
+    ufw status verbose | grep inactive > /dev/null 2>&1
+    if [ $? = 0 ]; then 
+        for PORT in ${FIREWALLLIST}; do
+            ufw allow ${PORT} > /dev/null 2>&1
+        done    
+        echo "y" | ufw enable > /dev/null 2>&1 
+        ufw status | grep '80.*ALLOW' > /dev/null 2>&1
         if [ $? = 0 ]; then 
             echoG 'firewalld rules setup success'
         else 
-            echoR 'Please check firewalld rules'    
-        fi         
-     else 
-        ufw status verbose | grep inactive > /dev/null 2>&1
-        if [ $? = 0 ]; then 
-            for PORT in ${FIREWALLLIST}; do
-                ufw allow ${PORT} > /dev/null 2>&1
-            done    
-            echo "y" | ufw enable > /dev/null 2>&1
-            
-            ufw status | grep '80.*ALLOW' > /dev/null 2>&1
-            if [ $? = 0 ]; then 
-                echoG 'firewalld rules setup success'
-            else 
-                echoR 'Please check ufw rules'    
-            fi    
-        else
-            echoG "ufw already enabled"    
-        fi
+            echoR 'Please check ufw rules'    
+        fi    
+    else
+        echoG "ufw already enabled"    
     fi
+}
+
+centos_firewall_add(){
+    echoG 'Setting Firewall'
+    if [ ! -e /usr/sbin/firewalld ]; then 
+        yum -y install firewalld > /dev/null 2>&1
+    fi
+    service firewalld start  > /dev/null 2>&1
+    systemctl enable firewalld > /dev/null 2>&1
+    for PORT in ${FIREWALLLIST}; do 
+        firewall-cmd --permanent --add-port=${PORT}/tcp > /dev/null 2>&1
+    done 
+    firewall-cmd --reload > /dev/null 2>&1
+    firewall-cmd --list-all | grep 80 > /dev/null 2>&1
+    if [ $? = 0 ]; then 
+        echoG 'firewalld rules setup success'
+    else 
+        echoR 'Please check firewalld rules'    
+    fi         
 }
 
 statusck(){
@@ -608,12 +623,12 @@ main(){
     landingpg
     configols
     configphp
-    configobject
+    [[ ${OSNAME} = 'centos' ]] && centos_config_obj || ubuntu_config_obj 
     configmysql
     configwp
     dbpasswordfile
     changeowner
-    firewalladd 
+    [[ ${OSNAME} = 'centos' ]] && centos_firewall_add || ubuntu_firewall_add
     statusck
     rmdummy
     END_TIME="$(date -u +%s)"
