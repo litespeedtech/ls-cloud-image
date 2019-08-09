@@ -43,7 +43,9 @@ if [ -e /sys/devices/virtual/dmi/id/product_uuid ] && [ "$(sudo cat /sys/devices
 elif [ "$(sudo dmidecode -s bios-vendor)" = 'Google' ]; then 
     MYIP=$(curl -s -H "Metadata-Flavor: Google" http://metadata/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip)
 elif [ "$(dmidecode -s system-product-name | cut -c 1-7)" = 'Alibaba' ]; then
-    MYIP=$(curl -s http://100.100.100.200/latest/meta-data/eipv4)     
+    MYIP=$(curl -s http://100.100.100.200/latest/meta-data/eipv4)    
+elif [ "$(dmidecode -s system-manufacturer)" = 'Microsoft Corporation' ];then    
+    MYIP=$(curl -s http://checkip.amazonaws.com || printf "0.0.0.0")     
 else    
     MYIP=$(ip -4 route get 8.8.8.8 | awk {'print $7'} | tr -d '\n')
 fi    

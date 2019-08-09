@@ -50,6 +50,8 @@ providerck()
     PROVIDER='do'
   elif [ "$(dmidecode -s system-product-name | cut -c 1-7)" = 'Alibaba' ];then
     PROVIDER='aliyun'   
+  elif [ "$(dmidecode -s system-manufacturer)" = 'Microsoft Corporation' ];then    
+    PROVIDER='azure'  
   else
     PROVIDER='undefined'  
   fi
