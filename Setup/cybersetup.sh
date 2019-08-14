@@ -33,7 +33,7 @@ check_os()
 check_os
 
 ### Upgrade
-systemupgrade() {
+upgrade() {
     echoG 'Updating system'
     if [ "${OSNAME}" = 'ubuntu' ] || [ "${OSNAME}" = 'debian' ]; then 
         apt-get update > /dev/null 2>&1
@@ -53,14 +53,25 @@ systemupgrade() {
     echoG 'Finish Update'  
 }
 
-### Start
-installcyberpanel(){
+install_cyberpanel(){
     echoG 'Installing CyberPanel'
     ### The 1 1 will auto answer the prompt to install CyberPanel and OpenLiteSpeed
     ### and then accept the default values for the rest of the questions.     
     printf "%s\n" 1 1 | sh <(curl https://cyberpanel.net/install.sh || wget -O - https://cyberpanel.net/install.sh)
     echoG 'Finish CyberPanel'
 }   
+
+rm_agpl-pkg(){
+    local RAINLOOP_PATH='/usr/local/CyberCP/public/rainloop'
+    if [ -e ${RAINLOOP_PATH} ]; then
+        rm -rf ${RAINLOOP_PATH}
+    fi
+    if [ "${OSNAME}" = 'ubuntu' ] || [ "${OSNAME}" = 'debian' ]; then
+        apt remove ghostscript -y
+    else
+        yum remove ghostscript -y
+    fi
+}
 
 rmdummy(){
     rm -f ${NOWPATH}/cyberpanel.sh
@@ -71,8 +82,9 @@ rmdummy(){
 
 main(){
     START_TIME="$(date -u +%s)"
-    systemupgrade
-    installcyberpanel
+    upgrade
+    install_cyberpanel
+    rm_agpl-pkg
     rmdummy
     END_TIME="$(date -u +%s)"
     ELAPSED="$((${END_TIME}-${START_TIME}))"

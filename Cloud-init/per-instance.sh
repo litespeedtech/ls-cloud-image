@@ -34,9 +34,8 @@ check_os(){
         BANNERDST='/etc/update-motd.d/99-one-click'
     fi        
 }
-check_os
 
-editioncheck()
+check_edition()
 {
     if [ -d /usr/local/CyberCP ]; then
         PANEL='cyber'
@@ -62,9 +61,8 @@ editioncheck()
         EDITION='litespeed'
     fi 
 }
-editioncheck
 
-providerck()
+check_provider()
 {
     if [ -e /sys/devices/virtual/dmi/id/product_uuid ] && [ "$(sudo cat /sys/devices/virtual/dmi/id/product_uuid | cut -c 1-3)" = 'EC2' ]; then
         PROVIDER='aws'    
@@ -84,9 +82,8 @@ providerck()
         PROVIDER='undefined' 
     fi
 }
-providerck
 
-pathupdate()
+update_path()
 {
     if [ "${PANEL}" = 'cyber' ]; then 
         PHPMYPATH="${PANELPATH}/public/phpmyadmin"
@@ -125,8 +122,8 @@ pathupdate()
     fi
 
 }
-pathupdate
-oshmpath()
+
+os_home_path()
 {
     if [ ${PROVIDER} = 'aws' ] && [ -d /home/ubuntu ]; then
         HMPATH='/home/ubuntu'
@@ -143,8 +140,8 @@ oshmpath()
         PUBIP=$(ip -4 route get 8.8.8.8 | awk {'print $7'} | tr -d '\n')
     fi   
 }
-oshmpath
-rmdummy(){
+
+rm_dummy(){
     if [ "${OSNAME}" = 'ubuntu' ] || [ "${OSNAME}" = 'debian' ]; then 
         rm -f /etc/update-motd.d/00-header
         rm -f /etc/update-motd.d/10-help-text
@@ -153,12 +150,12 @@ rmdummy(){
     fi
 }
 
-doimgversionct()
+ct_version()
 {
     curl "https://wp.api.litespeedtech.com/v?t=image&src=${WPCT}" > /dev/null 2>&1
 }
 
-setupdomain(){
+setup_domain(){
     ### domainsetup.sh
     if [ ! -e /opt/domainsetup.sh ]; then  
         curl -s https://raw.githubusercontent.com/litespeedtech/ls-cloud-image/master/Setup/domainsetup.sh \
@@ -170,7 +167,7 @@ setupdomain(){
         chmod +x /opt/domainsetup.sh
     fi    
 }    
-setupbanner(){
+setup_banner(){
     ### Setup banner automatically
     if [ ! -e ${BANNERDST} ]; then  
         curl -s https://raw.githubusercontent.com/litespeedtech/ls-cloud-image/master/Banner/${BANNERNAME} \
@@ -184,7 +181,7 @@ setupbanner(){
     fi
 }
 
-dbpasswordfile()
+db_passwordfile()
 {
     if [ "${APPLICATION}" = 'NONE' ] || [ "${PANEL}" = 'cyber' ]; then
         if [ ! -e "${HMPATH}/.db_password" ]; then
@@ -196,7 +193,7 @@ dbpasswordfile()
         fi
     fi 
 }
-litespeedpasswordfile()
+litespeed_passwordfile()
 {
     if [ ! -e "${HMPATH}/.litespeed_password" ]; then
         touch "${HMPATH}/.litespeed_password"
@@ -227,21 +224,21 @@ litespeedpasswordfile()
 
 #####################################################################
 ### Generate cert/key/password ###
-genlswspwd()
+gen_lsws_pwd()
 {
     ADMIN_PASS=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 16 ; echo '')
     ENCRYPT_PASS=$(${LSDIR}/admin/fcgi-bin/admin_php* -q ${LSDIR}/admin/misc/htpasswd.php ${ADMIN_PASS})
 }
 
-gensqlpwd(){
+gen_sql_pwd(){
     root_mysql_pass=$(openssl rand -hex 24)
     wordpress_mysql_pass=$(openssl rand -hex 24)
     debian_sys_maint_mysql_pass=$(openssl rand -hex 24)
 }
-gensaltpwd(){
+gen_salt_pwd(){
     GEN_SALT=$(</dev/urandom tr -dc 'a-zA-Z0-9!@#%^&*()-_[]{}<>~+=' | head -c 64 | sed -e 's/[\/&]/\&/g')
 }
-gensecretkey(){
+gen_secretkey(){
     GEN_SECRET=$(</dev/urandom tr -dc 'a-zA-Z0-9!@#%^&*()-_[]{}<>~+=' | head -c 50 | sed -e 's/[\/&]/\&/g')
 }
 gen_selfsigned_cert()
@@ -327,7 +324,7 @@ filepermission_update(){
     chmod 600 ${HMPATH}/.litespeed_password
 }
 
-updatesecretkey(){
+update_secretkey(){
     if [ "${PANEL}" = 'cyber' ]; then
         SECRETPATH=${CPCFPATH}
     elif [ "${APPLICATION}" = 'PYTHON' ]; then 
@@ -339,7 +336,7 @@ updatesecretkey(){
     sed -i "${LINENUM}i${NEWKEY}" ${SECRETPATH}
 }
 
-updateCPsqlpwd(){
+update_CPsqlpwd(){
     PREPWD=$(cat ${CPSQLPATH})
     ### root user
     mysql -uroot -p${PREPWD} \
@@ -384,14 +381,14 @@ updateCPsqlpwd(){
     service lscpd restart
 }
 
-renewwppwd(){
+renew_wp_pwd(){
     NEWDBPWD="define('DB_PASSWORD', '${wordpress_mysql_pass}');"
     linechange 'DB_PASSWORD' ${WPCFPATH} "${NEWDBPWD}"
 }
 
 
 ### Listener '*' to 'IP'
-replacelitenerip(){
+replace_litenerip(){
     if [ "${PANEL}" = '' ]; then 
         for LINENUM in $(grep -n 'map' ${LSHTTPDCFPATH} | cut -d: -f 1)
         do
@@ -405,7 +402,7 @@ replacelitenerip(){
     fi    
 }
 
-updatesqlpwd(){
+update_sql_pwd(){
     mysql -uroot -p${ori_root_mysql_pass} \
         -e "SET PASSWORD FOR 'root'@'localhost' = PASSWORD('${root_mysql_pass}');"
     mysql -uroot -p${root_mysql_pass} \
@@ -430,7 +427,7 @@ updatesqlpwd(){
     #EOM
 }
 
-renewwpsalt(){
+renew_wpsalt(){
     # WordPress Salts
     for KEY in "'AUTH_KEY'" "'SECURE_AUTH_KEY'" "'LOGGED_IN_KEY'" "'NONCE_KEY'" "'AUTH_SALT'" "'SECURE_AUTH_SALT'" "'LOGGED_IN_SALT'" "'NONCE_SALT'"
     do
@@ -441,7 +438,7 @@ renewwpsalt(){
     done
 }
 
-renewblowfish(){
+renew_blowfish(){
     #phpmyadmin blowfish
     LINENUM=$(grep -n "'blowfish_secret'" ${PHPMYCFPATH} | cut -d: -f 1)
     sed -i "${LINENUM}d" ${PHPMYCFPATH}
@@ -457,7 +454,7 @@ root_mysql_pass="${root_mysql_pass}"
 EOM
 }
 
-updateCPpwdfile(){
+update_CPpwdfile(){
     rm -f ${DBPASSPATH}
     cat >> ${DBPASSPATH} <<EOM
 root_mysql_pass="${root_mysql_pass}"
@@ -465,7 +462,7 @@ cyberpanel_mysql_pass="${root_mysql_pass}"
 EOM
 }
 
-updatepwdfile(){
+update_pwd_file(){
     rm -f ${DBPASSPATH}
     cat >> ${DBPASSPATH} <<EOM
 root_mysql_pass="${root_mysql_pass}"
@@ -485,7 +482,7 @@ upgrade_cyberpanel() {
 
 ###prevent hijacking
 
-aftersshsetup(){
+setup_after_ssh(){
     sudo cat << EOM > /etc/profile.d/afterssh.sh
 #!/bin/bash
 sudo mv /var/www/html/ /var/www/html.land/
@@ -496,53 +493,74 @@ EOM
     sudo chmod 755 /etc/profile.d/afterssh.sh
 }
 
-addprofile(){
+add_profile(){
     echo "sudo /opt/domainsetup.sh" >> /etc/profile
 }
 
 
-addtohosts(){
+add_hosts(){
     if [ -d /home/ubuntu ]; then
         NEWKEY="127.0.0.1 localhost $(hostname)"
         linechange '127.0.0.1' /etc/hosts "${NEWKEY}"
     fi
 }
 
+install_rainloop(){
+    RAINLOOP_PATH="${PANELPATH}/public/rainloop"
+    RAINDATA_PATH="${LSCPPATH}/cyberpanel/rainloop/data"
+    mkdir -p ${RAINLOOP_PATH}
+    cd ${RAINLOOP_PATH}
+    wget -q http://www.rainloop.net/repository/webmail/rainloop-community-latest.zip
+    if [ -e rainloop-community-latest.zip ]; then
+        unzip -qq rainloop-community-latest.zip
+        rm -f rainloop-community-latest.zip
+        find . -type d -exec chmod 755 {} \;
+        find . -type f -exec chmod 644 {} \;
+        sed -i "s|$sCustomDataPath = '';|$sCustomDataPath = '${RAINDATA_PATH}';|g" ${RAINLOOP_PATH}/rainloop/v/*/include.php
+        cp -r ${RAINLOOP_PATH}/* ${RAINDATA_PATH}/
+        chown -R lscpd:lscpd ${RAINDATA_PATH}/
+    else
+        echo 'No rainloop-community-latest.zip file'
+    fi
+}
+
 #Security
-installfirewalld(){
-    FWDCMD='/usr/bin/firewall-cmd --permanent --zone=public --add-rich-rule'
+install_firewalld(){
+    if [ "${OSNAME}" != 'centos' ]; then
+        FWDCMD='/usr/bin/firewall-cmd --permanent --zone=public --add-rich-rule'
 
-    /usr/bin/apt-get install firewalld -y
-    /bin/systemctl enable firewalld
+        /usr/bin/apt-get install firewalld -y
+        /bin/systemctl enable firewalld
 
-    ${FWDCMD}='rule family="ipv4" source address="0.0.0.0/0" port protocol="tcp" port="8090" accept'
-    ${FWDCMD}='rule family="ipv6" port protocol="tcp" port="8090" accept'
-    ${FWDCMD}='rule family="ipv4" source address="0.0.0.0/0" port protocol="tcp" port="80" accept'
-    ${FWDCMD}='rule family="ipv6" port protocol="tcp" port="80" accept'
-    ${FWDCMD}='rule family="ipv4" source address="0.0.0.0/0" port protocol="tcp" port="443" accept'
-    ${FWDCMD}='rule family="ipv6" port protocol="tcp" port="443" accept'
-    /usr/bin/firewall-cmd --add-service=ssh --permanent
-    /usr/bin/firewall-cmd --add-service=ftp --permanent
-    ${FWDCMD}='rule family="ipv4" source address="0.0.0.0/0" port protocol="tcp" port="25" accept'
-    ${FWDCMD}='rule family="ipv6" port protocol="tcp" port="25" accept'
-    ${FWDCMD}='rule family="ipv4" source address="0.0.0.0/0" port protocol="tcp" port="587" accept'
-    ${FWDCMD}='rule family="ipv6" port protocol="tcp" port="587" accept'
-    ${FWDCMD}='rule family="ipv4" source address="0.0.0.0/0" port protocol="tcp" port="465" accept'
-    ${FWDCMD}='rule family="ipv6" port protocol="tcp" port="465" accept'
-    ${FWDCMD}='rule family="ipv4" source address="0.0.0.0/0" port protocol="tcp" port="110" accept'
-    ${FWDCMD}='rule family="ipv6" port protocol="tcp" port="110" accept'
-    ${FWDCMD}='rule family="ipv4" source address="0.0.0.0/0" port protocol="tcp" port="143" accept'
-    ${FWDCMD}='rule family="ipv6" port protocol="tcp" port="143" accept'
-    ${FWDCMD}='rule family="ipv4" source address="0.0.0.0/0" port protocol="tcp" port="993" accept'
-    ${FWDCMD}='rule family="ipv6" port protocol="tcp" port="993" accept'
-    ${FWDCMD}='rule family="ipv4" source address="0.0.0.0/0" port protocol="udp" port="53" accept'
-    ${FWDCMD}='rule family="ipv6" port protocol="udp" port="53" accept'
-    ${FWDCMD}='rule family="ipv4" source address="0.0.0.0/0" port protocol="tcp" port="53" accept'
-    ${FWDCMD}='rule family="ipv6" port protocol="tcp" port="53" accept'
-    ${FWDCMD}='rule family="ipv4" source address="0.0.0.0/0" port protocol="tcp" port="40110-40210" accept'
-    ${FWDCMD}='rule family="ipv6" port protocol="tcp" port="40110-40210" accept'
+        ${FWDCMD}='rule family="ipv4" source address="0.0.0.0/0" port protocol="tcp" port="8090" accept'
+        ${FWDCMD}='rule family="ipv6" port protocol="tcp" port="8090" accept'
+        ${FWDCMD}='rule family="ipv4" source address="0.0.0.0/0" port protocol="tcp" port="80" accept'
+        ${FWDCMD}='rule family="ipv6" port protocol="tcp" port="80" accept'
+        ${FWDCMD}='rule family="ipv4" source address="0.0.0.0/0" port protocol="tcp" port="443" accept'
+        ${FWDCMD}='rule family="ipv6" port protocol="tcp" port="443" accept'
+        /usr/bin/firewall-cmd --add-service=ssh --permanent
+        /usr/bin/firewall-cmd --add-service=ftp --permanent
+        ${FWDCMD}='rule family="ipv4" source address="0.0.0.0/0" port protocol="tcp" port="25" accept'
+        ${FWDCMD}='rule family="ipv6" port protocol="tcp" port="25" accept'
+        ${FWDCMD}='rule family="ipv4" source address="0.0.0.0/0" port protocol="tcp" port="587" accept'
+        ${FWDCMD}='rule family="ipv6" port protocol="tcp" port="587" accept'
+        ${FWDCMD}='rule family="ipv4" source address="0.0.0.0/0" port protocol="tcp" port="465" accept'
+        ${FWDCMD}='rule family="ipv6" port protocol="tcp" port="465" accept'
+        ${FWDCMD}='rule family="ipv4" source address="0.0.0.0/0" port protocol="tcp" port="110" accept'
+        ${FWDCMD}='rule family="ipv6" port protocol="tcp" port="110" accept'
+        ${FWDCMD}='rule family="ipv4" source address="0.0.0.0/0" port protocol="tcp" port="143" accept'
+        ${FWDCMD}='rule family="ipv6" port protocol="tcp" port="143" accept'
+        ${FWDCMD}='rule family="ipv4" source address="0.0.0.0/0" port protocol="tcp" port="993" accept'
+        ${FWDCMD}='rule family="ipv6" port protocol="tcp" port="993" accept'
+        ${FWDCMD}='rule family="ipv4" source address="0.0.0.0/0" port protocol="udp" port="53" accept'
+        ${FWDCMD}='rule family="ipv6" port protocol="udp" port="53" accept'
+        ${FWDCMD}='rule family="ipv4" source address="0.0.0.0/0" port protocol="tcp" port="53" accept'
+        ${FWDCMD}='rule family="ipv6" port protocol="tcp" port="53" accept'
+        ${FWDCMD}='rule family="ipv4" source address="0.0.0.0/0" port protocol="tcp" port="40110-40210" accept'
+        ${FWDCMD}='rule family="ipv6" port protocol="tcp" port="40110-40210" accept'
 
-    /usr/bin/firewall-cmd --reload
+        /usr/bin/firewall-cmd --reload
+    fi    
 }
 
 check_version() {
@@ -605,7 +623,7 @@ update_phpmyadmin() {
     fi
 }
 
-phpmyadminfix(){
+fix_phpmyadmin(){
     if [ ${BANNERNAME} = 'wordpress' ]; then 
         grep -q '    enable' ${LSVHCFPATH}
         if [ $? != 0 ]; then 
@@ -645,48 +663,56 @@ set_tmp() {
     fi
 }
 
+main_env_check(){
+    check_os
+    check_edition
+    check_provider
+    update_path
+    os_home_path
+}
+
 maincloud(){
-    setupdomain
-    setupbanner
-    litespeedpasswordfile
-    doimgversionct
-    genlswspwd
-    addtohosts
+    main_env_check
+    setup_domain
+    setup_banner
+    litespeed_passwordfile
+    ct_version
+    gen_lsws_pwd
+    add_hosts
     gen_selfsigned_cert
     lscpd_cert_update
     web_admin_update
-    replacelitenerip
-    dbpasswordfile
-    gensqlpwd
-    gensaltpwd
-    gensecretkey
-    rmdummy
-    addprofile
+    replace_litenerip
+    db_passwordfile
+    gen_sql_pwd
+    gen_salt_pwd
+    gen_secretkey
+    rm_dummy
+    add_profile
     set_tmp
     if [ "${PANEL}" = 'cyber' ]; then
         panel_admin_update
         panel_sshkey_update
         panel_IP_update
         update_phpmyadmin
-        updateCPsqlpwd
-        updatesecretkey
-        updateCPpwdfile
+        update_CPsqlpwd
+        update_secretkey
+        update_CPpwdfile
+        install_rainloop
         filepermission_update
-        renewblowfish
-        if [ "${OSNAME}" != 'centos' ]; then
-            installfirewalld
-        fi   
+        renew_blowfish
+        install_firewalld  
     elif [ "${APPLICATION}" = 'PYTHON' ]; then
-        updatesecretkey
+        update_secretkey
     elif [ "${APPLICATION}" = 'NONE' ]; then
-        updatesqlpwd
-        renewwppwd
-        updatepwdfile
-        renewwpsalt
+        update_sql_pwd
+        renew_wp_pwd
+        update_pwd_file
+        renew_wpsalt
         update_phpmyadmin
-        phpmyadminfix
-        renewblowfish
-        aftersshsetup
+        fix_phpmyadmin
+        renew_blowfish
+        setup_after_ssh
     fi
 }
 

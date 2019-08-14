@@ -53,6 +53,8 @@ fi
 
 if [ -e /home/ubuntu ]; then 
     HMUBUNTU='/home/ubuntu/' 
+elif [ "$(dmidecode -s system-manufacturer)" = 'Microsoft Corporation' ];then
+    HMUBUNTU='/root/'   
 else
     HMUBUNTU=''
 fi
@@ -74,9 +76,9 @@ In a web browser, you can view:
 On the server:
 * The default web root is located at /var/www/html
 * You can get the MySQL root password and MySQL WordPress user password with command:
-   $(echoY "cat ${HMUBUNTU}.db_password")
+   $(echoY "sudo cat ${HMUBUNTU}.db_password")
 * You can get the Web Admin admin password with the following command:
-   $(echoY "cat ${HMUBUNTU}.litespeed_password")
+   $(echoY "sudo cat ${HMUBUNTU}.litespeed_password")
 * The WordPress Cache plugin, LSCache, is located at
    /var/www/html/wp-content/plugins/litespeed-cache
 * The phpMyAdmin is located at /var/www/phpmyadmin
