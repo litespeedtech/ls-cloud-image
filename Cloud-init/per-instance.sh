@@ -518,18 +518,20 @@ add_hosts(){
 install_rainloop(){
     RAINLOOP_PATH="${PANELPATH}/public/rainloop"
     RAINDATA_PATH="${LSCPPATH}/cyberpanel/rainloop/data"
-    mkdir -p ${RAINLOOP_PATH}; cd ${RAINLOOP_PATH}
-    wget -q http://www.rainloop.net/repository/webmail/rainloop-community-latest.zip
-    if [ -e rainloop-community-latest.zip ]; then
-        unzip -qq rainloop-community-latest.zip
-        rm -f rainloop-community-latest.zip
-        find . -type d -exec chmod 755 {} \;
-        find . -type f -exec chmod 644 {} \;
-        NEWKEY="\$sCustomDataPath = '${RAINDATA_PATH}';"
-        linechange "sCustomDataPath = '" ${RAINLOOP_PATH}/rainloop/v/*/include.php "${NEWKEY}"
-        chown -R lscpd:lscpd ${RAINDATA_PATH}/
-    else
-        echo 'No rainloop-community-latest.zip file'
+    if [ ! -e ${RAINLOOP_PATH} ]; then
+        mkdir -p ${RAINLOOP_PATH}; cd ${RAINLOOP_PATH}
+        wget -q http://www.rainloop.net/repository/webmail/rainloop-community-latest.zip
+        if [ -e rainloop-community-latest.zip ]; then
+            unzip -qq rainloop-community-latest.zip
+            rm -f rainloop-community-latest.zip
+            find . -type d -exec chmod 755 {} \;
+            find . -type f -exec chmod 644 {} \;
+            NEWKEY="\$sCustomDataPath = '${RAINDATA_PATH}';"
+            linechange "sCustomDataPath = '" ${RAINLOOP_PATH}/rainloop/v/*/include.php "${NEWKEY}"
+            chown -R lscpd:lscpd ${RAINDATA_PATH}/
+        else
+            echo 'No rainloop-community-latest.zip file'
+        fi
     fi
 }
 
