@@ -508,16 +508,15 @@ add_hosts(){
 install_rainloop(){
     RAINLOOP_PATH="${PANELPATH}/public/rainloop"
     RAINDATA_PATH="${LSCPPATH}/cyberpanel/rainloop/data"
-    mkdir -p ${RAINLOOP_PATH}
-    cd ${RAINLOOP_PATH}
+    mkdir -p ${RAINLOOP_PATH}; cd ${RAINLOOP_PATH}
     wget -q http://www.rainloop.net/repository/webmail/rainloop-community-latest.zip
     if [ -e rainloop-community-latest.zip ]; then
         unzip -qq rainloop-community-latest.zip
         rm -f rainloop-community-latest.zip
         find . -type d -exec chmod 755 {} \;
         find . -type f -exec chmod 644 {} \;
-        sed -i "s|$sCustomDataPath = '';|$sCustomDataPath = '${RAINDATA_PATH}';|g" ${RAINLOOP_PATH}/rainloop/v/*/include.php
-        cp -r ${RAINLOOP_PATH}/* ${RAINDATA_PATH}/
+        NEWKEY="\$sCustomDataPath = '${RAINDATA_PATH}';"
+        linechange "sCustomDataPath = '" ${RAINLOOP_PATH}/rainloop/v/*/include.php "${NEWKEY}"
         chown -R lscpd:lscpd ${RAINDATA_PATH}/
     else
         echo 'No rainloop-community-latest.zip file'
