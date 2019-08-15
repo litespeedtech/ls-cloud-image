@@ -141,6 +141,16 @@ os_home_path()
     fi   
 }
 
+main_env_check(){
+    check_os
+    check_edition
+    check_provider
+    update_path
+    os_home_path
+}
+
+main_env_check
+
 rm_dummy(){
     if [ "${OSNAME}" = 'ubuntu' ] || [ "${OSNAME}" = 'debian' ]; then 
         rm -f /etc/update-motd.d/00-header
@@ -662,16 +672,9 @@ set_tmp() {
     fi
 }
 
-main_env_check(){
-    check_os
-    check_edition
-    check_provider
-    update_path
-    os_home_path
-}
+
 
 maincloud(){
-    main_env_check
     setup_domain
     setup_banner
     litespeed_passwordfile
