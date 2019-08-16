@@ -59,16 +59,18 @@ providerck()
 
 get_ip()
 {
-  if [ ${PROVIDER} = 'aws' ]; then 
-    MY_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4) 
-  elif [ ${PROVIDER} = 'google' ]; then 
-    MY_IP=$(curl -s -H "Metadata-Flavor: Google" \
-    http://metadata/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip)    
-  elif [ ${PROVIDER} = 'aliyun' ]; then
-    MYIP=$(curl -s http://100.100.100.200/latest/meta-data/eipv4)   
-  else
-    MY_IP=$(ifconfig eth0 | grep 'inet '| awk '{printf $2}')
-    #MY_IP=$(ip -4 route get 8.8.8.8 | awk {'print $7'} | tr -d '\n')
+    if [ ${PROVIDER} = 'aws' ]; then 
+        MY_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4) 
+    elif [ ${PROVIDER} = 'google' ]; then 
+        MY_IP=$(curl -s -H "Metadata-Flavor: Google" \
+        http://metadata/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip)    
+    elif [ ${PROVIDER} = 'aliyun' ]; then
+        MY_IP=$(curl -s http://100.100.100.200/latest/meta-data/eipv4)   
+    elif [ "$(dmidecode -s system-manufacturer)" = 'Microsoft Corporation' ];then    
+        MY_IP=$(curl -s http://checkip.amazonaws.com || printf "0.0.0.0")    
+    else
+        MY_IP=$(ifconfig eth0 | grep 'inet '| awk '{printf $2}')
+        #MY_IP=$(ip -4 route get 8.8.8.8 | awk {'print $7'} | tr -d '\n')
   fi    
 }
 

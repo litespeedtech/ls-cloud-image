@@ -251,6 +251,7 @@ install_wp_cli(){
     if [ -e /usr/local/bin/wp ]; then 
         echoG 'WP CLI already exist'
     else    
+        echoG "Install wp_cli"
         curl -sO https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
         chmod +x wp-cli.phar
         mv wp-cli.phar /usr/local/bin/wp
@@ -642,6 +643,7 @@ main(){
     install_olswp
     conf_path
     install_pkg
+    install_wp_cli
     install_cloudinit
     landing_pg
     config_ols
