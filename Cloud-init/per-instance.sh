@@ -134,9 +134,10 @@ os_home_path()
     elif [ ${PROVIDER} = 'aliyun' ] && [ -d /home/ubuntu ]; then
         HMPATH='/home/ubuntu'
         PUBIP=$(curl http://100.100.100.200/latest/meta-data/eipv4)   
+    elif [ "$(dmidecode -s system-manufacturer)" = 'Microsoft Corporation' ];then    
+        PUBIP=$(curl -s http://checkip.amazonaws.com || printf "0.0.0.0")        
     else
         HMPATH='/root'
-        #PUBIP=$(ifconfig eth0 | grep 'inet '| awk '{printf $2}')
         PUBIP=$(ip -4 route get 8.8.8.8 | awk {'print $7'} | tr -d '\n')
     fi   
 }
