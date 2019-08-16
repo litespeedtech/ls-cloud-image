@@ -177,7 +177,7 @@ install_pkg(){
     if [ "${OSNAME}" = 'centos' ]; then 
         yum -y install unzip > /dev/null 2>&1
         echoG 'Install lsphp extensions'
-        yum -y install lsphp${PHPVER}-memcached lsphp${PHPVER}-redis lsphp${PHPVER}-opcache > /dev/null 2>&1
+        yum -y install lsphp${PHPVER}-memcached lsphp${PHPVER}-redis lsphp${PHPVER}-opcache lsphp${PHPVER}-imagick > /dev/null 2>&1
         echoG 'Install Memcached'
         yum -y install memcached > /dev/null 2>&1
         echoG 'Install Redis'
@@ -185,7 +185,7 @@ install_pkg(){
     else  
         apt-get -y install unzip > /dev/null 2>&1
         echoG 'Install lsphp extensions'
-        apt-get -y install lsphp${PHPVER}-memcached lsphp${PHPVER}-redis lsphp${PHPVER}-opcache > /dev/null 2>&1
+        apt-get -y install lsphp${PHPVER}-memcached lsphp${PHPVER}-redis lsphp${PHPVER}-opcache lsphp${PHPVER}-imagick > /dev/null 2>&1
         echoG 'Install Memcached'
         apt-get -y install memcached > /dev/null 2>&1
         echoG 'Install Redis'
@@ -244,6 +244,17 @@ install_pkg(){
             echoR "Please check Mariadb $(/usr/bin/mysql -V)" 
         fi      
     fi        
+}
+
+install_wp_cli(){
+    ### WP CLI
+    if [ -e /usr/local/bin/wp ]; then 
+        echoG 'WP CLI already exist'
+    else    
+        curl -sO https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
+        chmod +x wp-cli.phar
+        mv wp-cli.phar /usr/local/bin/wp
+    fi
 }
 
 install_cloudinit(){

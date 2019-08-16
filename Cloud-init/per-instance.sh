@@ -91,11 +91,6 @@ update_path()
     elif [ "${PANEL}" = '' ]; then
         PHPMYPATH='/var/www/phpmyadmin' 
         DOCPATH='/var/www/html'
-        #DOCPATH=$(grep 'docRoot' ${LSVHCFPATH} | awk '{print $2}')
-        #   if [ "$(echo ${DOCPATH} | grep '$')" != '' ]; then
-        #     VHROOTURL=$(echo ${DOCPATH} | sed 's/$VH_ROOT\///')
-        #     DOCPATH="${LSDIR}/Example/${VHROOTURL}/"
-        #   fi
         if [ -f '/usr/bin/node' ] && [ "$(grep -n 'appType.*node' ${LSVHCFPATH})" != '' ]; then
             APPLICATION='NODE'
             WPCT="${PROVIDER}_ols_node"
@@ -120,7 +115,6 @@ update_path()
     if [ -f "${DOCPATH}/wp-config.php" ]; then
         WPCFPATH="${DOCPATH}/wp-config.php"
     fi
-
 }
 
 os_home_path()
@@ -135,6 +129,7 @@ os_home_path()
         HMPATH='/home/ubuntu'
         PUBIP=$(curl http://100.100.100.200/latest/meta-data/eipv4)   
     elif [ "$(dmidecode -s system-manufacturer)" = 'Microsoft Corporation' ];then    
+        HMPATH='/root'
         PUBIP=$(curl -s http://checkip.amazonaws.com || printf "0.0.0.0")        
     else
         HMPATH='/root'
