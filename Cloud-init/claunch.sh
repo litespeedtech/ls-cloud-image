@@ -18,6 +18,24 @@ check_os(){
     fi         
 }
 
+providerck()
+{
+    if [ "$(sudo cat /sys/devices/virtual/dmi/id/product_uuid | cut -c 1-3)" = 'EC2' ]; then 
+        PROVIDER='aws'
+    elif [ "$(dmidecode -s bios-vendor)" = 'Google' ];then
+        PROVIDER='google'      
+    elif [ "$(dmidecode -s bios-vendor)" = 'DigitalOcean' ];then
+        PROVIDER='do'
+    elif [ "$(dmidecode -s system-product-name | cut -c 1-7)" = 'Alibaba' ];then
+        PROVIDER='aliyun'
+    elif [ "$(dmidecode -s system-manufacturer)" = 'Microsoft Corporation' ];then    
+        PROVIDER='azure'
+    else
+        PROVIDER='undefined'  
+    fi
+}
+providerck
+
 check_root(){
     if [ $(id -u) -ne 0 ]; then
         echoR "Please run this script as root user or use sudo"
@@ -25,7 +43,7 @@ check_root(){
     fi
 }
 
-install_cloud_pkg(){
+install_cloudinit(){
     if [ ! -d ${CLDINITPATH} ]; then
         mkdir -p ${CLDINITPATH}
     fi    
@@ -34,7 +52,17 @@ install_cloud_pkg(){
         if [ ${OSNAME} = 'ubuntu' ]; then
             apt-get install cloud-init -y >/dev/null 2>&1
         else
-            yum install cloud-init -y >/dev/null 2>&1
+            if [ "${PROVIDER}" = 'aliyun' ]; then
+                yum -y install python-pip > /dev/null 2>&1
+                test -d /etc/cloud && mv /etc/cloud /etc/cloud-old; cd /tmp/
+                wget -q http://ecs-image-utils.oss-cn-hangzhou.aliyuncs.com/cloudinit/ali-cloud-init-latest.tgz
+                tar -zxvf ali-cloud-init-latest.tgz > /dev/null 2>&1
+                OS_VER=$(cat /etc/redhat-release | awk '{printf $4}'| awk -F'.' '{printf $1}')
+                bash /tmp/cloud-init-*/tools/deploy.sh centos ${OS_VER}
+                rm -rf ali-cloud-init-latest.tgz cloud-init-*
+            else
+                yum install cloud-init -y >/dev/null 2>&1
+            fi    
         fi    
     fi    
 }
@@ -53,8 +81,10 @@ END
 
 cleanup (){
     # IF CyberPanel is installed on Ubuntu we need to remove firewalld
-    if [ -d /usr/local/CyberCP ] && [ "${OSNAME}" != 'centos' ]; then
-        sudo apt-get remove firewalld -y > /dev/null 2>&1
+    if [ -d /usr/local/CyberCP ]; then
+        if [ "${OSNAME}" != 'centos' ]; then
+            sudo apt-get remove firewalld -y > /dev/null 2>&1
+        fi    
     fi
     #cloud-init here
     rm -f /var/log/cloud-init.log
@@ -87,6 +117,9 @@ cleanup (){
     rm -f /var/log/fontconfig.log
     #aws
     rm -f /var/log/amazon/ssm/*
+    #azure
+    rm -f /var/log/azure/*
+    rm -f /var/log/waagent.log
     #component log
     rm -f /usr/local/lscp/logs/*
     rm -f /var/log/mail.log*
@@ -111,7 +144,7 @@ cleanup (){
     #password
     rm -f /root/.litespeed_password
     rm -f /root/.bash_history
-    if [ "$(cat /sys/devices/virtual/dmi/id/product_uuid | cut -c 1-3)" = 'EC2' ]; then
+    if [ "${PROVIDER}" = 'aws' ]; then
         if [ -d /home/ubuntu ]; then
             rm -f /home/ubuntu/.mysql_history
             rm -f /home/ubuntu/.bash_history
@@ -119,9 +152,9 @@ cleanup (){
             rm -f /home/ubuntu/.litespeed_password
         fi    
     fi  
-    if [ "$(dmidecode -s bios-vendor)" = 'Google' ]; then
-        allhmfolder=$(ls /home/)
-        for i in ${allhmfolder[@]}; do
+    if [ "${PROVIDER}" = 'google' ] || [ "${PROVIDER}" = 'azure' ]; then
+        ALL_HMFD=$(ls /home/)
+        for i in ${ALL_HMFD[@]}; do
             if [ "${i}" != 'ubuntu' ] && [ "${i}" != 'cyberpanel' ]; then
                 rm -rf "/home/${i}"
             fi
@@ -132,7 +165,7 @@ cleanup (){
 main_claunch(){
     check_os
     check_root
-    install_cloud_pkg
+    install_cloudinit
     setup_cloud
     cleanup
 }

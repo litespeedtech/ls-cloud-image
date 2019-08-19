@@ -88,7 +88,7 @@ check_os()
 check_os
 providerck()
 {
-    if [ "$(sudo cat /sys/devices/virtual/dmi/id/product_uuid | cut -c 1-3)" = 'EC2' ] && [ -d /home/ubuntu ]; then 
+    if [ "$(sudo cat /sys/devices/virtual/dmi/id/product_uuid | cut -c 1-3)" = 'EC2' ]; then 
         PROVIDER='aws'
     elif [ "$(dmidecode -s bios-vendor)" = 'Google' ];then
         PROVIDER='google'      
@@ -255,20 +255,6 @@ install_wp_cli(){
         curl -sO https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
         chmod +x wp-cli.phar
         mv wp-cli.phar /usr/local/bin/wp
-    fi
-}
-
-install_cloudinit(){
-    ### Aliyun which cloudinit failed by default on CentOS
-    if [ "${OSNAME}" = 'centos' ] || [ "${PROVIDER}" = 'aliyun' ]; then
-        echoG "Install Cloud-init"
-        yum -y install python-pip > /dev/null 2>&1
-        test -d /etc/cloud && mv /etc/cloud /etc/cloud-old; cd /tmp/
-        wget -q http://ecs-image-utils.oss-cn-hangzhou.aliyuncs.com/cloudinit/ali-cloud-init-latest.tgz
-        tar -zxvf ali-cloud-init-latest.tgz > /dev/null 2>&1
-        OS_VER=$(cat /etc/redhat-release | awk '{printf $4}'| awk -F'.' '{printf $1}')
-        bash /tmp/cloud-init-*/tools/deploy.sh centos ${OS_VER}
-        rm -rf ali-cloud-init-latest.tgz cloud-init-*
     fi
 }
 
@@ -644,7 +630,6 @@ main(){
     conf_path
     install_pkg
     install_wp_cli
-    install_cloudinit
     landing_pg
     config_ols
     config_php
