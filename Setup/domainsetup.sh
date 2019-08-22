@@ -75,7 +75,7 @@ get_ip()
 }
 
 domainhelp(){
-    echo -e "\nIn order for WordPress to work properly, please enter a valid domain."
+    echo -e "\nTo visit your apps by domain instead of IP, please enter a valid domain."
     echo -e "If you don't have one yet, you may cancel this process by pressing CTRL+C and continuing to SSH."
     echo -e "This prompt will open again the next time you log in, and will continue to do so until you finish the setup."
     echo -e "Please make sure the domain's DNS record has been properly pointed to this server."

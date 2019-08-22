@@ -86,6 +86,10 @@ cleanup (){
             sudo apt-get remove firewalld -y > /dev/null 2>&1
         fi    
     fi
+    # Legal
+    if [ -f /etc/legal ]; then
+        mv /etc/legal /etc/legal.bk
+    fi
     #cloud-init here
     rm -f /var/log/cloud-init.log
     rm -f /var/log/cloud-init-output.log
