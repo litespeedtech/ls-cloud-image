@@ -3,7 +3,6 @@
 # LiteSpeed Cloud Script
 # @Author:   LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
 # @Copyright: (c) 2019-2020
-# @Version: 1.0
 # *********************************************************************/
 
 CLDINITPATH='/var/lib/cloud/scripts/per-instance'

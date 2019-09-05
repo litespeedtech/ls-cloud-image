@@ -3,7 +3,6 @@
 # LiteSpeed Cloud Script
 # @Author:   LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
 # @Copyright: (c) 2018-2020
-# @Version: 1.4
 # *********************************************************************/
 PANEL=''
 PANELPATH=''
@@ -152,7 +151,11 @@ rm_dummy(){
         rm -f /etc/update-motd.d/00-header
         rm -f /etc/update-motd.d/10-help-text
         rm -f /etc/update-motd.d/50-landscape-sysinfo
+        rm -f /etc/update-motd.d/50-motd-news
         rm -f /etc/update-motd.d/51-cloudguest
+        if [ -f /etc/legal ]; then
+            mv /etc/legal /etc/legal.bk
+        fi        
     fi
 }
 
