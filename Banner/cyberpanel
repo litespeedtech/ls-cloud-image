@@ -53,6 +53,8 @@ MYIP=$(cat /etc/cyberpanel/machineIP)
 
 if [ -e /home/ubuntu ]; then 
     HMUBUNTU='/home/ubuntu/' 
+elif [ "$(dmidecode -s system-manufacturer)" = 'Microsoft Corporation' ];then
+    HMUBUNTU='/root/'    
 else
     HMUBUNTU=''
 fi

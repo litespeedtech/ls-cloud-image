@@ -53,6 +53,8 @@ fi
 
 if [ -e /home/ubuntu ]; then 
     HMUBUNTU='/home/ubuntu/' 
+elif [ "$(dmidecode -s system-manufacturer)" = 'Microsoft Corporation' ];then
+    HMUBUNTU='/root/'    
 else
     HMUBUNTU=''
 fi
@@ -74,7 +76,9 @@ In a web browser, you can view:
 
 On the server:
 * You can get the Web Admin admin password with the following command:
-   $(echoY "cat ${HMUBUNTU}.litespeed_password")
+   $(echoY "sudo cat ${HMUBUNTU}.litespeed_password")
+* You can access into virtual environment by command:
+   $(echoY "source /usr/local/lsws/Example/html/bin/activate")
 
 System Status:
   $(echo "Load :")$(echoG "$LOAD")
