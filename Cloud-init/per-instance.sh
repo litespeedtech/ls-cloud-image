@@ -538,7 +538,7 @@ install_rainloop(){
 install_firewalld(){
     if [ "${OSNAME}" != 'centos' ]; then
         FWDCMD='/usr/bin/firewall-cmd --permanent --zone=public --add-rich-rule'
-
+        /usr/bin/apt update -y
         /usr/bin/apt-get install firewalld -y
         /bin/systemctl enable firewalld
 
