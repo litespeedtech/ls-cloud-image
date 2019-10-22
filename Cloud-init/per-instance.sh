@@ -153,6 +153,7 @@ rm_dummy(){
         rm -f /etc/update-motd.d/50-landscape-sysinfo
         rm -f /etc/update-motd.d/50-motd-news
         rm -f /etc/update-motd.d/51-cloudguest
+        rm -f /etc/profile.d/cyberpanel.sh
         if [ -f /etc/legal ]; then
             mv /etc/legal /etc/legal.bk
         fi        
