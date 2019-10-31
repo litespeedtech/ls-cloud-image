@@ -3,7 +3,7 @@
 # LiteSpeed CyberPanel setup Script
 # @Author:   LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
 # @Copyright: (c) 2019-2020
-# @Version: 1.0
+# @Version: 1.0.1
 # *********************************************************************/
 
 NOWPATH=$(pwd)
@@ -57,11 +57,14 @@ install_cyberpanel(){
     echoG 'Installing CyberPanel'
     ### The 1 1 will auto answer the prompt to install CyberPanel and OpenLiteSpeed
     ### and then accept the default values for the rest of the questions.     
-    printf "%s\n" 1 1 | sh <(curl https://cyberpanel.net/install.sh || wget -O - https://cyberpanel.net/install.sh)
+    cd /tmp/; wget -q https://cyberpanel.net/install.sh
+    chmod +x install.sh
+    printf "%s\n" 1 1 | bash install.sh
     echoG 'Finish CyberPanel'
+    rm -f install.sh
 }   
 
-rm_agpl-pkg(){
+rm_agpl_pkg(){
     local RAINLOOP_PATH='/usr/local/CyberCP/public/rainloop'
     if [ -e ${RAINLOOP_PATH} ]; then
         rm -rf ${RAINLOOP_PATH}
@@ -84,7 +87,7 @@ main(){
     START_TIME="$(date -u +%s)"
     upgrade
     install_cyberpanel
-    rm_agpl-pkg
+    rm_agpl_pkg
     rmdummy
     END_TIME="$(date -u +%s)"
     ELAPSED="$((${END_TIME}-${START_TIME}))"

@@ -3,7 +3,7 @@
 # LiteSpeed Django setup Script
 # @Author:   LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
 # @Copyright: (c) 2019-2020
-# @Version: 1.0
+# @Version: 1.0.1
 # *********************************************************************/
 LSWSFD='/usr/local/lsws'
 PHPVER=73
@@ -98,7 +98,9 @@ systemupgrade() {
 
 ### Start
 installols(){
-    echo 'Y' | bash <( curl -k https://raw.githubusercontent.com/litespeedtech/ols1clk/master/ols1clk.sh ) \
+    cd /tmp/; wget -q https://raw.githubusercontent.com/litespeedtech/ols1clk/master/ols1clk.sh
+    chmod +x ols1clk.sh
+    echo 'Y' | bash ols1clk.sh \
     --lsphp ${PHPVER}
 }
 

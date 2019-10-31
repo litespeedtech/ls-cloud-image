@@ -3,7 +3,7 @@
 # LiteSpeed WordPress setup Script
 # @Author:   LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
 # @Copyright: (c) 2019-2020
-# @Version: 1.0
+# @Version: 1.0.1
 # *********************************************************************/
 LSWSFD='/usr/local/lsws'
 DOCHM='/var/www/html.old'
@@ -151,7 +151,9 @@ system_upgrade() {
 
 ### Start
 install_olswp(){
-    echo 'Y' | bash <( curl -k https://raw.githubusercontent.com/litespeedtech/ols1clk/master/ols1clk.sh ) \
+    cd /tmp/; wget -q https://raw.githubusercontent.com/litespeedtech/ols1clk/master/ols1clk.sh
+    chmod +x ols1clk.sh
+    echo 'Y' | bash ols1clk.sh \
     --lsphp ${PHPVER} \
     --wordpress \
     --wordpresspath ${DOCHM} \
@@ -159,6 +161,7 @@ install_olswp(){
     --dbname wordpress \
     --dbuser wordpress \
     --dbpassword wordpress
+    rm -f ols1clk.sh
 }
 
 conf_path(){
@@ -227,19 +230,17 @@ install_pkg(){
     fi
     ### Mariadb 10.3
     cksqlver
-    echo ${SQLDBVER} | grep 'MariaDB' | grep '10.3' > /dev/null 2>&1
-    if [ $? = 0 ]; then 
-        echoG 'Mariadb 10.3 installed'
+    if [[ ${SQLDBVER} == *[10-99].[3-9]*-MariaDB* ]]; then
+        echoG 'Mariadb version -ge 10.3'
     else
-        apt -y remove mariadb-server-10.* > /dev/null 2>&1
+        apt -y remove mariadb-server-* > /dev/null 2>&1
         echoG "Install Mariadb 10.3"
         DEBIAN_FRONTEND='noninteractive' apt-get -y \
             -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' \
             install mariadb-server-10.3 > /dev/null 2>&1
         cksqlver
-        echo ${SQLDBVER} | grep 'MariaDB' | grep '10.3' > /dev/null 2>&1
-        if [ $? = 0 ]; then 
-            echoG 'Mariadb 10.3 installed'
+        if [[ ${SQLDBVER} == *[10-99].[3-9]*-MariaDB* ]]; then
+            echoG 'Mariadb version -ge 10.3'
         else
             echoR "Please check Mariadb $(/usr/bin/mysql -V)" 
         fi      
@@ -413,15 +414,13 @@ config_mysql(){
     if [ -f ${DBPASSPATH} ]; then 
         EXISTSQLPASS=$(grep root_mysql_passs ${HMPATH}/.db_password | awk -F '"' '{print $2}'); 
     fi    
-    if [[ ${EXISTSQLPASS} = '' ]]; then  
+    if [ "${EXISTSQLPASS}" = '' ]; then
         mysql -u root -p${root_mysql_pass} \
             -e "update mysql.user set authentication_string=password('${root_mysql_pass}') where user='root';"
-            
     else
         mysql -u root -p${EXISTSQLPASS} \     
             -e "update mysql.user set authentication_string=password('${root_mysql_pass}') where user='root';" 
     fi   
-
     if [ ! -e ${MARIADBCNF} ]; then 
     touch ${MARIADBCNF}
     cat > ${MARIADBCNF} <<END 
