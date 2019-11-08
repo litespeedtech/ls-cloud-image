@@ -47,6 +47,7 @@ check_os()
         OSNAME=centos
         USER='nobody'
         GROUP='nobody'
+        OSVER=$(cat /etc/redhat-release | awk '{print substr($4,1,1)}')
     elif [ -f /etc/lsb-release ] ; then
         OSNAME=ubuntu    
     elif [ -f /etc/debian_version ] ; then
@@ -56,7 +57,7 @@ check_os()
 check_os
 providerck()
 {
-  if [ "$(sudo cat /sys/devices/virtual/dmi/id/product_uuid | cut -c 1-3)" = 'EC2' ]; then 
+  if [ -e /sys/devices/virtual/dmi/id/product_uuid ] && [ "$(sudo cat /sys/devices/virtual/dmi/id/product_uuid | cut -c 1-3)" = 'EC2' ]; then 
     PROVIDER='aws'
   elif [ "$(dmidecode -s bios-vendor)" = 'Google' ];then
     PROVIDER='google'      
@@ -94,6 +95,14 @@ systemupgrade() {
         yum update -y > /dev/null 2>&1
         echo -ne '#######################   (100%)\r'
     fi    
+}
+
+install_basic_pkg(){
+    if [ "${OSNAME}" = 'centos' ]; then 
+        yum -y install wget > /dev/null 2>&1
+    else  
+        apt-get -y install wget > /dev/null 2>&1
+    fi
 }
 
 ### Start
@@ -149,7 +158,15 @@ installpkg(){
     ### CertBot
     echoG "Install CertBot" 
     if [ "${OSNAME}" = 'centos' ]; then 
-        yum -y install certbot  > /dev/null 2>&1
+        if [ ${OSVER} = 8 ]; then
+            wget -q https://dl.eff.org/certbot-auto
+            mv certbot-auto /usr/local/bin/certbot
+            chown root /usr/local/bin/certbot
+            chmod 0755 /usr/local/bin/certbot
+            echo "y" | /usr/local/bin/certbot > /dev/null 2>&1
+        else
+            yum -y install certbot  > /dev/null 2>&1
+        fi
     else 
         add-apt-repository universe > /dev/null 2>&1
         echo -ne '\n' | add-apt-repository ppa:certbot/certbot > /dev/null 2>&1
@@ -394,6 +411,7 @@ rmdummy(){
 main(){
     START_TIME="$(date -u +%s)"
     systemupgrade
+    install_basic_pkg
     installols
     installpkg
     installwsgi

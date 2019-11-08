@@ -209,7 +209,7 @@ force_https() {
             echo "$(echo '
 ### Forcing HTTPS rule start       
 RewriteEngine On
-RewriteCond %{SERVER_PORT} 80
+RewriteCond %{HTTPS} off
 RewriteRule (.*) https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
 ### Forcing HTTPS rule end
             ' | cat - ${DOCHM}/.htaccess)" > ${DOCHM}/.htaccess

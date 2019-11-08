@@ -79,6 +79,7 @@ check_os()
         REDISCONF='/etc/redis.conf'
         MEMCACHESERVICE='/etc/systemd/system/memcached.service'
         MEMCACHECONF='/etc/sysconfig/memcached'
+        OSVER=$(cat /etc/redhat-release | awk '{print substr($4,1,1)}')
     elif [ -f /etc/lsb-release ] ; then
         OSNAME=ubuntu    
     elif [ -f /etc/debian_version ] ; then
@@ -88,7 +89,7 @@ check_os()
 check_os
 providerck()
 {
-    if [ "$(sudo cat /sys/devices/virtual/dmi/id/product_uuid | cut -c 1-3)" = 'EC2' ]; then 
+    if [ -e /sys/devices/virtual/dmi/id/product_uuid ] && [ "$(sudo cat /sys/devices/virtual/dmi/id/product_uuid | cut -c 1-3)" = 'EC2' ]; then 
         PROVIDER='aws'
     elif [ "$(dmidecode -s bios-vendor)" = 'Google' ];then
         PROVIDER='google'      
@@ -123,9 +124,18 @@ change_owner(){
   chown -R ${USER}:${GROUP} /var/www
 }
 
+install_basic_pkg(){
+    if [ "${OSNAME}" = 'centos' ]; then 
+        yum -y install wget > /dev/null 2>&1
+    else  
+        apt-get -y install wget > /dev/null 2>&1
+    fi
+}
+
 prepare(){
     mkdir -p "${DOCLAND}"
     change_owner
+    install_basic_pkg
 }
 
 ### Upgrade
@@ -147,7 +157,6 @@ system_upgrade() {
         echo -ne '#######################   (100%)\r'
     fi    
 }
-
 
 ### Start
 install_olswp(){
@@ -215,7 +224,15 @@ install_pkg(){
     ### CertBot
     echoG "Install CertBot" 
     if [ "${OSNAME}" = 'centos' ]; then 
-        yum -y install certbot  > /dev/null 2>&1
+        if [ ${OSVER} = 8 ]; then
+            wget -q https://dl.eff.org/certbot-auto
+            mv certbot-auto /usr/local/bin/certbot
+            chown root /usr/local/bin/certbot
+            chmod 0755 /usr/local/bin/certbot
+            echo "y" | /usr/local/bin/certbot > /dev/null 2>&1
+        else
+            yum -y install certbot  > /dev/null 2>&1
+        fi
     else 
         add-apt-repository universe > /dev/null 2>&1
         echo -ne '\n' | add-apt-repository ppa:certbot/certbot > /dev/null 2>&1
@@ -223,7 +240,7 @@ install_pkg(){
         apt-get -y install certbot > /dev/null 2>&1
 
     fi 
-    if [ -e /usr/bin/certbot ]; then 
+    if [ -e /usr/bin/certbot ] || [ -e /usr/local/bin/certbot ]; then 
         echoG 'Install CertBot finished'
     else 
         echoR 'Please check CertBot'    
@@ -233,17 +250,23 @@ install_pkg(){
     if [[ ${SQLDBVER} == *[10-99].[3-9]*-MariaDB* ]]; then
         echoG 'Mariadb version -ge 10.3'
     else
-        apt -y remove mariadb-server-* > /dev/null 2>&1
-        echoG "Install Mariadb 10.3"
-        DEBIAN_FRONTEND='noninteractive' apt-get -y \
-            -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' \
-            install mariadb-server-10.3 > /dev/null 2>&1
-        cksqlver
-        if [[ ${SQLDBVER} == *[10-99].[3-9]*-MariaDB* ]]; then
-            echoG 'Mariadb version -ge 10.3'
-        else
-            echoR "Please check Mariadb $(/usr/bin/mysql -V)" 
-        fi      
+        if [ "${OSNAME}" = 'centos' ]; then
+            echo "Mariadb version ${SQLDBVER} is lower than 10.3"
+        else    
+            echo "Mariadb version ${SQLDBVER} is lower than 10.3, upgrading"
+
+            apt -y remove mariadb-server-* > /dev/null 2>&1
+            echoG "Install Mariadb 10.3"
+            DEBIAN_FRONTEND='noninteractive' apt-get -y \
+                -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' \
+                install mariadb-server-10.3 > /dev/null 2>&1
+            cksqlver
+            if [[ ${SQLDBVER} == *[10-99].[3-9]*-MariaDB* ]]; then
+                echoG 'Mariadb version -ge 10.3'
+            else
+                echoR "Please check Mariadb $(/usr/bin/mysql -V)" 
+            fi     
+        fi     
     fi        
 }
 
@@ -391,6 +414,9 @@ CACHESIZE="64"
 OPTIONS="-s /var/www/memcached.sock -a 0770 -U 0 -l 127.0.0.1"
 END
     ### SELINUX permissive Mode
+    if [ ! -f /usr/sbin/semanage ]; then 
+        yum install -y policycoreutils-python-utils > /dev/null 2>&1
+    fi    
     semanage permissive -a memcached_t
     setsebool -P httpd_can_network_memcache 1
     systemctl daemon-reload > /dev/null 2>&1
@@ -623,8 +649,8 @@ rm_dummy(){
 ### Main
 main(){
     START_TIME="$(date -u +%s)"
-    prepare
     system_upgrade
+    prepare
     install_olswp
     conf_path
     install_pkg

@@ -23,6 +23,7 @@ echoR()
 check_os()
 {
     if [ -f /etc/redhat-release ] ; then
+        OSVER=$(cat /etc/redhat-release | awk '{print substr($4,1,1)}')
         OSNAME=centos
     elif [ -f /etc/lsb-release ] ; then
         OSNAME=ubuntu    
@@ -51,6 +52,14 @@ upgrade() {
         echo -ne '#######################   (100%)\r'
     fi  
     echoG 'Finish Update'  
+}
+
+install_basic_pkg(){
+    if [ "${OSNAME}" = 'centos' ]; then 
+        yum -y install wget > /dev/null 2>&1
+    else  
+        apt-get -y install wget > /dev/null 2>&1
+    fi
 }
 
 install_cyberpanel(){
@@ -86,6 +95,7 @@ rmdummy(){
 main(){
     START_TIME="$(date -u +%s)"
     upgrade
+    install_basic_pkg
     install_cyberpanel
     rm_agpl_pkg
     rmdummy
