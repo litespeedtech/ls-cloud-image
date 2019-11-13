@@ -311,7 +311,11 @@ web_admin_update()
 panel_admin_update()
 {
     if [ "${PANEL}" = 'cyber' ]; then  
-        python ${PANELPATH}/plogical/adminPass.py --password ${ADMIN_PASS}
+        if [ -f /usr/local/CyberPanel/bin/python2 ]; then
+            /usr/local/CyberPanel/bin/python2 ${PANELPATH}/plogical/adminPass.py --password ${ADMIN_PASS}
+        else
+            python ${PANELPATH}/plogical/adminPass.py --password ${ADMIN_PASS}
+        fi    
     fi 
 }
 
