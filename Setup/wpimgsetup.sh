@@ -3,7 +3,7 @@
 # LiteSpeed WordPress setup Script
 # @Author:   LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
 # @Copyright: (c) 2019-2020
-# @Version: 1.0.1
+# @Version: 1.0.2
 # *********************************************************************/
 LSWSFD='/usr/local/lsws'
 DOCHM='/var/www/html.old'
@@ -22,7 +22,7 @@ PHPVER=73
 FIREWALLLIST="22 80 443"
 USER='www-data'
 GROUP='www-data'
-THEME='twentynineteen'
+THEME='twentytwenty'
 PLUGINLIST="litespeed-cache.zip all-in-one-seo-pack.zip all-in-one-wp-migration.zip google-analytics-for-wordpress.zip jetpack.zip wp-mail-smtp.zip"
 root_mysql_pass=$(openssl rand -hex 24)
 ALLERRORS=0
@@ -555,7 +555,7 @@ EOM
         cp ${DOCHM}/wp-content/themes/${THEME}/functions.php ${DOCHM}/wp-content/themes/${THEME}/functions.php.bk
         cked
         ed ${DOCHM}/wp-content/themes/${THEME}/functions.php << END >>/dev/null 2>&1
-19i
+2i
 require_once( WP_CONTENT_DIR.'/../wp-admin/includes/plugin.php' );
 \$path = 'litespeed-cache/litespeed-cache.php' ;
 if (!is_plugin_active( \$path )) {
