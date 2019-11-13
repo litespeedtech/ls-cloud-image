@@ -66,11 +66,11 @@ install_cyberpanel(){
     echoG 'Installing CyberPanel'
     ### The 1 1 will auto answer the prompt to install CyberPanel and OpenLiteSpeed
     ### and then accept the default values for the rest of the questions.     
-    cd /tmp/; wget -q https://cyberpanel.net/install.sh
+    cd /opt/; wget -q https://cyberpanel.net/install.sh
     chmod +x install.sh
     printf "%s\n" 1 1 | bash install.sh
     echoG 'Finish CyberPanel'
-    rm -f install.sh
+    rm -rf cyberpanel cyberpanel.sh install.sh requirements.txt
 }   
 
 rm_agpl_pkg(){
