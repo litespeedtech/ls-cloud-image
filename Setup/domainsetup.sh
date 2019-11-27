@@ -255,6 +255,7 @@ aptgetupgrade() {
     echo -ne '####################      (99%)\r'
     apt-get clean > /dev/null 2>&1
     apt-get autoclean > /dev/null 2>&1
+    systemctl daemon-reload > /dev/null 2>&1
     echo -ne '#######################   (100%)\r'
 }
 
