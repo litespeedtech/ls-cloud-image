@@ -3,7 +3,7 @@
 # LiteSpeed WordPress setup Script
 # @Author:   LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
 # @Copyright: (c) 2019-2020
-# @Version: 1.0.2
+# @Version: 1.0.3
 # *********************************************************************/
 LSWSFD='/usr/local/lsws'
 DOCHM='/var/www/html.old'
@@ -29,7 +29,6 @@ ALLERRORS=0
 EXISTSQLPASS=''
 NOWPATH=$(pwd)
 
-### Tools
 echoY() {
     echo -e "\033[38;5;148m${1}\033[39m"
 }
@@ -40,6 +39,7 @@ echoR()
 {
     echo -e "\033[38;5;203m${1}\033[39m"
 }
+
 linechange(){
     LINENUM=$(grep -n "${1}" ${2} | cut -d: -f 1)
     if [ -n "$LINENUM" ] && [ "$LINENUM" -eq "$LINENUM" ] 2>/dev/null; then
@@ -47,6 +47,7 @@ linechange(){
         sed -i "${LINENUM}i${3}" ${2}
     fi  
 }
+
 cked()
 {
     if [ -f /bin/ed ]; then
@@ -61,12 +62,20 @@ cked()
     fi    
 }
 
-cksqlver(){
-    SQLDBVER=$(/usr/bin/mysql -V)
+ck_sql_ver(){
+    SQLDBVER=$(/usr/bin/mysql -V | awk '{match($0,"([^ ]+)-MariaDB",a)}END{print a[1]}')
+    SQL_MAINV=$(echo ${SQLDBVER} | awk -F '.' '{print $1}')
+    SQL_SECV=$(echo ${SQLDBVER} | awk -F '.' '{print $2}')
+    if (( ${SQL_MAINV} >=11 && ${SQL_MAINV}<=99 )); then
+        echoG '[OK] Mariadb version -ge 11'
+    elif (( ${SQL_MAINV} >=10 )) && (( ${SQL_SECV} >=3 && ${SQL_SECV}<=9 )); then
+        echoG '[OK] Mariadb version -ge 10.3'
+    else
+        echoR "Mariadb version ${SQLDBVER} is lower than 10.3, please check!"    
+    fi     
 }
 
 
-### ENV
 check_os()
 {
     if [ -f /etc/redhat-release ] ; then
@@ -86,7 +95,7 @@ check_os()
         OSNAME=debian
     fi         
 }
-check_os
+
 providerck()
 {
     if [ -e /sys/devices/virtual/dmi/id/product_uuid ] && [ "$(sudo cat /sys/devices/virtual/dmi/id/product_uuid | cut -c 1-3)" = 'EC2' ]; then 
@@ -103,7 +112,7 @@ providerck()
         PROVIDER='undefined'  
     fi
 }
-providerck
+
 oshmpath()
 {
     if [ ${PROVIDER} = 'aws' ] && [ -d /home/ubuntu ]; then 
@@ -115,30 +124,18 @@ oshmpath()
     else
         HMPATH='/root'
     fi
+    DBPASSPATH="${HMPATH}/.db_password"
 }
-oshmpath
-DBPASSPATH="${HMPATH}/.db_password"
-
 
 change_owner(){
-  chown -R ${USER}:${GROUP} /var/www
-}
-
-install_basic_pkg(){
-    if [ "${OSNAME}" = 'centos' ]; then 
-        yum -y install wget > /dev/null 2>&1
-    else  
-        apt-get -y install wget > /dev/null 2>&1
-    fi
+  chown -R ${USER}:${GROUP} ${1}
 }
 
 prepare(){
     mkdir -p "${DOCLAND}"
-    change_owner
-    install_basic_pkg
+    change_owner /var/www
 }
 
-### Upgrade
 system_upgrade() {
     echoG 'Updating system'
     if [ "${OSNAME}" = 'ubuntu' ] || [ "${OSNAME}" = 'debian' ]; then 
@@ -158,8 +155,24 @@ system_upgrade() {
     fi    
 }
 
-### Start
-install_olswp(){
+wp_conf_path(){
+    if [ -f "${LSWSCONF}" ]; then 
+        if [ ! -f $(grep 'configFile.*wordpress' "${LSWSCONF}" | awk '{print $2}') ]; then 
+            WPVHCONF="${EXAMPLECONF}"
+        fi
+    else
+        echo 'Can not find LSWS Config, exit script'
+        exit 1    
+    fi
+}
+
+rm_dummy(){
+    echoG 'Remove dummy file'
+    rm -f "/tmp/example.csr" "/tmp/privkey.pem"
+    echoG 'Finished dummy file'
+}
+
+install_ols_wp(){
     cd /tmp/; wget -q https://raw.githubusercontent.com/litespeedtech/ols1clk/master/ols1clk.sh
     chmod +x ols1clk.sh
     echo 'Y' | bash ols1clk.sh \
@@ -171,46 +184,105 @@ install_olswp(){
     --dbuser wordpress \
     --dbpassword wordpress
     rm -f ols1clk.sh
+    wp_conf_path
+    rm_dummy
 }
 
-conf_path(){
-    if [ -f "${LSWSCONF}" ]; then 
-        #WPVHCONF = /usr/local/lsws/conf/vhosts/wordpress/vhconf.conf   
-        if [ ! -f $(grep 'configFile.*wordpress' "${LSWSCONF}" | awk '{print $2}') ]; then 
-            WPVHCONF="${EXAMPLECONF}"
-        fi
-    else
-        echo 'Can not find LSWS Config, exit script'
-        exit 1    
-    fi
+restart_lsws(){
+    echoG 'Restart LiteSpeed Web Server'
+    ${LSWSFD}/bin/lswsctrl restart >/dev/null 2>&1
 }
 
-install_pkg(){
-    if [ "${OSNAME}" = 'centos' ]; then 
-        yum -y install unzip > /dev/null 2>&1
-        echoG 'Install lsphp extensions'
-        yum -y install lsphp${PHPVER}-memcached lsphp${PHPVER}-redis lsphp${PHPVER}-opcache lsphp${PHPVER}-imagick > /dev/null 2>&1
-        echoG 'Install Memcached'
-        yum -y install memcached > /dev/null 2>&1
-        echoG 'Install Redis'
-        yum -y install redis > /dev/null 2>&1
-    else  
-        apt-get -y install unzip > /dev/null 2>&1
-        echoG 'Install lsphp extensions'
-        apt-get -y install lsphp${PHPVER}-memcached lsphp${PHPVER}-redis lsphp${PHPVER}-opcache lsphp${PHPVER}-imagick > /dev/null 2>&1
-        echoG 'Install Memcached'
-        apt-get -y install memcached > /dev/null 2>&1
-        echoG 'Install Redis'
-        apt-get -y install redis > /dev/null 2>&1
-        echoG 'Install Postfix'
-        DEBIAN_FRONTEND='noninteractive' apt-get -y -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' install postfix > /dev/null 2>&1
-    fi
-    ### Memcache
+centos_install_basic(){
+    yum -y install wget unzip > /dev/null 2>&1
+}
+
+centos_install_ols(){
+    install_ols_wp
+}
+
+centos_install_php(){
+    echoG 'Install lsphp extensions'
+    yum -y install lsphp${PHPVER}-memcached lsphp${PHPVER}-redis lsphp${PHPVER}-opcache lsphp${PHPVER}-imagick > /dev/null 2>&1
+}
+
+centos_install_memcached(){
+    echoG 'Install Memcached'
+    yum -y install memcached > /dev/null 2>&1
     systemctl start memcached > /dev/null 2>&1
     systemctl enable memcached > /dev/null 2>&1
-    ### Redis
-    systemctl start redis > /dev/null 2>&1 
-    ### phpmyadmin
+}
+
+centos_install_redis(){
+    echoG 'Install Redis'
+    yum -y install redis > /dev/null 2>&1
+    systemctl start redis > /dev/null 2>&1
+}
+
+centos_install_certbot(){
+    echoG "Install CertBot" 
+    if [ ${OSVER} = 8 ]; then
+        wget -q https://dl.eff.org/certbot-auto
+        mv certbot-auto /usr/local/bin/certbot
+        chown root /usr/local/bin/certbot
+        chmod 0755 /usr/local/bin/certbot
+        echo "y" | /usr/local/bin/certbot > /dev/null 2>&1
+    else
+        yum -y install certbot  > /dev/null 2>&1
+    fi
+    if [ -e /usr/bin/certbot ] || [ -e /usr/local/bin/certbot ]; then 
+        echoG 'Install CertBot finished'
+    else 
+        echoR 'Please check CertBot'    
+    fi    
+} 
+
+ubuntu_install_basic(){
+    apt-get -y install wget unzip > /dev/null 2>&1
+}
+
+ubuntu_install_ols(){
+    install_ols_wp
+}
+
+ubuntu_install_php(){
+    echoG 'Install lsphp extensions'
+    apt-get -y install lsphp${PHPVER}-memcached lsphp${PHPVER}-redis lsphp${PHPVER}-opcache lsphp${PHPVER}-imagick > /dev/null 2>&1
+}
+
+ubuntu_install_memcached(){
+    echoG 'Install Memcached'
+    apt-get -y install memcached > /dev/null 2>&1
+    systemctl start memcached > /dev/null 2>&1
+    systemctl enable memcached > /dev/null 2>&1        
+}
+
+ubuntu_install_redis(){    
+    echoG 'Install Redis'
+    apt-get -y install redis > /dev/null 2>&1
+    systemctl start redis > /dev/null 2>&1
+}
+
+ubuntu_install_postfix(){
+    echoG 'Install Postfix'
+    DEBIAN_FRONTEND='noninteractive' apt-get -y -o Dpkg::Options::='--force-confdef' \
+    -o Dpkg::Options::='--force-confold' install postfix > /dev/null 2>&1
+}
+
+ubuntu_install_certbot(){       
+    echoG "Install CertBot" 
+    add-apt-repository universe > /dev/null 2>&1
+    echo -ne '\n' | add-apt-repository ppa:certbot/certbot > /dev/null 2>&1
+    apt-get update > /dev/null 2>&1
+    apt-get -y install certbot > /dev/null 2>&1
+    if [ -e /usr/bin/certbot ] || [ -e /usr/local/bin/certbot ]; then 
+        echoG 'Install CertBot finished'
+    else 
+        echoR 'Please check CertBot'    
+    fi    
+}
+
+install_phpmyadmin(){
     if [ ! -f ${PHPCONF}/changelog.php ]; then 
         cd /tmp/ 
         echoG 'Download phpmyadmin'
@@ -221,57 +293,9 @@ install_pkg(){
         mv phpMyAdmin-*-all-languages ${PHPCONF}
         mv ${PHPCONF}/config.sample.inc.php ${PHPCONF}/config.inc.php
     fi    
-    ### CertBot
-    echoG "Install CertBot" 
-    if [ "${OSNAME}" = 'centos' ]; then 
-        if [ ${OSVER} = 8 ]; then
-            wget -q https://dl.eff.org/certbot-auto
-            mv certbot-auto /usr/local/bin/certbot
-            chown root /usr/local/bin/certbot
-            chmod 0755 /usr/local/bin/certbot
-            echo "y" | /usr/local/bin/certbot > /dev/null 2>&1
-        else
-            yum -y install certbot  > /dev/null 2>&1
-        fi
-    else 
-        add-apt-repository universe > /dev/null 2>&1
-        echo -ne '\n' | add-apt-repository ppa:certbot/certbot > /dev/null 2>&1
-        apt-get update > /dev/null 2>&1
-        apt-get -y install certbot > /dev/null 2>&1
-
-    fi 
-    if [ -e /usr/bin/certbot ] || [ -e /usr/local/bin/certbot ]; then 
-        echoG 'Install CertBot finished'
-    else 
-        echoR 'Please check CertBot'    
-    fi
-    ### Mariadb 10.3
-    cksqlver
-    if [[ ${SQLDBVER} == *[10-99].[3-9]*-MariaDB* ]]; then
-        echoG 'Mariadb version -ge 10.3'
-    else
-        if [ "${OSNAME}" = 'centos' ]; then
-            echo "Mariadb version ${SQLDBVER} is lower than 10.3"
-        else    
-            echo "Mariadb version ${SQLDBVER} is lower than 10.3, upgrading"
-
-            apt -y remove mariadb-server-* > /dev/null 2>&1
-            echoG "Install Mariadb 10.3"
-            DEBIAN_FRONTEND='noninteractive' apt-get -y \
-                -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' \
-                install mariadb-server-10.3 > /dev/null 2>&1
-            cksqlver
-            if [[ ${SQLDBVER} == *[10-99].[3-9]*-MariaDB* ]]; then
-                echoG 'Mariadb version -ge 10.3'
-            else
-                echoR "Please check Mariadb $(/usr/bin/mysql -V)" 
-            fi     
-        fi     
-    fi        
-}
+}  
 
 install_wp_cli(){
-    ### WP CLI
     if [ -e /usr/local/bin/wp ]; then 
         echoG 'WP CLI already exist'
     else    
@@ -282,22 +306,11 @@ install_wp_cli(){
     fi
 }
 
-config_ols(){
+centos_config_ols(){
     echoG 'Setting Web Server config'
-    ### Change user to www-data
-    if [ "${OSNAME}" = 'ubuntu' ] || [ "${OSNAME}" = 'debian' ]; then 
-        sed -i "s/nobody/${USER}/g" ${LSWSCONF}
-        sed -i "s/nogroup/${GROUP}/g" ${LSWSCONF}
-    fi    
-    if [ "${OSNAME}" = 'centos' ]; then 
-        yum -y install --reinstall openlitespeed > /dev/null 2>&1
-    else    
-        apt-get -y install --reinstall openlitespeed > /dev/null 2>&1
-    fi    
-   ### Change wordpress virtualhost root to /var/www/html
+    yum -y install --reinstall openlitespeed > /dev/null 2>&1   
     NEWKEY='  vhRoot                  /var/www/html'
     linechange 'www/html' ${LSWSCONF} "${NEWKEY}"
-    ### change doc root to landing page, setup phpmyadmin context
     cat > ${WPVHCONF} <<END 
 docRoot                   ${DOCLAND}/
 
@@ -333,7 +346,55 @@ rewrite  {
 }
 END
     echoG 'Finish Web Server config'
+    change_owner /tmp/lshttpd/
 }
+
+ubuntu_config_ols(){
+    echoG 'Setting Web Server config'
+    sed -i "s/nobody/${USER}/g" ${LSWSCONF}
+    sed -i "s/nogroup/${GROUP}/g" ${LSWSCONF}
+    apt-get -y install --reinstall openlitespeed > /dev/null 2>&1
+    
+    NEWKEY='  vhRoot                  /var/www/html'
+    linechange 'www/html' ${LSWSCONF} "${NEWKEY}"
+    cat > ${WPVHCONF} <<END 
+docRoot                   ${DOCLAND}/
+
+index  {
+  useServer               0
+  indexFiles              index.php index.html
+}
+
+context /phpmyadmin/ {
+  location                ${PHPCONF}
+  allowBrowse             1
+  indexFiles              index.php
+
+  accessControl  {
+    allow                 *
+  }
+
+  rewrite  {
+    enable                0
+    inherit               0
+
+  }
+  addDefaultCharset       off
+
+  phpIniOverride  {
+
+  }
+}
+
+rewrite  {
+  enable                1
+  autoLoadHtaccess        1
+}
+END
+    echoG 'Finish Web Server config'
+    change_owner /tmp/lshttpd/
+}
+
 
 landing_pg(){
     echoG 'Setting Landing Page'
@@ -350,18 +411,15 @@ config_php(){
     echoG 'Updating PHP Paremeter'
     NEWKEY='max_execution_time = 360'
     linechange 'max_execution_time' ${PHPINICONF} "${NEWKEY}"
-
     NEWKEY='post_max_size = 16M'
     linechange 'post_max_size' ${PHPINICONF} "${NEWKEY}"
-
     NEWKEY='upload_max_filesize = 16M'
     linechange 'upload_max_filesize' ${PHPINICONF} "${NEWKEY}"
     echoG 'Finish PHP Paremeter'
 }
 
-ubuntu_config_obj(){
+ubuntu_config_memcached(){
    echoG 'Setting Object Cache'
-    ### Memcached Unix Socket
     service memcached stop > /dev/null 2>&1
     cat >> "${MEMCACHECONF}" <<END 
 -s /var/www/memcached.sock
@@ -372,8 +430,9 @@ END
     linechange '\-u memcache' ${MEMCACHECONF} "${NEWKEY}"  
     systemctl daemon-reload > /dev/null 2>&1
     service memcached start > /dev/null 2>&1
+}
 
-    ### Redis Unix Socket
+ubuntu_config_redis(){
     service redis-server stop > /dev/null 2>&1
     NEWKEY="Group=${GROUP}"
     linechange 'Group=' ${REDISSERVICE} "${NEWKEY}"  
@@ -386,9 +445,8 @@ END
     echoG 'Finish Object Cache'
 }
 
-centos_config_obj(){
-   echoG 'Setting Object Cache'
-    ### Memcached Unix Socket
+centos_config_memcached(){
+    echoG 'Setting Object Cache'
     service memcached stop > /dev/null 2>&1 
     cat >> "${MEMCACHESERVICE}" <<END 
 [Unit]
@@ -421,8 +479,9 @@ END
     setsebool -P httpd_can_network_memcache 1
     systemctl daemon-reload > /dev/null 2>&1
     service memcached start > /dev/null 2>&1
+}
 
-    ### Redis Unix Socket
+centos_config_redis(){
     service redis stop > /dev/null 2>&1
     NEWKEY="Group=${GROUP}"
     linechange 'Group=' ${REDISSERVICE} "${NEWKEY}"  
@@ -457,11 +516,8 @@ END
     echoG 'Finish DataBase'
 }
 
-
-
-config_wp(){
+install_wp_plugin(){
     echoG 'Setting WordPress'
-### Install popular WP plugins
     for PLUGIN in ${PLUGINLIST}; do
         echoG "Install ${PLUGIN}"
         wget -q -P ${DOCHM}/wp-content/plugins/ https://downloads.wordpress.org/plugin/${PLUGIN}
@@ -472,7 +528,9 @@ config_wp(){
         fi
     done
     rm -f ${DOCHM}/wp-content/plugins/*.zip
+}
 
+set_htaccess(){
     if [ ! -f ${DOCHM}/.htaccess ]; then 
         touch ${DOCHM}/.htaccess
     fi   
@@ -489,8 +547,9 @@ RewriteRule . /index.php [L]
 
 # END WordPress
 EOM
+}
 
-###  LSCACHE read DATA 
+set_lscache(){ 
     cat << EOM > "${WPCONSTCONF}" 
 ; This is the default LSCWP configuration file
 ; All keys and values please refer const.cls.php
@@ -567,9 +626,7 @@ w
 q
 END
     fi
-    echoG 'Finish WordPress'
-    service lsws restart   
-}
+}    
 
 db_password_file(){
     echoG 'Create db fiile'
@@ -622,7 +679,8 @@ centos_firewall_add(){
     fi         
 }
 
-status_ck(){
+service_check(){
+    ck_sql_ver
     for ITEM in lsws memcached redis mariadb
     do 
         service ${ITEM} status | grep "active\|running" > /dev/null 2>&1
@@ -640,37 +698,93 @@ status_ck(){
     fi        
 }
 
-rm_dummy(){
-    echoG 'Remove dummy file'
-    rm -f "${NOWPATH}/example.csr" "${NOWPATH}/privkey.pem"
-    echoG 'Finished dummy file'
+init_check(){
+    START_TIME="$(date -u +%s)"
+    check_os
+    providerck
+    oshmpath
 }
 
-### Main
-main(){
-    START_TIME="$(date -u +%s)"
+init_setup(){
     system_upgrade
     prepare
-    install_olswp
-    conf_path
-    install_pkg
+}   
+
+centos_main_install(){
+    centos_install_basic
+    centos_install_ols
+    centos_install_php
+    centos_install_memcached
+    centos_install_redis
+    centos_install_certbot
+    install_phpmyadmin
     install_wp_cli
     landing_pg
-    config_ols
+}
+
+centos_main_config(){
+    centos_config_ols
     config_php
-    [[ ${OSNAME} = 'centos' ]] && centos_config_obj || ubuntu_config_obj 
+    centos_config_memcached
+    centos_config_redis
+    wp_main_config
+}
+
+ubuntu_main_install(){
+    ubuntu_install_basic
+    ubuntu_install_ols
+    ubuntu_install_php
+    ubuntu_install_memcached
+    ubuntu_install_redis
+    ubuntu_install_certbot
+    ubuntu_install_postfix
+    install_phpmyadmin
+    install_wp_cli
+    landing_pg
+}
+
+ubuntu_main_config(){
+    ubuntu_config_ols
+    config_php
+    ubuntu_config_memcached
+    ubuntu_config_redis   
+    wp_main_config 
+}
+
+wp_config(){
+    install_wp_plugin
+    set_htaccess
+    set_lscache
+    restart_lsws
+}
+
+wp_main_config(){
     config_mysql
-    config_wp
+    wp_config
     db_password_file
-    change_owner
-    [[ ${OSNAME} = 'centos' ]] && centos_firewall_add || ubuntu_firewall_add
-    status_ck
-    rm_dummy
+    change_owner ${DOCHM}
+}
+
+end_message(){
     END_TIME="$(date -u +%s)"
     ELAPSED="$((${END_TIME}-${START_TIME}))"
     echoY "***Total of ${ELAPSED} seconds to finish process***"
 }
+
+main(){
+    init_check
+    init_setup
+    if [ ${OSNAME} = 'centos' ]; then
+        centos_main_install
+        centos_main_config
+        centos_firewall_add
+    else
+        ubuntu_main_install
+        ubuntu_main_config
+        ubuntu_firewall_add
+    fi    
+    service_check
+    end_message
+}
 main
-#echoG 'Auto remove script itself'
-#rm -- "$0"
 exit 0
