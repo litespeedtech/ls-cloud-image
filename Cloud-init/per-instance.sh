@@ -500,7 +500,13 @@ setup_after_ssh(){
 #!/bin/bash
 sudo mv /var/www/html/ /var/www/html.land/
 sudo mv /var/www/html.old/ /var/www/html/
-sudo systemctl restart lsws
+sudo systemctl stop lsws
+sudo /usr/local/lsws/bin/lswsctrl stop
+sleep 1
+if [[ \$(sudo ps -ef | grep -i 'openlitespeed' | grep -v 'grep') != '' ]]; then
+  sudo kill -9 \$(sudo ps -ef | grep -v 'grep' | grep -i 'openlitespeed' | grep -i 'main' | awk '{print \$2}')
+fi
+sudo systemctl start lsws
 sudo rm -f '/etc/profile.d/afterssh.sh'
 EOM
     sudo chmod 755 /etc/profile.d/afterssh.sh
