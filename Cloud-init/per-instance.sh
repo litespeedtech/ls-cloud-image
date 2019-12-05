@@ -305,7 +305,6 @@ web_admin_update()
     echo "admin_pass=${ADMIN_PASS}" > ${LSPASSPATH}
     mv ${SSL_HOSTNAME}.crt ${LSDIR}/admin/conf/${SSL_HOSTNAME}.crt
     mv ${SSL_HOSTNAME}.key ${LSDIR}/admin/conf/${SSL_HOSTNAME}.key
-    service lsws restart
 }
 
 panel_admin_update()
@@ -501,7 +500,7 @@ setup_after_ssh(){
 #!/bin/bash
 sudo mv /var/www/html/ /var/www/html.land/
 sudo mv /var/www/html.old/ /var/www/html/
-sudo service lsws restart
+sudo systemctl restart lsws
 sudo rm -f '/etc/profile.d/afterssh.sh'
 EOM
     sudo chmod 755 /etc/profile.d/afterssh.sh

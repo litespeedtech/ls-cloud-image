@@ -62,10 +62,13 @@ cked()
     fi    
 }
 
-ck_sql_ver(){
+get_sql_ver(){
     SQLDBVER=$(/usr/bin/mysql -V | awk '{match($0,"([^ ]+)-MariaDB",a)}END{print a[1]}')
     SQL_MAINV=$(echo ${SQLDBVER} | awk -F '.' '{print $1}')
     SQL_SECV=$(echo ${SQLDBVER} | awk -F '.' '{print $2}')
+}
+
+check_sql_ver(){    
     if (( ${SQL_MAINV} >=11 && ${SQL_MAINV}<=99 )); then
         echoG '[OK] Mariadb version -ge 11'
     elif (( ${SQL_MAINV} >=10 )) && (( ${SQL_SECV} >=3 && ${SQL_SECV}<=9 )); then
@@ -169,7 +172,6 @@ wp_conf_path(){
 rm_dummy(){
     echoG 'Remove dummy file'
     rm -f "/tmp/example.csr" "/tmp/privkey.pem"
-    echoG 'Finished dummy file'
 }
 
 install_ols_wp(){
@@ -190,7 +192,8 @@ install_ols_wp(){
 
 restart_lsws(){
     echoG 'Restart LiteSpeed Web Server'
-    ${LSWSFD}/bin/lswsctrl restart >/dev/null 2>&1
+    systemctl stop lsws >/dev/null 2>&1
+    systemctl start lsws >/dev/null 2>&1
 }
 
 centos_install_basic(){
@@ -346,7 +349,6 @@ rewrite  {
 }
 END
     echoG 'Finish Web Server config'
-    change_owner /tmp/lshttpd/
 }
 
 ubuntu_config_ols(){
@@ -392,7 +394,6 @@ rewrite  {
 }
 END
     echoG 'Finish Web Server config'
-    change_owner /tmp/lshttpd/
 }
 
 
@@ -416,6 +417,13 @@ config_php(){
     NEWKEY='upload_max_filesize = 16M'
     linechange 'upload_max_filesize' ${PHPINICONF} "${NEWKEY}"
     echoG 'Finish PHP Paremeter'
+}
+
+update_final_permission(){
+    change_owner ${DOCHM}
+    change_owner /tmp/lshttpd/lsphp.sock*
+    rm -f /tmp/lshttpd/.rtreport 
+    rm -f /tmp/lshttpd/.status
 }
 
 ubuntu_config_memcached(){
@@ -496,15 +504,26 @@ END
 
 config_mysql(){
     echoG 'Setting DataBase'
+    get_sql_ver
     if [ -f ${DBPASSPATH} ]; then 
         EXISTSQLPASS=$(grep root_mysql_passs ${HMPATH}/.db_password | awk -F '"' '{print $2}'); 
     fi    
     if [ "${EXISTSQLPASS}" = '' ]; then
-        mysql -u root -p${root_mysql_pass} \
-            -e "update mysql.user set authentication_string=password('${root_mysql_pass}') where user='root';"
+        if (( ${SQL_MAINV} >=10 )) && (( ${SQL_SECV} >=4 && ${SQL_SECV}<=9 )); then
+            mysql -u root -p${root_mysql_pass} \
+                -e "ALTER USER root@localhost IDENTIFIED VIA mysql_native_password USING PASSWORD('${root_mysql_pass}');"
+        else
+            mysql -u root -p${root_mysql_pass} \
+                -e "update mysql.user set authentication_string=password('${root_mysql_pass}') where user='root';"
+        fi    
     else
-        mysql -u root -p${EXISTSQLPASS} \     
-            -e "update mysql.user set authentication_string=password('${root_mysql_pass}') where user='root';" 
+        if (( ${SQL_MAINV} >=10 )) && (( ${SQL_SECV} >=4 && ${SQL_SECV}<=9 )); then
+            mysql -u root -p${EXISTSQLPASS} \
+                -e "ALTER USER root@localhost IDENTIFIED VIA mysql_native_password USING PASSWORD('${root_mysql_pass}');"
+        else        
+            mysql -u root -p${EXISTSQLPASS} \     
+                -e "update mysql.user set authentication_string=password('${root_mysql_pass}') where user='root';" 
+        fi        
     fi   
     if [ ! -e ${MARIADBCNF} ]; then 
     touch ${MARIADBCNF}
@@ -644,13 +663,13 @@ EOM
 ubuntu_firewall_add(){
     echoG 'Setting Firewall'
     ufw status verbose | grep inactive > /dev/null 2>&1
-    if [ $? = 0 ]; then 
+    if [ ${?} = 0 ]; then 
         for PORT in ${FIREWALLLIST}; do
             ufw allow ${PORT} > /dev/null 2>&1
         done    
         echo "y" | ufw enable > /dev/null 2>&1 
         ufw status | grep '80.*ALLOW' > /dev/null 2>&1
-        if [ $? = 0 ]; then 
+        if [ ${?} = 0 ]; then 
             echoG 'firewalld rules setup success'
         else 
             echoR 'Please check ufw rules'    
@@ -672,7 +691,7 @@ centos_firewall_add(){
     done 
     firewall-cmd --reload > /dev/null 2>&1
     firewall-cmd --list-all | grep 80 > /dev/null 2>&1
-    if [ $? = 0 ]; then 
+    if [ ${?} = 0 ]; then 
         echoG 'firewalld rules setup success'
     else 
         echoR 'Please check firewalld rules'    
@@ -680,7 +699,7 @@ centos_firewall_add(){
 }
 
 service_check(){
-    ck_sql_ver
+    check_sql_ver
     for ITEM in lsws memcached redis mariadb
     do 
         service ${ITEM} status | grep "active\|running" > /dev/null 2>&1
@@ -755,14 +774,14 @@ wp_config(){
     install_wp_plugin
     set_htaccess
     set_lscache
-    restart_lsws
 }
 
 wp_main_config(){
     config_mysql
     wp_config
     db_password_file
-    change_owner ${DOCHM}
+    update_final_permission
+    restart_lsws
 }
 
 end_message(){
