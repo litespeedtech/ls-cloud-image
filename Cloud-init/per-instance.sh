@@ -500,8 +500,8 @@ setup_after_ssh(){
 #!/bin/bash
 sudo mv /var/www/html/ /var/www/html.land/
 sudo mv /var/www/html.old/ /var/www/html/
-sudo systemctl stop lsws
-sudo /usr/local/lsws/bin/lswsctrl stop
+sudo systemctl stop lsws >/dev/null 2>&1
+sudo /usr/local/lsws/bin/lswsctrl stop >/dev/null 2>&1
 sleep 1
 if [[ \$(sudo ps -ef | grep -i 'openlitespeed' | grep -v 'grep') != '' ]]; then
   sudo kill -9 \$(sudo ps -ef | grep -v 'grep' | grep -i 'openlitespeed' | grep -i 'main' | awk '{print \$2}')
