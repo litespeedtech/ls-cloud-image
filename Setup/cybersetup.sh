@@ -79,7 +79,7 @@ rm_agpl_pkg(){
         rm -rf ${RAINLOOP_PATH}
     fi
     if [ "${OSNAME}" = 'ubuntu' ] || [ "${OSNAME}" = 'debian' ]; then
-        apt remove ghostscript -y
+        apt remove ghostscript unattended-upgrades -y
     else
         yum remove ghostscript -y
     fi
