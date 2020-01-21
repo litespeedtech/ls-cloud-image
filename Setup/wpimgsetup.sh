@@ -23,7 +23,7 @@ FIREWALLLIST="22 80 443"
 USER='www-data'
 GROUP='www-data'
 THEME='twentytwenty'
-PLUGINLIST="litespeed-cache.zip all-in-one-seo-pack.zip all-in-one-wp-migration.zip google-analytics-for-wordpress.zip jetpack.zip wp-mail-smtp.zip"
+PLUGINLIST="litespeed-cache.zip all-in-one-seo-pack.zip all-in-one-wp-migration.zip google-analytics-for-wordpress.zip jetpack.zip wp-mail-smtp.zip dologin.zip"
 root_mysql_pass=$(openssl rand -hex 24)
 ALLERRORS=0
 EXISTSQLPASS=''
@@ -314,6 +314,7 @@ centos_config_ols(){
     yum -y install --reinstall openlitespeed > /dev/null 2>&1   
     NEWKEY='  vhRoot                  /var/www/html'
     linechange 'www/html' ${LSWSCONF} "${NEWKEY}"
+    sed -i '/errorlog logs\/error.log/a \ \ \ \ \ \ \ \ keepDays             1' ${LSWSCONF}
     cat > ${WPVHCONF} <<END 
 docRoot                   ${DOCLAND}/
 
@@ -359,6 +360,7 @@ ubuntu_config_ols(){
     
     NEWKEY='  vhRoot                  /var/www/html'
     linechange 'www/html' ${LSWSCONF} "${NEWKEY}"
+    sed -i '/errorlog logs\/error.log/a \ \ \ \ \ \ \ \ keepDays             1' ${LSWSCONF}
     cat > ${WPVHCONF} <<END 
 docRoot                   ${DOCLAND}/
 

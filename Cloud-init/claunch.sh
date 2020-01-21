@@ -67,7 +67,6 @@ install_cloudinit(){
 }
 
 setup_cloud(){
-    ### per-instance.sh
     cat > ${CLDINITPATH}/per-instance.sh <<END 
 #!/bin/bash
 MAIN_URL='https://raw.githubusercontent.com/litespeedtech/ls-cloud-image/master/Cloud-init/per-instance.sh'
@@ -79,11 +78,13 @@ END
 }
 
 cleanup (){
-    # IF CyberPanel is installed on Ubuntu we need to remove firewalld
     if [ -d /usr/local/CyberCP ]; then
         if [ "${OSNAME}" != 'centos' ]; then
             sudo apt-get remove firewalld -y > /dev/null 2>&1
         fi    
+    fi
+    if [ "${OSNAME}" = 'ubuntu' ]; then
+        sudo apt-get remove unattended-upgrades -y > /dev/null 2>&1
     fi
     # Legal
     if [ -f /etc/legal ]; then
