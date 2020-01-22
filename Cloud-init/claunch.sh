@@ -146,6 +146,7 @@ cleanup (){
     rm -f /root/.ssh/authorized_keys
     rm -f /root/.ssh/cyberpanel*
     #password
+    sudo passwd -d root
     rm -f /root/.litespeed_password
     rm -f /root/.bash_history
     if [ "${PROVIDER}" = 'aws' ]; then
