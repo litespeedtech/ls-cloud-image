@@ -313,7 +313,7 @@ panel_admin_update()
         if [ -f /usr/local/CyberPanel/bin/python2 ]; then
             /usr/local/CyberPanel/bin/python2 ${PANELPATH}/plogical/adminPass.py --password ${ADMIN_PASS}
         else
-            python ${PANELPATH}/plogical/adminPass.py --password ${ADMIN_PASS}
+            /usr/local/CyberPanel/bin/python ${PANELPATH}/plogical/adminPass.py --password ${ADMIN_PASS}
         fi    
     fi 
 }
