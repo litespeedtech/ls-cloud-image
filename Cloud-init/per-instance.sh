@@ -402,12 +402,12 @@ renew_wp_pwd(){
 
 ### Listener '*' to 'IP'
 replace_litenerip(){
-    if [ "${PANEL}" = '' ]; then 
+    if [ "${PROVIDER}" = 'do' ] && [ "${PANEL}" = '' ]; then 
         for LINENUM in $(grep -n 'map' ${LSHTTPDCFPATH} | cut -d: -f 1)
         do
             if [ -e /var/www/html ] || [ -e /var/www/html.old ]; then 
                 NEWDBPWD="  map                     wordpress ${PUBIP}"
-            else     
+            else
                 NEWDBPWD="  map                     Example ${PUBIP}"
             fi    
             sed -i "${LINENUM}s/.*/${NEWDBPWD}/" ${LSHTTPDCFPATH}
