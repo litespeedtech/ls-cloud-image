@@ -3,10 +3,10 @@
 # LiteSpeed domain setup Script
 # @Author:   LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
 # @Copyright: (c) 2019-2020
-# @Version: 1.0.3
+# @Version: 1.1
 # *********************************************************************/
-MY_DOMAIN=''
-MY_DOMAIN2=''
+DOMAIN=''
+WWW_DOMAIN=''
 DOCHM='/var/www/html'
 LSDIR='/usr/local/lsws'
 WEBCF="${LSDIR}/conf/httpd_config.conf"
@@ -28,6 +28,10 @@ echoY() {
 }
 echoG() {
     echo -e "\033[38;5;71m${1}\033[39m"
+}
+
+echoB(){
+    echo -e "\033[1;34m${1}\033[0m"
 }
 
 check_os(){
@@ -69,32 +73,42 @@ get_ip()
     elif [ "$(dmidecode -s system-manufacturer)" = 'Microsoft Corporation' ];then    
         MY_IP=$(curl -s http://checkip.amazonaws.com || printf "0.0.0.0")    
     else
-        MY_IP=$(ifconfig eth0 | grep 'inet '| awk '{printf $2}')
-        #MY_IP=$(ip -4 route get 8.8.8.8 | awk {'print $7'} | tr -d '\n')
+        MY_IP=$(curl -s http://checkip.amazonaws.com || printf "0.0.0.0") 
   fi    
 }
 
 domainhelp(){
-    echo -e "\nTo visit your apps by domain instead of IP, please enter a valid domain."
-    echo -e "If you don't have one yet, you may cancel this process by pressing CTRL+C and continuing to SSH."
-    echo -e "This prompt will open again the next time you log in, and will continue to do so until you finish the setup."
-    echo -e "Please make sure the domain's DNS record has been properly pointed to this server."
-    echo -e "\n(If you are using top level (root) domain, please include it with \033[38;5;71mwww.\033[39m so both www and root domain will be added)"
-    echo -e "(ex. www.domain.com or sub.domain.com). Do not include http/s.\n"
+    echoB "To visit your apps by domain instead of IP, please enter a valid domain."
+    echoB "If you don't have one yet, you may cancel this process by pressing CTRL+C and continuing to SSH."
+    echoB "This prompt will open again the next time you log in, and will continue to do so until you finish the setup."
+    echoB "Make sure the domain's DNS record has been properly pointed to this server."
+    echo -e "Enter the root domain only, then the system will add both the root domain and the www domain for you."
 }
 
 restart_lsws(){
     ${LSDIR}/bin/lswsctrl restart >/dev/null
 }   
 
+domain_filter(){
+    DOMAIN="${1}"
+    DOMAIN="${DOMAIN#http://}"
+    DOMAIN="${DOMAIN#https://}"
+    DOMAIN="${DOMAIN#ftp://}"
+    DOMAIN="${DOMAIN#scp://}"
+    DOMAIN="${DOMAIN#scp://}"
+    DOMAIN="${DOMAIN#sftp://}"
+    DOMAIN=${DOMAIN%%/*}
+}
+
 domaininput(){
     printf "%s" "Your domain: "
-    read MY_DOMAIN
-    if [ -z "${MY_DOMAIN}" ] ; then
-    echo -e "\nPlease input a valid domain\n"
-    exit
+    read DOMAIN
+    if [ -z "${DOMAIN}" ] ; then
+        echo -e "\nPlease input a valid domain\n"
+        exit 1
     fi
-    echo -e "The domain you put is: \e[31m${MY_DOMAIN}\e[39m"
+    domain_filter ${DOMAIN}
+    echo -e "The domain you put is: \e[31m${DOMAIN}\e[39m"
     printf "%s"  "Please verify it is correct. [y/N] "
 }
 
@@ -102,50 +116,47 @@ duplicateck(){
     grep "${1}" ${2} >/dev/null 2>&1
 }
 
-domainadd(){
-    CHECK_WWW=$(echo ${MY_DOMAIN} | cut -c1-4)
+www_domain(){
+    CHECK_WWW=$(echo ${1} | cut -c1-4)
     if [[ ${CHECK_WWW} == www. ]] ; then
-        WWW='TRUE'
-        #check if domain starts with www.
-        MY_DOMAIN2=$(echo ${MY_DOMAIN} | cut -c 5-)
-        duplicateck ${MY_DOMAIN2} ${WEBCF}
-        if [ ${?} = 1 ]; then 
-            #my_domain is domain wih www, and my_domain2 is domain without www, both added into listener.
-            if [ "${VHNAME}" = 'wordpress' ]; then 
-                sed -i 's|wordpress '${MY_IP}'|wordpress '${MY_IP}', '${MY_DOMAIN}', '${MY_DOMAIN2}' |g' ${WEBCF}
-            else
-                sed -i 's|Example '${MY_IP}'|Example '${MY_IP}', '${MY_DOMAIN}', '${MY_DOMAIN2}' |g' ${WEBCF}   
-            fi      
-        fi
+        DOMAIN=$(echo ${1} | cut -c 5-)
     else
-        duplicateck ${MY_DOMAIN} ${WEBCF}
-        if [ ${?} = 1 ]; then
-            #and if domain is not started with www. consider it as sub-domain
-            if [ "${VHNAME}" = 'wordpress' ]; then 
-                sed -i 's|wordpress '${MY_IP}'|wordpress '${MY_IP}', '${MY_DOMAIN}'|g' ${WEBCF}
-            else
-                sed -i 's|Example '${MY_IP}'|Example '${MY_IP}', '${MY_DOMAIN}'|g' ${WEBCF}   
-            fi
-        fi    
+        DOMAIN=${1}
+    fi
+    WWW_DOMAIN="www.${DOMAIN}"
+}
+
+domainadd(){
+    duplicateck ${DOMAIN} ${WEBCF}
+    if [ ${?} = 1 ]; then 
+        if [ ${PROVIDER} = 'do' ] && [ "${VHNAME}" = 'wordpress' ]; then
+            sed -i 's|wordpress '${MY_IP}'|wordpress '${MY_IP}', '${DOMAIN}', '${WWW_DOMAIN}' |g' ${WEBCF}
+        elif [ ${PROVIDER} = 'do' ]; then
+            sed -i 's|Example '${MY_IP}'|Example '${MY_IP}', '${DOMAIN}', '${WWW_DOMAIN}' |g' ${WEBCF}
+        elif [ "${VHNAME}" = 'wordpress' ]; then
+            sed -i 's|wordpress \*|wordpress \*, '${DOMAIN}', '${WWW_DOMAIN}' |g' ${WEBCF}
+        else
+            sed -i 's|Example \*|Example \*, '${DOMAIN}', '${WWW_DOMAIN}' |g' ${WEBCF}
+        fi
     fi
     restart_lsws
     echoG "\nDomain has been added into OpenLiteSpeed listener.\n"
 }
 
 domainverify(){
-    curl -Is http://${MY_DOMAIN}/ | grep -i LiteSpeed > /dev/null 2>&1
-    if [ $? = 0 ]; then
-        echoG "${MY_DOMAIN} check PASS"
-    else
-        echo "${MY_DOMAIN} inaccessible, please verify."; exit 1    
-    fi
-    if [ ${WWW} = 'TRUE' ]; then
-        curl -Is http://${MY_DOMAIN2}/ | grep -i LiteSpeed > /dev/null 2>&1
-        if [ $? = 0 ]; then 
-            echoG "${MY_DOMAIN2} check PASS"   
+    curl -Is http://${DOMAIN}/ | grep -i LiteSpeed > /dev/null 2>&1
+    if [ ${?} = 0 ]; then
+        echoG "[OK] ${DOMAIN} is accessible."
+        TYPE=1
+        curl -Is http://${WWW_DOMAIN}/ | grep -i LiteSpeed > /dev/null 2>&1
+        if [ ${?} = 0 ]; then
+            echoG "[OK] ${WWW_DOMAIN} is accessible."
+            TYPE=2
         else
-            echo "${MY_DOMAIN2} inaccessible, please verify."; exit 1    
-        fi    
+            echo "${WWW_DOMAIN} is inaccessible." 
+        fi        
+    else
+        echo "${DOMAIN} is inaccessible, please verify!"; exit 1
     fi
 }
 
@@ -155,6 +166,7 @@ main_domain_setup(){
         domaininput
         read TMP_YN
         if [[ "${TMP_YN}" =~ ^(y|Y) ]]; then
+            www_domain ${DOMAIN}
             domainadd
             break
         fi
@@ -183,15 +195,17 @@ certbothook(){
 }
 
 lecertapply(){
-    if [ ${WWW} = 'TRUE' ]; then
-        certbot certonly --non-interactive --agree-tos -m ${EMAIL} --webroot -w ${DOCHM} -d ${MY_DOMAIN} -d ${MY_DOMAIN2}
+    if [ ${TYPE} = 1 ]; then
+        certbot certonly --non-interactive --agree-tos -m ${EMAIL} --webroot -w ${DOCHM} -d ${DOMAIN}
+    elif [ ${TYPE} = 2 ]; then
+        certbot certonly --non-interactive --agree-tos -m ${EMAIL} --webroot -w ${DOCHM} -d ${DOMAIN} -d ${WWW_DOMAIN}
     else
-        certbot certonly --non-interactive --agree-tos -m ${EMAIL} --webroot -w ${DOCHM} -d ${MY_DOMAIN}
-    fi    
-    if [ $? -eq 0 ]; then
+        echo 'Unknown type!'; exit 2    
+    fi
+    if [ ${?} -eq 0 ]; then
         echo "vhssl  {
-            keyFile                 /etc/letsencrypt/live/${MY_DOMAIN}/privkey.pem
-            certFile                /etc/letsencrypt/live/${MY_DOMAIN}/fullchain.pem
+            keyFile                 /etc/letsencrypt/live/${DOMAIN}/privkey.pem
+            certFile                /etc/letsencrypt/live/${DOMAIN}/fullchain.pem
             certChain               1
         }" >> ${LSVHCFPATH}
 
@@ -215,12 +229,11 @@ RewriteRule (.*) https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
             ' | cat - ${DOCHM}/.htaccess)" > ${DOCHM}/.htaccess
         fi
     else 
-        ### Rewrite in rewrite tab
         sed -i '/^  logLevel                0/a\ \ rules                   <<<END_rules \
 RewriteCond %{SERVER_PORT} 80\nRewriteRule (.*) https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]\
 \ \ END_rules' ${LSVHCFPATH}   
     fi    
-    echoG "Force HTTPS rules has been added..."
+    echoG "Force HTTPS rules has been added success."
 }
 
 endsetup(){
@@ -265,10 +278,9 @@ yumupgrade(){
     echo -ne '#######################   (100%)\r'
 }
 main_cert_setup(){
-    printf "%s"   "Do you wish to issue a Let's encrypt certificate for this domain? [y/N]"
+    printf "%s"   "Do you wish to issue a Let's encrypt certificate for this domain? [y/N] "
     read TMP_YN
     if [[ "${TMP_YN}" =~ ^(y|Y) ]]; then
-    #in case www domain , check both root domain and www domain accessibility.
         domainverify
         while true; do 
             emailinput
@@ -278,9 +290,8 @@ main_cert_setup(){
                 break
             fi
         done   
-        echoG 'Update certbot cronjob hook'
         certbothook 
-        printf "%s"   "Do you wish to force HTTPS rewrite rule for this domain? [y/N]"
+        printf "%s"   "Do you wish to force HTTPS rewrite rule for this domain? [y/N] "
         read TMP_YN
         if [[ "${TMP_YN}" =~ ^(y|Y) ]]; then
             force_https
@@ -299,7 +310,6 @@ main_upgrade(){
         printf "%s"   "Do you wish to update the system now? This will update the web server as well. [Y/n]? "
         read TMP_YN
         if [[ ! "${TMP_YN}" =~ ^(n|N) ]]; then
-            #START_TIME="$(date -u +%s)"
             echoG "Update Starting..." 
             if [ "${OSNAME}" = 'ubuntu' ]; then 
                 aptgetupgrade
@@ -307,14 +317,15 @@ main_upgrade(){
                 yumupgrade
             fi    
             echoG "\nUpdate complete" 
-            #END_TIME="$(date -u +%s)"
-            #ELAPSED="$((${END_TIME}-${START_TIME}))"
-            #echoY "***Total of ${ELAPSED} seconds to finish process***"
-            echoG 'Your system is up to date'
         fi    
     else
         echoG 'Your system is up to date'
-    fi        
+    fi
+    if [ ! -d /usr/local/CyberCP ]; then
+        echoG "\nEnjoy your accelarated OpenLiteSpeed server!\n"
+    else
+        echoG "\nEnjoy your accelarated CyberPanel server!\n"
+    fi    
 }
 
 main(){
@@ -324,7 +335,6 @@ main(){
     if [ ! -d /usr/local/CyberCP ]; then
         main_domain_setup
         main_cert_setup
-        echoG "\nEnjoy your accelarated OpenLiteSpeed server."
     fi   
     main_upgrade
     endsetup
