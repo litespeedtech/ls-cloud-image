@@ -283,7 +283,7 @@ csrconf
 
 ### Tools
 linechange(){
-    LINENUM=$(grep -n "${1}" ${2} | cut -d: -f 1)
+    LINENUM=$(grep -n -m 1 "${1}" ${2} | cut -d: -f 1)
     if [ -n "$LINENUM" ] && [ "$LINENUM" -eq "$LINENUM" ] 2>/dev/null; then
         sed -i "${LINENUM}d" ${2}
         sed -i "${LINENUM}i${3}" ${2}
