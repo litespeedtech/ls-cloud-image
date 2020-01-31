@@ -210,25 +210,19 @@ litespeed_passwordfile()
     fi
     LSPASSPATH="${HMPATH}/.litespeed_password"
     }
-    ## dovecot
     APP_DOVECOT_CF='/etc/dovecot/dovecot-sql.conf.ext'
-    ## postfix
     APP_POSTFIX_DOMAINS_CF='/etc/postfix/mysql-virtual_domains.cf'
     APP_POSTFIX_EMAIL2EMAIL_CF='/etc/postfix/mysql-virtual_email2email.cf'
     APP_POSTFIX_FORWARDINGS_CF='/etc/postfix/mysql-virtual_forwardings.cf'
     APP_POSTFIX_MAILBOXES_CF='/etc/postfix/mysql-virtual_mailboxes.cf'
 
     if [ ${OSNAME} = 'ubuntu' ] || [ ${OSNAME} = 'debian' ]; then
-        ## pure-ftpd
         APP_PUREFTP_CF='/etc/pure-ftpd/pureftpd-mysql.conf'
         APP_PUREFTPDB_CF='/etc/pure-ftpd/db/mysql.conf'
-        ## powerdns
         APP_POWERDNS_CF='/etc/powerdns/pdns.conf'
     elif [ ${OSNAME} = 'centos' ]; then
-        ## pure-ftpd
         APP_PUREFTP_CF='/etc/pure-ftpd/pureftpd-mysql.conf'
         APP_PUREFTPDB_CF='/etc/pure-ftpd/pureftpd-mysql.conf'
-        ## powerdns
         APP_POWERDNS_CF='/etc/pdns/pdns.conf'
     fi
 
@@ -259,7 +253,6 @@ gen_selfsigned_cert()
     key="${SSL_HOSTNAME}.key"
     cert="${SSL_HOSTNAME}.crt"
 
-    # Create the certificate signing request
     openssl req -new -passin pass:password -passout pass:password -out ${csr} >/dev/null 2>&1 <<csrconf
 US
 NJ
@@ -281,7 +274,6 @@ csrconf
     rm -f privkey.pem
 }
 
-### Tools
 linechange(){
     LINENUM=$(grep -n -m 1 "${1}" ${2} | cut -d: -f 1)
     if [ -n "$LINENUM" ] && [ "$LINENUM" -eq "$LINENUM" ] 2>/dev/null; then
@@ -290,7 +282,6 @@ linechange(){
     fi 
 }
 
-### Update/Renew password/key ###
 lscpd_cert_update()
 {
     if [ "${PANEL}" = 'cyber' ]; then
@@ -351,7 +342,6 @@ update_secretkey(){
 
 update_CPsqlpwd(){
     PREPWD=$(cat ${CPSQLPATH})
-    ### root user
     mysql -uroot -p${PREPWD} \
         -e "SET PASSWORD FOR 'root'@'localhost' = PASSWORD('${root_mysql_pass}');"
 
@@ -452,14 +442,12 @@ renew_wpsalt(){
 }
 
 renew_blowfish(){
-    #phpmyadmin blowfish
     LINENUM=$(grep -n "'blowfish_secret'" ${PHPMYCFPATH} | cut -d: -f 1)
     sed -i "${LINENUM}d" ${PHPMYCFPATH}
     NEW_SALT="\$cfg['blowfish_secret'] = '${GEN_SALT}';"
     sed -i "${LINENUM}i${NEW_SALT}" ${PHPMYCFPATH}
 }
 
-### Update File###
 updaterootpwdfile(){
     rm -f ${DBPASSPATH}
     cat >> ${DBPASSPATH} <<EOM
@@ -483,7 +471,6 @@ wordpress_mysql_pass="${wordpress_mysql_pass}"
 EOM
 }
 
-### Update software
 upgrade_cyberpanel() {
     if [ -e /tmp/upgrade.py ]; then
         sudo rm -rf /tmp/upgrade.py
@@ -492,8 +479,6 @@ upgrade_cyberpanel() {
     sudo chmod 755 /tmp/upgrade.py
     sudo python /tmp/upgrade.py
 }
-
-###prevent hijacking
 
 setup_after_ssh(){
     sudo cat << EOM > /etc/profile.d/afterssh.sh
@@ -544,7 +529,6 @@ install_rainloop(){
     fi
 }
 
-#Security
 install_firewalld(){
     if [ "${OSNAME}" != 'centos' ]; then
         FWDCMD='/usr/bin/firewall-cmd --permanent --zone=public --add-rich-rule'
@@ -646,9 +630,13 @@ update_phpmyadmin() {
 fix_phpmyadmin(){
     if [ ${BANNERNAME} = 'wordpress' ]; then 
         grep -q '    enable' ${LSVHCFPATH}
-        if [ $? != 0 ]; then 
+        if [ ${?} != 0 ]; then 
             sed -i "/^  rewrite/a\ \ \ \ \enable                0\n \ \ \ \inherit               0" ${LSVHCFPATH}           
-        fi    
+        fi
+        grep -q '/var/www/phpmyadmin/' ${LSVHCFPATH}
+        if [ ${?} != 0 ]; then
+            sed -i 's|/var/www/phpmyadmin|/var/www/phpmyadmin/|' ${LSVHCFPATH}
+        fi
     fi 
 }
 

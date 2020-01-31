@@ -324,7 +324,7 @@ index  {
 }
 
 context /phpmyadmin/ {
-  location                ${PHPCONF}
+  location                ${PHPCONF}/
   allowBrowse             1
   indexFiles              index.php
 
