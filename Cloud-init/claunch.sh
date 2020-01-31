@@ -160,7 +160,7 @@ cleanup (){
     if [ "${PROVIDER}" = 'google' ] || [ "${PROVIDER}" = 'azure' ]; then
         ALL_HMFD=$(ls /home/)
         for i in ${ALL_HMFD[@]}; do
-            if [ "${i}" != 'ubuntu' ] && [ "${i}" != 'cyberpanel' ]; then
+            if [ "${i}" != 'ubuntu' ] && [ "${i}" != 'cyberpanel' ] && [ "${i}" != 'vmail' ] && [ "${i}" != 'docker' ]; then
                 rm -rf "/home/${i}"
             fi
         done  
