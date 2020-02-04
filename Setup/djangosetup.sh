@@ -3,7 +3,7 @@
 # LiteSpeed Django setup Script
 # @Author:   LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
 # @Copyright: (c) 2019-2020
-# @Version: 1.0.1
+# @Version: 1.1
 # *********************************************************************/
 LSWSFD='/usr/local/lsws'
 PHPVER=73
@@ -21,7 +21,6 @@ DEMOSETTINGS="${DEMOPROJECT}/${PROJNAME}/settings.py"
 ALLERRORS=0
 NOWPATH=$(pwd)
 
-### Tools
 echoY() {
     echo -e "\033[38;5;148m${1}\033[39m"
 }
@@ -32,17 +31,16 @@ echoR()
 {
     echo -e "\033[38;5;203m${1}\033[39m"
 }
+
 linechange(){
     LINENUM=$(grep -n "${1}" ${2} | cut -d: -f 1)
-    if [ -n "$LINENUM" ] && [ "$LINENUM" -eq "$LINENUM" ] 2>/dev/null; then
+    if [ -n "${LINENUM}" ] && [ "${LINENUM}" -eq "${LINENUM}" ] 2>/dev/null; then
         sed -i "${LINENUM}d" ${2}
         sed -i "${LINENUM}i${3}" ${2}
     fi  
 }
 
-### ENV
-check_os()
-{
+check_os(){
     if [ -f /etc/redhat-release ] ; then
         OSNAME=centos
         USER='nobody'
@@ -54,9 +52,8 @@ check_os()
         OSNAME=debian
     fi         
 }
-check_os
-providerck()
-{
+
+check_provider(){
   if [ -e /sys/devices/virtual/dmi/id/product_uuid ] && [ "$(sudo cat /sys/devices/virtual/dmi/id/product_uuid | cut -c 1-3)" = 'EC2' ]; then 
     PROVIDER='aws'
   elif [ "$(dmidecode -s bios-vendor)" = 'Google' ];then
@@ -71,125 +68,141 @@ providerck()
     PROVIDER='undefined'  
   fi
 }
-providerck
 
-changeowner(){
+change_owner(){
   chown -R ${USER}:${GROUP} ${DEMOPROJECT}
 }
 
-### Upgrade
-systemupgrade() {
+centos_sys_upgrade(){
     echoG 'Updating system'
-    if [ "${OSNAME}" = 'ubuntu' ] || [ "${OSNAME}" = 'debian' ]; then 
-        apt-get update > /dev/null 2>&1
-        echo -ne '#####                     (33%)\r'
-        DEBIAN_FRONTEND=noninteractive apt-get -y -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' upgrade > /dev/null 2>&1
-        echo -ne '#############             (66%)\r'
-        DEBIAN_FRONTEND=noninteractive apt-get -y -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' dist-upgrade > /dev/null 2>&1
-        echo -ne '####################      (99%)\r'
-        apt-get clean > /dev/null 2>&1
-        apt-get autoclean > /dev/null 2>&1
-        echo -ne '#######################   (100%)\r'
-    else
-        echo -ne '#                         (5%)\r'
-        yum update -y > /dev/null 2>&1
-        echo -ne '#######################   (100%)\r'
-    fi    
+    echo -ne '#                         (5%)\r'
+    yum update -y > /dev/null 2>&1
+    echo -ne '#######################   (100%)\r'   
 }
 
-install_basic_pkg(){
-    if [ "${OSNAME}" = 'centos' ]; then 
-        yum -y install wget > /dev/null 2>&1
-    else  
-        apt-get -y install wget > /dev/null 2>&1
-    fi
+ubuntu_sys_upgrade(){
+    echoG 'Updating system'
+    apt-get update > /dev/null 2>&1
+    echo -ne '#####                     (33%)\r'
+    DEBIAN_FRONTEND=noninteractive apt-get -y -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' upgrade > /dev/null 2>&1
+    echo -ne '#############             (66%)\r'
+    DEBIAN_FRONTEND=noninteractive apt-get -y -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' dist-upgrade > /dev/null 2>&1
+    echo -ne '####################      (99%)\r'
+    apt-get clean > /dev/null 2>&1
+    apt-get autoclean > /dev/null 2>&1
+    echo -ne '#######################   (100%)\r'    
+}    
+
+centos_install_basic(){
+    yum -y install wget > /dev/null 2>&1
 }
 
-### Start
-installols(){
+ubuntu_install_basic(){
+    apt-get -y install wget > /dev/null 2>&1
+}
+
+install_ols(){
     cd /tmp/; wget -q https://raw.githubusercontent.com/litespeedtech/ols1clk/master/ols1clk.sh
     chmod +x ols1clk.sh
     echo 'Y' | bash ols1clk.sh \
     --lsphp ${PHPVER}
 }
 
-installpkg(){
-    echoG 'Install packages'
-    if [ "${OSNAME}" = 'centos' ]; then 
-        yum install python36-devel -y > /dev/null 2>&1
-        yum install python36-pip -y > /dev/null 2>&1
-        yum groupinstall "Development Tools" -y > /dev/null 2>&1
-        yum install wget -y > /dev/null 2>&1
-        pip3 install virtualenv > /dev/null 2>&1
-        ### Install latest sqlite version
-        echoG 'Install latest sqlite'
-        LASTSQLV=$(curl -s https://www.sqlite.org/download.html | grep '/sqlite-autoconf.*gz' | awk -F "'" '{print $4}')
-        wget -q https://www.sqlite.org/${LASTSQLV} -P /opt/
-        cd /opt/
-        tar -zxf sqlite-autoconf-*.tar.gz
-        rm -f sqlite-autoconf-*.tar.gz
-        cd sqlite-autoconf-*
-        echoG 'Compiling from source code'
-        ./configure > /dev/null 2>&1
-        if [ -e Makefile ]; then 
-            make && sudo make install > /dev/null 2>&1
-            if [ -e sqlite3 ]; then 
-                echoG 'Make success, replacing sqlite bin file'
-                mv /usr/bin/sqlite3 /usr/bin/sqlite3.bk
-                mv sqlite3 /usr/bin/
-                ### export lib
-                export LD_LIBRARY_PATH="/usr/local/lib"
-                echo 'export LD_LIBRARY_PATH="/usr/local/lib"' >> /etc/profile
-                echoG 'Finished sqlite3 compile'
-            else
-                echoR 'Make Failed'    
-            fi
-        else 
-            echoR 'Configure Failed'   
-        fi     
-    else 
-        apt-get install python3-pip -y > /dev/null 2>&1
-        apt-get install python3-dev -y > /dev/null 2>&1
-        apt-get install virtualenv -y > /dev/null 2>&1
-        apt-get install socat -y > /dev/null 2>&1
-        apt-get install build-essential -y > /dev/null 2>&1
-    fi 
+centos_install_ols(){
+    install_ols
+}
 
-    ### CertBot
-    echoG "Install CertBot" 
-    if [ "${OSNAME}" = 'centos' ]; then 
-        if [ ${OSVER} = 8 ]; then
-            wget -q https://dl.eff.org/certbot-auto
-            mv certbot-auto /usr/local/bin/certbot
-            chown root /usr/local/bin/certbot
-            chmod 0755 /usr/local/bin/certbot
-            echo "y" | /usr/local/bin/certbot > /dev/null 2>&1
+ubuntu_install_ols(){
+    install_ols
+}
+
+centos_install_python(){
+    echoG 'Install python'
+    yum install python36-devel -y > /dev/null 2>&1
+    yum install python36-pip -y > /dev/null 2>&1
+    yum groupinstall "Development Tools" -y > /dev/null 2>&1
+    yum install wget -y > /dev/null 2>&1
+    pip3 install virtualenv > /dev/null 2>&1
+    ### Install latest sqlite version
+    echoG 'Install latest sqlite'
+    LASTSQLV=$(curl -s https://www.sqlite.org/download.html | grep '/sqlite-autoconf.*gz' | awk -F "'" '{print $4}')
+    wget -q https://www.sqlite.org/${LASTSQLV} -P /opt/
+    cd /opt/
+    tar -zxf sqlite-autoconf-*.tar.gz
+    rm -f sqlite-autoconf-*.tar.gz
+    cd sqlite-autoconf-*
+    echoG 'Compiling from source code'
+    ./configure > /dev/null 2>&1
+    if [ -e Makefile ]; then 
+        make && sudo make install > /dev/null 2>&1
+        if [ -e sqlite3 ]; then 
+            echoG 'Make success, replacing sqlite bin file'
+            mv /usr/bin/sqlite3 /usr/bin/sqlite3.bk
+            mv sqlite3 /usr/bin/
+            export LD_LIBRARY_PATH="/usr/local/lib"
+            echo 'export LD_LIBRARY_PATH="/usr/local/lib"' >> /etc/profile
+            echoG 'Finished sqlite3 compile'
         else
-            yum -y install certbot  > /dev/null 2>&1
+            echoR 'Make Failed'    
         fi
     else 
-        add-apt-repository universe > /dev/null 2>&1
-        echo -ne '\n' | add-apt-repository ppa:certbot/certbot > /dev/null 2>&1
-        apt-get update > /dev/null 2>&1
-        apt-get -y install certbot > /dev/null 2>&1
+        echoR 'Configure Failed'   
+    fi     
+}
 
-    fi 
+ubuntu_install_python(){
+    echoG 'Install python'
+    apt-get install python3-pip -y > /dev/null 2>&1
+    apt-get install python3-dev -y > /dev/null 2>&1
+    apt-get install virtualenv -y > /dev/null 2>&1
+    apt-get install socat -y > /dev/null 2>&1
+    apt-get install build-essential -y > /dev/null 2>&1
+} 
+
+centos_install_certbot(){
+    echoG "Install CertBot"
+    if [ ${OSVER} = 8 ]; then
+        wget -q https://dl.eff.org/certbot-auto
+        mv certbot-auto /usr/local/bin/certbot
+        chown root /usr/local/bin/certbot
+        chmod 0755 /usr/local/bin/certbot
+        echo "y" | /usr/local/bin/certbot > /dev/null 2>&1
+    else
+        yum -y install certbot  > /dev/null 2>&1
+    fi
     if [ -e /usr/bin/certbot ]; then 
         echoG 'Install CertBot finished'
     else 
         echoR 'Please check CertBot'    
-    fi       
-
-    echoG 'Finish packages'
+    fi    
 }
 
-installwsgi(){
+ubuntu_install_certbot(){
+    echoG "Install CertBot"
+    add-apt-repository universe > /dev/null 2>&1
+    echo -ne '\n' | add-apt-repository ppa:certbot/certbot > /dev/null 2>&1
+    apt-get update > /dev/null 2>&1
+    apt-get -y install certbot > /dev/null 2>&1
+    if [ -e /usr/bin/certbot ]; then 
+        echoG 'Install CertBot finished'
+    else 
+        echoR 'Please check CertBot'    
+    fi
+}    
+
+restart_lsws(){
+    echoG 'Restart LiteSpeed Web Server'
+    systemctl stop lsws >/dev/null 2>&1
+    systemctl start lsws >/dev/null 2>&1
+}
+
+install_wsgi(){
     echoG 'Build wsgi'
     curl http://www.litespeedtech.com/packages/lsapi/${WSGINAME}.tgz -so /opt/${WSGINAME}.tgz
     tar zxf /opt/${WSGINAME}.tgz -C /opt/
     cd /opt/${WSGINAME}/
     python3 ./configure.py | grep -i Done > /dev/null 2>&1
-    if [ $? = 0 ]; then  
+    if [ ${?} = 0 ]; then  
         make > /dev/null 2>&1
         if [ -e 'lswsgi' ]; then 
             cp lswsgi ${LSWSFD}/fcgi-bin/    
@@ -204,9 +217,16 @@ installwsgi(){
     fi
 }
 
-configols(){
+centos_install_wsgi(){
+    install_wsgi
+}
+
+ubuntu_install_wsgi(){
+    install_wsgi
+}
+
+config_ols(){
     echoG 'Setting Web Server config'
-    ### change doc root to landing page, setup phpmyadmin context
     cat > ${LSWSVHCONF} <<END 
 docRoot                   \$VH_ROOT/html/
 enableGzip                1
@@ -220,7 +240,7 @@ errorlog \$VH_ROOT/logs/error.log {
 accesslog \$VH_ROOT/logs/access.log {
   useServer               0
   rollingSize             10M
-  keepDays                30
+  keepDays                7
   compressArchive         0
 }
 
@@ -281,25 +301,40 @@ rewrite  {
 }
 
 END
-    echoG 'Finish Web Server config'
-    service lsws restart
 }
 
-appsetup(){
+centos_set_ols(){
+    config_ols
+}    
+
+ubuntu_set_ols(){
+    config_ols
+} 
+
+centos_set_env(){
     echoG 'Setting django venv'
     virtualenv --system-site-packages -p python3 ${VHDOCROOT} > /dev/null 2>&1
-    if [ $? = 1 ]; then 
+    if [ ${?} = 1 ]; then 
         echoR 'Create virtualenv failed'
     fi    
     echoG 'Source'
     source ${VHDOCROOT}/bin/activate
-    ### Install Django
-    if [ "${OSNAME}" = 'centos' ]; then 
-        ### Currently CentOS 7 + 2.2 have 500 error 
-        pip3 install -I django==2.1.8> /dev/null 2>&1
-    elif [ "${OSNAME}" = 'ubuntu' ] || [ "${OSNAME}" = 'debian' ]; then 
-        pip3 install -I django > /dev/null 2>&1
-    fi 
+    ### Currently CentOS 7 + 2.2 have 500 error 
+    pip3 install -I django==2.1.8> /dev/null 2>&1
+}
+
+ubuntu_set_env(){
+    echoG 'Setting django venv'
+    virtualenv --system-site-packages -p python3 ${VHDOCROOT} > /dev/null 2>&1
+    if [ ${?} = 1 ]; then 
+        echoR 'Create virtualenv failed'
+    fi    
+    echoG 'Source'
+    source ${VHDOCROOT}/bin/activate
+    pip3 install -I django > /dev/null 2>&1
+}
+
+app_setup(){
     cd ${VHDOCROOT}
     echoG 'Start project'
     django-admin startproject ${PROJNAME}
@@ -307,7 +342,6 @@ appsetup(){
     echoG 'Start app'
     python3 manage.py startapp ${PROJAPPNAME}
  
-    ### Update Settings
     echoG 'update settings'
     NEWKEY="ALLOWED_HOSTS = ['*']"
     linechange 'ALLOWED_HOST' ${DEMOSETTINGS} "${NEWKEY}"
@@ -315,13 +349,11 @@ appsetup(){
     cat >> ${DEMOSETTINGS} <<END 
 STATIC_ROOT = '${DEMOPROJECT}/public/static'
 END
-    ### Collect static files
     echoG 'Collect files'
     mkdir -p ${DEMOPROJECT}/public/static
     python manage.py collectstatic > /dev/null 2>&1
     python manage.py migrate > /dev/null 2>&1
 
-    ### Demo view
     echoG 'update views'
     cat > "${DEMOPROJECT}/${PROJAPPNAME}/views.py" <<END 
 from django.shortcuts import render
@@ -331,13 +363,12 @@ def index(request):
     return HttpResponse("Hello, world!")
 END
 
-    ### Demo Urls
     echoG 'Update URLs'
     cat > "${DEMOPROJECT}/${PROJNAME}/urls.py" <<END 
 """demo URL Configuration
 
 The \`urlpatterns\` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/2.1/topics/http/urls/
+    https://docs.djangoproject.com/en/3.0/topics/http/urls/
 Examples:
 Function views
     1. Add an import:  from my_app import views
@@ -358,73 +389,127 @@ urlpatterns = [
     path('admin/', admin.site.urls),
 ]
 END
-    ### Exit venv
     deactivate
     echoG 'Finish django'
 }
 
-firewalladd(){
+centos_set_app(){
+    app_setup
+}
+
+ubuntu_set_app(){
+    app_setup
+}
+
+centos_install_firewall(){
+    echoG 'Install Firewall'
+    if [ ! -e /usr/sbin/firewalld ]; then 
+        yum -y install firewalld > /dev/null 2>&1
+    fi
+    service firewalld start > /dev/null 2>&1
+    systemctl enable firewalld > /dev/null 2>&1
+}
+
+centos_config_firewall(){
     echoG 'Setting Firewall'
-    if [ "${OSNAME}" = 'centos' ]; then 
-        if [ ! -e /usr/sbin/firewalld ]; then 
-            yum -y install firewalld > /dev/null 2>&1
-        fi
-        service firewalld start > /dev/null 2>&1
-        systemctl enable firewalld > /dev/null 2>&1
-        for PORT in ${FIREWALLLIST}; do 
-            firewall-cmd --permanent --add-port=${PORT}/tcp > /dev/null 2>&1
-        done 
-        firewall-cmd --reload > /dev/null 2>&1
-        firewall-cmd --list-all | grep 80 > /dev/null 2>&1
-        if [ $? = 0 ]; then 
+    for PORT in ${FIREWALLLIST}; do 
+        firewall-cmd --permanent --add-port=${PORT}/tcp > /dev/null 2>&1
+    done 
+    firewall-cmd --reload > /dev/null 2>&1
+    firewall-cmd --list-all | grep 80 > /dev/null 2>&1
+    if [ ${?} = 0 ]; then 
+        echoG 'firewalld rules setup success'
+    else 
+        echoR 'Please check firewalld rules'
+    fi 
+}
+
+ubuntu_config_firewall(){
+    echoG 'Setting Firewall'
+    ufw status verbose | grep inactive > /dev/null 2>&1
+    if [ ${?} = 0 ]; then 
+        for PORT in ${FIREWALLLIST}; do
+            ufw allow ${PORT} > /dev/null 2>&1
+        done    
+        echo "y" | ufw enable > /dev/null 2>&1
+
+        ufw status | grep '80.*ALLOW' > /dev/null 2>&1
+        if [ ${?} = 0 ]; then 
             echoG 'firewalld rules setup success'
         else 
-            echoR 'Please check firewalld rules'    
+            echoR 'Please check ufw rules'    
         fi 
-    else 
-        ufw status verbose | grep inactive > /dev/null 2>&1
-        if [ $? = 0 ]; then 
-            for PORT in ${FIREWALLLIST}; do
-                ufw allow ${PORT} > /dev/null 2>&1
-            done    
-            echo "y" | ufw enable > /dev/null 2>&1
-
-            ufw status | grep '80.*ALLOW' > /dev/null 2>&1
-            if [ $? = 0 ]; then 
-                echoG 'firewalld rules setup success'
-            else 
-                echoR 'Please check ufw rules'    
-            fi 
-        else
-            echoG "ufw already enabled"    
-        fi
+    else
+        echoG "ufw already enabled"    
     fi
 }
 
-rmdummy(){
+rm_dummy(){
     echoG 'Remove dummy file'
     rm -f "${NOWPATH}/example.csr" "${NOWPATH}/privkey.pem"
     echoG 'Finished dummy file'
 }
 
-### Main
-main(){
+init_check(){
     START_TIME="$(date -u +%s)"
-    systemupgrade
-    install_basic_pkg
-    installols
-    installpkg
-    installwsgi
-    appsetup
-    configols
-    changeowner
-    firewalladd
-    rmdummy
+    check_os
+    check_provider
+} 
+
+centos_main_install(){
+    centos_install_basic
+    centos_install_ols
+    centos_install_python
+    centos_install_certbot
+    centos_install_wsgi
+    centos_install_firewall
+}
+
+centos_main_config(){
+    centos_set_env
+    centos_set_app
+    centos_set_ols
+    centos_config_firewall
+}
+
+ubuntu_main_install(){    
+    ubuntu_install_basic
+    ubuntu_install_ols
+    ubuntu_install_python
+    ubuntu_install_certbot
+    ubuntu_install_wsgi
+}    
+
+ubuntu_main_config(){
+    ubuntu_set_env
+    ubuntu_set_app
+    ubuntu_set_ols
+    ubuntu_config_firewall
+}
+
+end_message(){
+    rm_dummy
     END_TIME="$(date -u +%s)"
     ELAPSED="$((${END_TIME}-${START_TIME}))"
     echoY "***Total of ${ELAPSED} seconds to finish process***"
 }
+
+main(){
+    init_check
+    if [ ${OSNAME} = 'centos' ]; then
+        centos_sys_upgrade
+        centos_main_install
+        centos_main_config
+    else
+        ubuntu_sys_upgrade
+        ubuntu_main_install
+        ubuntu_main_config
+    fi
+    restart_lsws 
+    change_owner
+    end_message
+}
+
 main
-#echoG 'Auto remove script itself'
 #rm -- "$0"
 exit 0    
