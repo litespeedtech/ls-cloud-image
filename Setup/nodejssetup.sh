@@ -223,7 +223,7 @@ realm SampleProtectedArea {
 }
 
 context /.well-known/ {
-  location                ${VHDOCROOT}/
+  location                ${VHDOCROOT}/.well-known/
   allowBrowse             1
   addDefaultCharset       off
 }
@@ -253,6 +253,10 @@ centos_set_ols(){
 ubuntu_set_ols(){
     config_ols
 } 
+
+acme_folder(){
+    mkdir -p ${VHDOCROOT}/.well-known
+}
 
 app_setup(){
     mkdir -p ${DEMOPROJECT}
@@ -382,6 +386,7 @@ main(){
         ubuntu_main_install
         ubuntu_main_config
     fi
+    acme_folder
     restart_lsws 
     change_owner
     end_message

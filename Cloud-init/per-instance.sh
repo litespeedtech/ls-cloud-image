@@ -640,6 +640,18 @@ fix_phpmyadmin(){
     fi 
 }
 
+fix_wellknown(){
+    if [ ${BANNERNAME} = 'nodejs' ] || [ ${BANNERNAME} = 'django' ]; then
+        grep '/usr/local/lsws/Example/html/.well-known/' ${LSVHCFPATH} >/dev/null 2>&1
+        if [ ${?} = 1 ]; then
+            TMP_LINE_NUM=$(grep -n -m 1 '/.well-known/' ${LSVHCFPATH} | awk -F ':' '{print $1}')
+            TMP_LINE=$((TMP_LINE_NUM+1))
+            sed -i "${TMP_LINE}s|/usr/local/lsws/Example/html/|/usr/local/lsws/Example/html/.well-known/|" ${LSVHCFPATH}
+            mkdir ${LSDIR}/Example/html/.well-known/
+        fi
+    fi
+}
+
 set_tmp() {
     if [ ${OSNAME} = 'ubuntu' ]; then 
         if ! $(cat /proc/mounts | grep -q '/dev/loop0 /tmp'); then
@@ -705,6 +717,7 @@ maincloud(){
         install_firewalld  
     elif [ "${APPLICATION}" = 'PYTHON' ]; then
         update_secretkey
+        fix_wellknown
     elif [ "${APPLICATION}" = 'NONE' ]; then
         update_sql_pwd
         renew_wp_pwd
@@ -712,6 +725,7 @@ maincloud(){
         renew_wpsalt
         update_phpmyadmin
         fix_phpmyadmin
+        fix_wellknown
         renew_blowfish
         setup_after_ssh
     fi

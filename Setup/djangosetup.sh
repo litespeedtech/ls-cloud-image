@@ -279,7 +279,7 @@ realm SampleProtectedArea {
 }
 
 context /.well-known/ {
-  location                ${VHDOCROOT}/
+  location                ${VHDOCROOT}/.well-known/
   allowBrowse             1
   addDefaultCharset       off
 }
@@ -401,6 +401,10 @@ ubuntu_set_app(){
     app_setup
 }
 
+acme_folder(){
+    mkdir -p ${VHDOCROOT}/.well-known
+}
+
 centos_install_firewall(){
     echoG 'Install Firewall'
     if [ ! -e /usr/sbin/firewalld ]; then 
@@ -505,6 +509,7 @@ main(){
         ubuntu_main_install
         ubuntu_main_config
     fi
+    acme_folder
     restart_lsws 
     change_owner
     end_message
