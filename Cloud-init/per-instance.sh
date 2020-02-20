@@ -683,8 +683,6 @@ set_tmp() {
     fi
 }
 
-
-
 maincloud(){
     setup_domain
     setup_banner
