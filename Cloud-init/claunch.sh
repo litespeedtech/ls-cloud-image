@@ -197,7 +197,7 @@ cleanup (){
 main_claunch(){
     check_os
     check_root
-    uninstall_aegis
+    #uninstall_aegis
     install_cloudinit
     setup_cloud
     cleanup
