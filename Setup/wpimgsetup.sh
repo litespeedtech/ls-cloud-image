@@ -445,11 +445,13 @@ END
 ubuntu_config_redis(){
     service redis-server stop > /dev/null 2>&1
     NEWKEY="Group=${GROUP}"
-    linechange 'Group=' ${REDISSERVICE} "${NEWKEY}"  
+    linechange 'Group=' ${REDISSERVICE} "${NEWKEY}" 
     cat >> "${REDISCONF}" <<END 
 unixsocket /var/run/redis/redis-server.sock
 unixsocketperm 775
 END
+    BIND_LINE=$(grep -n -m 1 '^bind 127' ${REDISCONF} | awk -F ':' '{print $1}')
+    sed -i "${BIND_LINE}s/::1//"
     systemctl daemon-reload > /dev/null 2>&1
     service redis-server start > /dev/null 2>&1
     echoG 'Finish Object Cache'
@@ -700,7 +702,26 @@ centos_firewall_add(){
     fi         
 }
 
-service_check(){
+ubuntu_service_check(){
+    check_sql_ver
+    for ITEM in lsws memcached redis-server mariadb
+    do 
+        service ${ITEM} status | grep "active\|running" > /dev/null 2>&1
+        if [ $? = 0 ]; then 
+            echoG "Process ${ITEM} is active"
+        else
+            echoR "Please check Process ${ITEM}" 
+            ALLERRORS=1
+        fi
+    done        
+    if [[ "${ALLERRORS}" = 0 ]]; then 
+        echoG "Congratulations! Installation finished."
+    else
+        echoR "Some errors seem to have occured, please check this as you may need to manually fix them"
+    fi        
+}
+
+centos_service_check(){
     check_sql_ver
     for ITEM in lsws memcached redis mariadb
     do 
@@ -799,12 +820,13 @@ main(){
         centos_main_install
         centos_main_config
         centos_firewall_add
+        centos_service_check
     else
         ubuntu_main_install
         ubuntu_main_config
         ubuntu_firewall_add
-    fi    
-    service_check
+        ubuntu_service_check
+    fi
     end_message
 }
 main

@@ -6,6 +6,7 @@
 # *********************************************************************/
 
 CLDINITPATH='/var/lib/cloud/scripts/per-instance'
+AGENT_PATH='/usr/local/aegis'
 
 check_os(){
     if [ -f /etc/redhat-release ] ; then
@@ -26,7 +27,7 @@ providerck()
     elif [ "$(dmidecode -s bios-vendor)" = 'DigitalOcean' ];then
         PROVIDER='do'
     elif [ "$(dmidecode -s system-product-name | cut -c 1-7)" = 'Alibaba' ];then
-        PROVIDER='aliyun'
+        PROVIDER='ali'
     elif [ "$(dmidecode -s system-manufacturer)" = 'Microsoft Corporation' ];then    
         PROVIDER='azure'
     else
@@ -42,6 +43,32 @@ check_root(){
     fi
 }
 
+stop_aegis(){
+    killall -9 aegis_cli aegis_update aegis_cli aegis_quartz >/dev/null 2>&1
+    killall -9 AliYunDun AliHids AliYunDunUpdate >/dev/null 2>&1
+    if [ -f "/etc/init.d/aegis" ]; then
+        /etc/init.d/aegis stop  >/dev/null 2>&1
+    fi    
+    printf "%-40s %40s\n" "Stopping aegis" "[  OK  ]"
+}
+
+remove_aegis(){
+    if [ -d ${AGENT_PATH} ];then
+        rm -rf ${AGENT_PATH}/aegis_client
+        rm -rf ${AGENT_PATH}/aegis_update
+        rm -rf ${AGENT_PATH}/alihids
+        rm -rf ${AGENT_PATH}/aegis_quartz
+        rm -f /etc/init.d/aegis
+    fi  
+}
+
+uninstall_aegis(){
+    if [ "${PROVIDER}" = 'ali' ]; then 
+        stop_aegis
+        remove_aegis
+    fi
+}
+
 install_cloudinit(){
     if [ ! -d ${CLDINITPATH} ]; then
         mkdir -p ${CLDINITPATH}
@@ -51,7 +78,7 @@ install_cloudinit(){
         if [ ${OSNAME} = 'ubuntu' ]; then
             apt-get install cloud-init -y >/dev/null 2>&1
         else
-            if [ "${PROVIDER}" = 'aliyun' ]; then
+            if [ "${PROVIDER}" = 'ali' ]; then
                 yum -y install python-pip > /dev/null 2>&1
                 test -d /etc/cloud && mv /etc/cloud /etc/cloud-old; cd /tmp/
                 wget -q http://ecs-image-utils.oss-cn-hangzhou.aliyuncs.com/cloudinit/ali-cloud-init-latest.tgz
@@ -170,6 +197,7 @@ cleanup (){
 main_claunch(){
     check_os
     check_root
+    uninstall_aegis
     install_cloudinit
     setup_cloud
     cleanup

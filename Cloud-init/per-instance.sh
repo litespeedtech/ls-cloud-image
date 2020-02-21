@@ -70,7 +70,7 @@ check_provider()
     elif [ "$(dmidecode -s bios-vendor)" = 'DigitalOcean' ];then
         PROVIDER='do'
     elif [ "$(dmidecode -s system-product-name | cut -c 1-7)" = 'Alibaba' ];then
-        PROVIDER='aliyun'   
+        PROVIDER='ali'
     elif [ "$(dmidecode -s system-manufacturer)" = 'Microsoft Corporation' ];then    
         PROVIDER='azure'        
     elif [ -e /root/StackScript ]; then 
@@ -124,7 +124,7 @@ os_home_path()
     elif [ ${PROVIDER} = 'google' ] && [ -d /home/ubuntu ]; then
         HMPATH='/home/ubuntu'
         PUBIP=$(curl -H "Metadata-Flavor: Google" http://metadata/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip)   
-    elif [ ${PROVIDER} = 'aliyun' ] && [ -d /home/ubuntu ]; then
+    elif [ ${PROVIDER} = 'ali' ] && [ -d /home/ubuntu ]; then
         HMPATH='/home/ubuntu'
         PUBIP=$(curl http://100.100.100.200/latest/meta-data/eipv4)   
     elif [ "$(dmidecode -s system-manufacturer)" = 'Microsoft Corporation' ];then    
@@ -163,28 +163,24 @@ rm_dummy(){
 ct_version()
 {
     curl "https://wp.api.litespeedtech.com/v?t=image&src=${WPCT}" > /dev/null 2>&1
+    echo "Cloud-${PROVIDER}" > ${LSDIR}/PLAT
 }
 
 setup_domain(){
-    ### domainsetup.sh
     if [ ! -e /opt/domainsetup.sh ]; then  
         curl -s https://raw.githubusercontent.com/litespeedtech/ls-cloud-image/master/Setup/domainsetup.sh \
         -o /opt/domainsetup.sh
-        if [ $? != 0 ];  then 
-            ### Use LiteSpeed backup repo
+        if [ ${?} != 0 ];  then 
             curl -s https://cloud.litespeed.sh/Setup/domainsetup.sh -o /opt/domainsetup.sh
         fi    
         chmod +x /opt/domainsetup.sh
     fi    
 }    
 setup_banner(){
-    ### Setup banner automatically
     if [ ! -e ${BANNERDST} ]; then  
         curl -s https://raw.githubusercontent.com/litespeedtech/ls-cloud-image/master/Banner/${BANNERNAME} \
         -o ${BANNERDST}  
-
-        if [ $? != 0 ];  then 
-            ### Use LiteSpeed backup repo
+        if [ ${?} != 0 ];  then 
             curl -s https://cloud.litespeed.sh/Banner/${BANNERNAME} -o ${BANNERDST}  
         fi  
         chmod +x ${BANNERDST}
@@ -226,8 +222,6 @@ litespeed_passwordfile()
         APP_POWERDNS_CF='/etc/pdns/pdns.conf'
     fi
 
-#####################################################################
-### Generate cert/key/password ###
 gen_lsws_pwd()
 {
     ADMIN_PASS=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 16 ; echo '')
@@ -247,7 +241,6 @@ gen_secretkey(){
 }
 gen_selfsigned_cert()
 { 
-    # set default value
     SSL_HOSTNAME=webadmin
     csr="${SSL_HOSTNAME}.csr"
     key="${SSL_HOSTNAME}.key"
@@ -265,11 +258,8 @@ webadmin
 .
 csrconf
     [ -f ${csr} ] && openssl req -text -noout -in ${csr} >/dev/null 2>&1
-    # Create the Key
     openssl rsa -in privkey.pem -passin pass:password -passout pass:password -out ${key} >/dev/null 2>&1
-    # Create the Certificate
     openssl x509 -in ${csr} -out ${cert} -req -signkey ${key} -days 1000 >/dev/null 2>&1
-    # Remove file
     rm -f ${SSL_HOSTNAME}.csr
     rm -f privkey.pem
 }
@@ -380,7 +370,6 @@ update_CPsqlpwd(){
     NEWKEY="gmysql-password=${root_mysql_pass}"
     linechange 'gmysql-password' ${APP_POWERDNS_CF} "${NEWKEY}"
 
-    ### Apply settings
     service lscpd restart
 }
 
@@ -388,7 +377,6 @@ renew_wp_pwd(){
     NEWDBPWD="define('DB_PASSWORD', '${wordpress_mysql_pass}');"
     linechange 'DB_PASSWORD' ${WPCFPATH} "${NEWDBPWD}"
 }
-
 
 ### Listener '*' to 'IP'
 replace_litenerip(){
@@ -431,7 +419,6 @@ update_sql_pwd(){
 }
 
 renew_wpsalt(){
-    # WordPress Salts
     for KEY in "'AUTH_KEY'" "'SECURE_AUTH_KEY'" "'LOGGED_IN_KEY'" "'NONCE_KEY'" "'AUTH_SALT'" "'SECURE_AUTH_SALT'" "'LOGGED_IN_SALT'" "'NONCE_SALT'"
     do
         LINENUM=$(grep -n "${KEY}" ${WPCFPATH} | cut -d: -f 1)
@@ -500,7 +487,6 @@ EOM
 add_profile(){
     echo "sudo /opt/domainsetup.sh" >> /etc/profile
 }
-
 
 add_hosts(){
     if [ -d /home/ubuntu ]; then
