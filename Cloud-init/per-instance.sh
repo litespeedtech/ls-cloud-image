@@ -156,7 +156,10 @@ rm_dummy(){
         rm -f /etc/profile.d/cyberpanel.sh
         if [ -f /etc/legal ]; then
             mv /etc/legal /etc/legal.bk
-        fi        
+        fi
+        if [ "${PROVIDER}" = 'ali' ]; then
+            mv /etc/motd /etc/motd.bk
+        fi      
     fi
 }
 

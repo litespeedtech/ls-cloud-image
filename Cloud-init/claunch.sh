@@ -173,10 +173,10 @@ cleanup (){
     rm -f /root/.ssh/authorized_keys
     rm -f /root/.ssh/cyberpanel*
     #password
-    sudo passwd -d root
     rm -f /root/.litespeed_password
     rm -f /root/.bash_history
     if [ "${PROVIDER}" = 'aws' ]; then
+        sudo passwd -d root
         if [ -d /home/ubuntu ]; then
             rm -f /home/ubuntu/.mysql_history
             rm -f /home/ubuntu/.bash_history
@@ -185,6 +185,7 @@ cleanup (){
         fi    
     fi  
     if [ "${PROVIDER}" = 'google' ] || [ "${PROVIDER}" = 'azure' ]; then
+        sudo passwd -d root
         ALL_HMFD=$(ls /home/)
         for i in ${ALL_HMFD[@]}; do
             if [ "${i}" != 'ubuntu' ] && [ "${i}" != 'cyberpanel' ] && [ "${i}" != 'vmail' ] && [ "${i}" != 'docker' ]; then
