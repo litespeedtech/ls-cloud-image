@@ -166,7 +166,7 @@ rm_dummy(){
 ct_version()
 {
     curl "https://wp.api.litespeedtech.com/v?t=image&src=${WPCT}" > /dev/null 2>&1
-    echo "Cloud-${PROVIDER}" > ${LSDIR}/PLAT
+    echo "cloud-${PROVIDER}" > ${LSDIR}/PLAT
 }
 
 setup_domain(){
