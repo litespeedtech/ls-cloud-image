@@ -316,6 +316,14 @@ panel_IP_update()
     fi
 }
 
+passftp_IP_update(){
+    if [ "${PANEL}" = 'cyber' ]; then
+        if [ ${OSNAME} = 'ubuntu' ] || [ ${OSNAME} = 'debian' ]; then
+            cat "${CPIPPATH}" > /etc/pure-ftpd/conf/ForcePassiveIP
+        fi    
+    fi
+}
+
 filepermission_update(){
     chmod 600 ${HMPATH}/.db_password
     chmod 600 ${HMPATH}/.litespeed_password
@@ -381,7 +389,6 @@ renew_wp_pwd(){
     linechange 'DB_PASSWORD' ${WPCFPATH} "${NEWDBPWD}"
 }
 
-### Listener '*' to 'IP'
 replace_litenerip(){
     if [ "${PROVIDER}" = 'do' ] && [ "${PANEL}" = '' ]; then 
         for LINENUM in $(grep -n 'map' ${LSHTTPDCFPATH} | cut -d: -f 1)
@@ -694,6 +701,7 @@ maincloud(){
         panel_admin_update
         panel_sshkey_update
         panel_IP_update
+        passftp_IP_update
         update_phpmyadmin
         update_CPsqlpwd
         update_secretkey
