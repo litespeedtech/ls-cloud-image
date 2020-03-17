@@ -151,6 +151,8 @@ cleanup (){
     #azure
     rm -f /var/log/azure/*
     rm -f /var/log/waagent.log
+    #ali
+    rm -f /var/log/ecs_network_optimization.log
     #component log
     rm -f /usr/local/lscp/logs/*
     rm -f /var/log/mail.log*
