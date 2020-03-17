@@ -301,8 +301,10 @@ main_cert_setup(){
 }
 
 main_upgrade(){
-    if [ "${OSNAME}" = 'ubuntu' ]; then 
-        aptupgradelist
+    if [ "${OSNAME}" = 'ubuntu' ]; then
+        if [ ${PROVIDER} != 'aliyun' ]; then
+            aptupgradelist
+        fi    
     else
         yumupgradelist
     fi    
