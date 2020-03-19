@@ -3,6 +3,7 @@
 # 1. read domain name , docroot and SSL setting
 # 2. install litespeed enterprise
 # 3. create vhost with Apache conf
+# 4. webadmin console pass will be reset when convert.
 
 TOTAL_RAM=$(free -m | awk '/Mem\:/ { print $2 }')
 LICENSE_KEY=""
@@ -555,6 +556,17 @@ fi
 
 lsws_conf_file
 
+if [[ -f /usr/local/lsws/admin/fcgi-bin/admin_php ]] ; then
+	php_command="admin_php"
+else
+	php_command="admin_php5"
+fi
+
+WEBADMIN_PASS=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 16 ; echo '')
+TEMP=`/usr/local/lsws/admin/fcgi-bin/${php_command} /usr/local/lsws/admin/misc/htpasswd.php ${WEBADMIN_PASS}`
+echo "" > /usr/local/lsws/admin/conf/htpasswd
+echo "admin:$TEMP" > /usr/local/lsws/admin/conf/htpasswd
+
 /usr/local/lsws/bin/lswsctrl stop > /dev/null 2>&1
 pkill lsphp
 systemctl stop lsws
@@ -562,6 +574,9 @@ systemctl start lsws
 systemctl status lsws
   if [[ $? == "0" ]] ; then
     echo -e "\nLiteSpeed Enterprise has started and running...\n"
+    echo -e "\nNew WebAdmin Console access: admin , $WEBADMIN_PASS\n"
+    echo -e "\nYou can reset by command:\n"
+    echo -e "/usr/local/lsws/admin/misc/admpass.sh"
   else
     echo -e "Something went wrong , LSWS can not be started."
     exit 1
