@@ -124,7 +124,7 @@ os_home_path()
     elif [ ${PROVIDER} = 'google' ] && [ -d /home/ubuntu ]; then
         HMPATH='/home/ubuntu'
         PUBIP=$(curl -H "Metadata-Flavor: Google" http://metadata/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip)   
-    elif [ ${PROVIDER} = 'ali' ] && [ -d /home/ubuntu ]; then
+    elif [ ${PROVIDER} = 'ali' ]; then
         HMPATH='/home/ubuntu'
         PUBIP=$(curl http://100.100.100.200/latest/meta-data/eipv4)   
     elif [ "$(dmidecode -s system-manufacturer)" = 'Microsoft Corporation' ];then    
