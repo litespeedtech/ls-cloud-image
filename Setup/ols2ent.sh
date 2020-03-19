@@ -19,6 +19,22 @@ else
   exit 1
 fi
 
+reset_pass() {
+if [[ -f /usr/local/lsws/admin/fcgi-bin/admin_php ]] ; then
+	php_command="admin_php"
+else
+	php_command="admin_php5"
+fi
+
+WEBADMIN_PASS=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 16 ; echo '')
+TEMP=`/usr/local/lsws/admin/fcgi-bin/${php_command} /usr/local/lsws/admin/misc/htpasswd.php ${WEBADMIN_PASS}`
+echo "" > /usr/local/lsws/admin/conf/htpasswd
+echo "admin:$TEMP" > /usr/local/lsws/admin/conf/htpasswd
+echo -e "\nNew WebAdmin Console access: admin , $WEBADMIN_PASS\n"
+echo -e "\nYou can reset by command:\n"
+echo -e "/usr/local/lsws/admin/misc/admpass.sh\n"
+}
+
 restore_ols() {
 echo -e "Restore OpenLiteSpeed in case LiteSpeed Enterprise installation failed..."
 echo -e "Listing all the backup files\n"
@@ -48,7 +64,8 @@ else
     check_return
     systemctl status lsws
     rm -f /usr/local/lsws/autoupdate/*
-    echo -e "OpenLiteSpeed Restored..."
+    echo -e "\nOpenLiteSpeed Restored...\n"
+    reset_pass
   fi
 fi
 }
@@ -556,16 +573,6 @@ fi
 
 lsws_conf_file
 
-if [[ -f /usr/local/lsws/admin/fcgi-bin/admin_php ]] ; then
-	php_command="admin_php"
-else
-	php_command="admin_php5"
-fi
-
-WEBADMIN_PASS=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 16 ; echo '')
-TEMP=`/usr/local/lsws/admin/fcgi-bin/${php_command} /usr/local/lsws/admin/misc/htpasswd.php ${WEBADMIN_PASS}`
-echo "" > /usr/local/lsws/admin/conf/htpasswd
-echo "admin:$TEMP" > /usr/local/lsws/admin/conf/htpasswd
 
 /usr/local/lsws/bin/lswsctrl stop > /dev/null 2>&1
 pkill lsphp
@@ -573,10 +580,8 @@ systemctl stop lsws
 systemctl start lsws
 systemctl status lsws
   if [[ $? == "0" ]] ; then
+    reset_pass
     echo -e "\nLiteSpeed Enterprise has started and running...\n"
-    echo -e "\nNew WebAdmin Console access: admin , $WEBADMIN_PASS\n"
-    echo -e "\nYou can reset by command:\n"
-    echo -e "/usr/local/lsws/admin/misc/admpass.sh"
   else
     echo -e "Something went wrong , LSWS can not be started."
     exit 1
