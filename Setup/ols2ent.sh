@@ -55,7 +55,7 @@ webadmin_reset() {
     echo "admin:$TEMP" > $LS_DIR/admin/conf/htpasswd
     echo -e "\nWebAdmin Console password has been set to: $WEBADMIN_PASS\n"
     echo -e "\nYou can reset by command:\n"
-    echo -e "$LS_DIR/admin/misc/admpass.sh"
+    echo -e "$LS_DIR/admin/misc/admpass.sh\n"
 }
 
 check_pkg_manage(){
@@ -222,7 +222,7 @@ gen_store_dir(){
 }
 
 uninstall_ols() {
-    if [[ ! -f $LS_DIR/conf/httpd_config.conf ]] ; then
+    if [[ -f $LS_DIR/conf/httpd_config.conf ]] ; then
         DATE=`date +%Y-%m-%d_%H%M`
         mkdir $STORE_DIR/OLS_backup_$DATE/
         echo -e "Backing up current OpenLiteSpeed configuration file to $STORE_DIR/OLS_backup_$DATE/"
