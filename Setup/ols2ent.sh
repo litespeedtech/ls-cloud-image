@@ -11,16 +11,35 @@ ADMIN_PASS="1234567"
 LS_DIR='/usr/local/lsws'
 STORE_DIR='/opt/.litespeed_conf'
 CONF_URL='https://raw.githubusercontent.com/litespeedtech/ls-cloud-image/master/Setup/conf/ols2ent'
+ols_conf_file="$LS_DIR/conf/httpd_config.conf"
+declare -a vhosts
+declare -a domains
+EPACE='        '
+start_mark='{'
+end_mark='}'
+
+echow(){
+    FLAG=${1}
+    shift
+    echo -e "\033[1m${EPACE}${FLAG}\033[0m${@}"
+}
 
 show_help() {
-echo -e "\nOpenLiteSpeed to LiteSpeed Enterprise converter script.\n"
-echo -e "\nThis script will:"
-echo -e "\n1. Backup current $LS_DIR/conf directory to $STORE_DIR"
-echo -e "\n2. Read current OpenLiteSpeed configuration files to get domains, PHP version, PHP user/group and SSL cert/key file"
-echo -e "\n3. From above read information, it will generate the Aapche configuration file"
-echo -e "\n4. Uninstall OpenLiteSpeed"
-echo -e "\n5. Install LiteSpeed Enterprise and configure it to use Apache configuration file from step 3"
-echo -e "\nNote: In case LiteSpeed Enterprise installation failed , please run script with \e[31m--resotre\e[39m to restore OpenLiteSpeed\n"
+    echo -e "\nOpenLiteSpeed to LiteSpeed Enterprise converter script.\n"
+    echo -e "\nThis script will:"
+    echo -e "\n1. Backup current $LS_DIR/conf directory to $STORE_DIR"
+    echo -e "\n2. Read current OpenLiteSpeed configuration files to get domains, PHP version, PHP user/group and SSL cert/key file"
+    echo -e "\n3. From above read information, it will generate the Aapche configuration file"
+    echo -e "\n4. Uninstall OpenLiteSpeed"
+    echo -e "\n5. Install LiteSpeed Enterprise and configure it to use Apache configuration file from step 3"
+    echo -e "\nNote: In case LiteSpeed Enterprise installation failed , please run script with \e[31m--resotre\e[39m to restore OpenLiteSpeed\n"
+    echow '-L, --lsws'
+    echo "${EPACE}${EPACE} Install and switch from OLS to LSWS. "
+    echow '-R, --restore'
+    echo "${EPACE}${EPACE} Restore to OpenLiteSpeed. "    
+    echow '-H, --help'
+    echo "${EPACE}${EPACE}Display help and exit."
+    exit 0
 }
 
 webadmin_reset() {
@@ -41,18 +60,24 @@ webadmin_reset() {
 
 check_pkg_manage(){
     if hash apt > /dev/null 2>&1 ; then
-      pkg_tool='apt'
+        pkg_tool='apt'
+        USER="www-data"
+        GROUP="www-data"      
     elif hash yum > /dev/null 2>&1 ; then
-      pkg_tool='yum'
+        pkg_tool='yum'
+        USER="nobody"
+        GROUP="nobody"      
     else
       echo -e "can not detect package management tool ..."
       exit 1
     fi
 }
-check_pkg_manage
 
 restore_ols() {
-    echo -e "Restore OpenLiteSpeed in case LiteSpeed Enterprise installation failed..."
+    if $LS_DIR/bin/lshttpd -v | grep -q Open ; then
+        echo -e "You arelady have OpenLiteSpeed installed..."
+        exit 1
+    fi
     echo -e "Listing all the backup files\n"
     ls $STORE_DIR | grep OLS_  --color=never
     echo -e "\nPlease input the backup directory :\n"
@@ -63,26 +88,21 @@ restore_ols() {
       echo -e "the dir seems not exists."
       exit 1
     else
-      if [[ ! -f $STORE_DIR/$ols_backup_dir/conf/httpd_config.conf ]] ; then
-          echo -e "main conf file is missing..."
-          exit 1
-      else
-          $pkg_tool install openlitespeed -y
-          rm -rf $LS_DIR/conf/*
-          cp -a $STORE_DIR/$ols_backup_dir/conf/* $LS_DIR/conf/
-          chown -R lsadm:lsadm $LS_DIR/conf
-          chown root:root $LS_DIR/logs
-          chmod 755 $LS_DIR/logs
-          systemctl stop lsws
-          $LS_DIR/bin/lswsctrl stop > /dev/null 2>&1
-          pkill lsphp
-          systemctl start lsws
-          check_return
-          systemctl status lsws
-          rm -f $LS_DIR/autoupdate/*
-          echo -e "OpenLiteSpeed Restored..."
-          webadmin_reset
-      fi
+        if [[ ! -f $STORE_DIR/$ols_backup_dir/conf/httpd_config.conf ]] ; then
+            echo -e "main conf file is missing..."
+            exit 1
+        else
+            $pkg_tool install openlitespeed -y
+            rm -rf $LS_DIR/conf/*
+            cp -a $STORE_DIR/$ols_backup_dir/conf/* $LS_DIR/conf/
+            chown -R lsadm:lsadm $LS_DIR/conf
+            chown root:root $LS_DIR/logs
+            chmod 755 $LS_DIR/logs
+            restart_lsws
+            rm -f $LS_DIR/autoupdate/*
+            echo -e "OpenLiteSpeed Restored..."
+            webadmin_reset
+        fi
     fi
 }
 
@@ -162,6 +182,20 @@ check_license() {
     echo -e "License seems valid..."
 }
 
+restart_lsws(){
+    $LS_DIR/bin/lswsctrl stop > /dev/null 2>&1
+    pkill lsphp
+    systemctl stop lsws
+    systemctl start lsws
+    systemctl status lsws
+    if [[ ${?} == '0' ]] ; then
+        echo -e "\nLiteSpeed has started and running...\n"
+    else
+        echo -e "Something went wrong , LSWS can not be started."
+        exit 1
+    fi    
+}
+
 check_return() {
   if [[ $? -eq "0" ]] ; then
       :
@@ -171,99 +205,93 @@ check_return() {
   fi
 }
 
-ols_conf_file="$LS_DIR/conf/httpd_config.conf"
-
-if [[ ! -d $STORE_DIR ]] ; then
-    mkdir $STORE_DIR
-fi
-#create a dir to save files
-
-if [[ ! -d $STORE_DIR/conf ]] ; then
-    mkdir $STORE_DIR/conf
-fi
-rm -rf $STORE_DIR/conf/*
-
-if [[ ! -d $STORE_DIR/conf/vhosts ]] ; then
-    mkdir $STORE_DIR/conf/vhosts
-fi
-rm -rf $STORE_DIR/conf/vhosts/*
-
+gen_store_dir(){
+    if [[ ! -d $STORE_DIR ]] ; then
+        mkdir $STORE_DIR
+    fi
+    if [[ ! -d $STORE_DIR/conf ]] ; then
+        mkdir $STORE_DIR/conf
+    else
+        rm -rf $STORE_DIR/conf/*
+    fi
+    if [[ ! -d $STORE_DIR/conf/vhosts ]] ; then
+        mkdir $STORE_DIR/conf/vhosts
+    else
+        rm -rf $STORE_DIR/conf/vhosts/*
+    fi    
+}
 
 uninstall_ols() {
-    DATE=`date +%Y-%m-%d_%H%M`
-    mkdir $STORE_DIR/OLS_backup_$DATE/
-    echo -e "Backing up current OpenLiteSpeed configuration file to $STORE_DIR/OLS_backup_$DATE/"
-    cp -a $LS_DIR/conf/ $STORE_DIR/OLS_backup_$DATE/
+    if [[ ! -f $LS_DIR/conf/httpd_config.conf ]] ; then
+        DATE=`date +%Y-%m-%d_%H%M`
+        mkdir $STORE_DIR/OLS_backup_$DATE/
+        echo -e "Backing up current OpenLiteSpeed configuration file to $STORE_DIR/OLS_backup_$DATE/"
+        cp -a $LS_DIR/conf/ $STORE_DIR/OLS_backup_$DATE/
 
-    echo -e "Uninstalling OpenLiteSpeed..."
+        echo -e "Uninstalling OpenLiteSpeed..."
 
-    $LS_DIR/bin/lswsctrl stop > /dev/null 2>&1
-    pkill lsphp
-    systemctl stop lsws
+        $LS_DIR/bin/lswsctrl stop > /dev/null 2>&1
+        pkill lsphp
+        systemctl stop lsws
 
-    $pkg_tool remove openlitespeed -y
-    check_return
-    echo -e "OpenLiteSpeed successfully removed..."
+        $pkg_tool remove openlitespeed -y
+        check_return
+        echo -e "OpenLiteSpeed successfully removed..."
+    fi
+}
+
+rm_lsws_autoupdate(){
+    rm -f $LS_DIR/autoupdate/*
 }
 
 install_lsws() {
-
-    if [[ $pkg_tool == "apt" ]] ; then
-        USER="www-data"
-        GROUP="www-data"
-    else
-        USER="nobody"
-        GROUP="nobody"
-    fi
-
-    sed -i '/^license$/d' install.sh
-    sed -i 's/read TMPS/TMPS=0/g' install.sh
-    sed -i 's/read TMP_YN/TMP_YN=N/g' install.sh
-    sed -i '/read [A-Z]/d' functions.sh
-    sed -i 's/HTTP_PORT=$TMP_PORT/HTTP_PORT=443/g' functions.sh
-    sed -i 's/ADMIN_PORT=$TMP_PORT/ADMIN_PORT=7080/g' functions.sh
-    sed -i "/^license()/i\
-    PASS_ONE=${ADMIN_PASS}\
-    PASS_TWO=${ADMIN_PASS}\
-    TMP_USER=${USER}\
-    TMP_GROUP=${GROUP}\
-    TMP_PORT=''\
-    TMP_DEST=''\
-    ADMIN_USER=''\
-    ADMIN_EMAIL=''
-    " functions.sh
-    chmod +x install.sh
-    echo -e "Installing LiteSpeed Enterprise..."
-    counter=0
-    ./install.sh
-    if [[ $? != "0" ]] ; then
-      while [ $counter -le 4 ]
-      do
+    if [[ ! -f $LS_DIR/conf/httpd_config.xml ]] ; then
+        sed -i '/^license$/d' install.sh
+        sed -i 's/read TMPS/TMPS=0/g' install.sh
+        sed -i 's/read TMP_YN/TMP_YN=N/g' install.sh
+        sed -i '/read [A-Z]/d' functions.sh
+        sed -i 's/HTTP_PORT=$TMP_PORT/HTTP_PORT=443/g' functions.sh
+        sed -i 's/ADMIN_PORT=$TMP_PORT/ADMIN_PORT=7080/g' functions.sh
+        sed -i "/^license()/i\
+        PASS_ONE=${ADMIN_PASS}\
+        PASS_TWO=${ADMIN_PASS}\
+        TMP_USER=${USER}\
+        TMP_GROUP=${GROUP}\
+        TMP_PORT=''\
+        TMP_DEST=''\
+        ADMIN_USER=''\
+        ADMIN_EMAIL=''
+        " functions.sh
+        chmod +x install.sh
+        echo -e "Installing LiteSpeed Enterprise..."
+        counter=0
         ./install.sh
-          if [[ $? == "0" ]] ; then
-            break
-          elif [[ $counter == "3" ]]; then
-            echo -e "\nUnable to install LiteSpeed Enterprise..."
-            echo -e "\nSwitching back to OpenLiteSpeed..."
-            restore_ols
-            exit
-          fi
-      counter=$((var+1))
-      done
-      #loop 3 three times see if install success , if not , at 3rd time , revert to OLS
+        if [[ $? != "0" ]] ; then
+        while [ $counter -le 4 ]
+        do
+            ./install.sh
+            if [[ $? == "0" ]] ; then
+                break
+            elif [[ $counter == "3" ]]; then
+                echo -e "\nUnable to install LiteSpeed Enterprise..."
+                echo -e "\nSwitching back to OpenLiteSpeed..."
+                restore_ols
+                exit
+            fi
+        counter=$((var+1))
+        done
+        fi
+        echo -e "LiteSpeed Enterprise installed..."
+        echo -e "Generating configuration..."
+        rm_lsws_autoupdate
     fi
-
-    echo -e "LiteSpeed Enterprise installed..."
-    echo -e "Generating configuration..."
 }
 
 lsws_conf_file() {
     if [[ -f $LS_DIR/conf/httpd.conf ]] ; then
         rm -f $LS_DIR/conf/httpd.conf
     fi
-
     cp $STORE_DIR/httpd.conf $LS_DIR/conf/httpd.conf
-
     if [[ $pkg_tool == "apt" ]] ; then
         sed -i $'s/Group nobody/Group www-data/' $LS_DIR/conf/httpd.conf
         sed -i $'s/User nobody/User www-data/' $LS_DIR/conf/httpd.conf
@@ -287,8 +315,6 @@ write_apache_conf() {
         wget -q -O $STORE_DIR/httpd.conf https://raw.githubusercontent.com/litespeedtech/ls-cloud-image/master/Setup/conf/ols2ent/httpd.conf
         check_return
     fi
-
-    #main httpd.conf only needs to download once.
 
     if [[ -d $STORE_DIR/conf/vhosts/${domains[i]} ]] ; then
         rm -rf $STORE_DIR/conf/vhosts/${domains[i]}
@@ -374,7 +400,6 @@ write_apache_conf() {
     else
         sed -i 's|replacement_key_file|'$LS_DIR'/admin/conf/webadmin.key|g' $STORE_DIR/conf/vhosts/${domains[i]}/${domains[i]}.conf
     fi
-    #replace cert/key to webadmin's if there is none.
 
     if [[ $phpmyadmin == "ON" ]] ; then
         sed -i 's|php_my_admin_directive|Alias /phpmyadmin/ /var/www/phpmyadmin/|g' $STORE_DIR/conf/vhosts/${domains[i]}/${domains[i]}.conf
@@ -455,7 +480,6 @@ get_conf_from_vhconf() {
     certFile=$(grep "certFile" $VH_CONF | awk 'NR==1{print $2}')
     echo "Cert file detected: $certFile"
     #if returns empty ,  try get from main conf
-
 }
 
 get_conf_from_main() {
@@ -481,115 +505,101 @@ get_conf_from_main() {
         done
 }
 
-if [[ $(id -u) != 0 ]]  > /dev/null; then
-    echo -e "\nYou must have root privileges to run this script. ...\n"
-    exit 1
-else
-	  echo -e "\nYou are runing as root...\n"
-fi
-
-
-if [[ $1 == "--restore" ]] || [[ $1 == "-r" ]] || [[ $1 == "restore" ]] ; then
-    if $LS_DIR/bin/lshttpd -v | grep -q Open ; then
-        echo -e "You arelady have OpenLiteSpeed installed..."
+check_root_user(){
+    if [[ $(id -u) != 0 ]]  > /dev/null; then
+        echo -e "\nYou must have root privileges to run this script. ...\n"
         exit 1
-    else
-        echo -e "Prepare to restore OpenLiteSpeed..."
     fi
+}
+
+check_ip(){
+    server_ipv4=$(curl -S -s -4 https://openlitespeed.org/?ipv4)
+    server_ipv6=$(curl -S -s -6 https://openlitespeed.org/?ipv6 2>/dev/null)
+    if [[ $? != "0" ]] ; then
+        server_ipv6=''
+    else
+        server_ipv6="[$server_ipv6]"
+        #enclose it with [ ] as Apache requires it
+    fi
+}
+
+check_no_lsws(){
+    if $LS_DIR/bin/lshttpd -v | grep -q Enterprise ; then
+        echo -e "You have already installed LiteSpeed Enterprise..."
+        exit 1
+    fi    
+}
+
+gen_domain_list(){
+    for i in $(grep "virtualhost" $ols_conf_file);
+        do
+            vhosts=("${vhosts[@]}" "$i")
+        done
+
+    vhosts=( "${vhosts[@]/\{/}" )
+    vhosts=( "${vhosts[@]/virtualhost/}" )
+
+    for i in ${!vhosts[@]} ;
+        do
+            if [[ ${vhosts[i]} != "" ]] ; then
+                domains=( "${domains[@]}" "${vhosts[i]}" )
+            fi
+        done
+}
+
+vhconf_to_apache(){
+    i=0
+    while [[ $i -ne ${#domains[@]} ]]
+        do
+            echo "detected ${domains[i]}..."
+            if [[ ${domains[i]} != "Example" ]] ; then
+                start_line=$(grep -n "virtualhost ${domains[i]}" $ols_conf_file | awk -F: '{ print $1 }' )
+                get_conf_from_main
+                echo "vhost root is $VH_ROOT"
+                echo "vhost conf is $VH_CONF"
+                get_conf_from_vhconf
+                write_apache_conf
+            fi
+            i=$(( $i + 1 ))
+        done
+}
+
+main_restore_ols(){
+    check_root_user
+    check_pkg_manage
+    gen_store_dir
     restore_ols
-    exit
-fi
+}
 
-if [[ $1 == "--help" ]] || [[ $1 == "-h" ]] || [[ $1 == "help" ]] ; then
-    show_help
-    exit 1
-fi
-
-
-if $LS_DIR/bin/lshttpd -v | grep -q Enterprise ; then
-    echo -e "You have already installed LiteSpeed Enterprise..."
-    exit 1
-fi
-
-server_ipv4=$(curl -S -s -4 https://openlitespeed.org/?ipv4)
-server_ipv6=$(curl -S -s -6 https://openlitespeed.org/?ipv6)
-
-if [[ $? != "0" ]] ; then
-    #no ipv6 , skip it
-    server_ipv6=""
-else
-    server_ipv6="[$server_ipv6]"
-    #enclose it with [ ] as Apache requires it
-fi
-
-licesne_input
-check_license
-#ask and check license before everything , if user doesn't have valid license , following functions no need to be executed anymore.
-
-
-declare -a vhosts
-declare -a domains
-for i in $(grep "virtualhost" $ols_conf_file);
-    do
-        vhosts=("${vhosts[@]}" "$i")
-    done
-#above code to get all virtualhost list in main conf.
-
-vhosts=( "${vhosts[@]/\{/}" )
-vhosts=( "${vhosts[@]/virtualhost/}" )
-
-for i in ${!vhosts[@]} ;
-    do
-        if [[ ${vhosts[i]} != "" ]] ; then
-            domains=( "${domains[@]}" "${vhosts[i]}" )
-        fi
-    done
-
-start_mark="{"
-end_mark="}"
-i="0"
-while [[ $i -ne ${#domains[@]} ]]
-    do
-        echo "detected ${domains[i]}..."
-        if [[ ${domains[i]} != "Example" ]] ; then
-            #disgard the example vhost.
-            start_line=$(grep -n "virtualhost ${domains[i]}" $ols_conf_file | awk -F: '{ print $1 }' )
-            get_conf_from_main
-            #this get vh_root and vh_conf location.
-
-            echo "vhost root is $VH_ROOT"
-            echo "vhost conf is $VH_CONF"
-
-            get_conf_from_vhconf
-            #this should get php version, php user, docroot, domains/alias and SSL setting.
-
-            write_apache_conf
-        fi
-        i=$(( $i + 1 ))
-    done
-
-
-if [[ -f $LS_DIR/conf/httpd_config.conf ]] ; then
-    #check if OLS conf exists or not , if so , back up and uninstall it
+main_to_lsws(){
+    check_root_user
+    check_no_lsws
+    check_pkg_manage
+    gen_store_dir    
+    check_ip
+    licesne_input
+    check_license
+    gen_domain_list
+    vhconf_to_apache
     uninstall_ols
-fi
-if [[ ! -f $LS_DIR/conf/httpd_config.xml ]] ; then
-    #check if LSWS conf exists or not , if not , install LSWS
     install_lsws
-    rm -f $LS_DIR/autoupdate/*
-fi
-
-lsws_conf_file
-
-$LS_DIR/bin/lswsctrl stop > /dev/null 2>&1
-pkill lsphp
-systemctl stop lsws
-systemctl start lsws
-systemctl status lsws
-if [[ $? == "0" ]] ; then
-    echo -e "\nLiteSpeed Enterprise has started and running...\n"
+    lsws_conf_file
+    restart_lsws
     webadmin_reset
-else
-    echo -e "Something went wrong , LSWS can not be started."
-    exit 1
-fi
+}
+
+case ${1} in
+    -[hH] | -help | --help)
+        show_help
+        ;;
+    -[rR] | -restore | --restore)
+        main_restore_ols; exit 0
+        ;;
+    -[lL] | -lsws | --lsws)
+        main_to_lsws; exit 0
+        ;;
+    *) 
+        main_to_lsws; exit 0
+        ;;                  
+esac
+
