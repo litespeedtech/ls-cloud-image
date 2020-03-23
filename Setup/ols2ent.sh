@@ -9,8 +9,35 @@ TOTAL_RAM=$(free -m | awk '/Mem\:/ { print $2 }')
 LICENSE_KEY=""
 ADMIN_PASS="1234567"
 LS_DIR='/usr/local/lsws'
-STORE_DIR='/opt'
+STORE_DIR='/opt/.litespeed_conf'
 CONF_URL='https://raw.githubusercontent.com/litespeedtech/ls-cloud-image/master/Setup/conf/ols2ent'
+
+show_help() {
+echo -e "\nOpenLiteSpeed to LiteSpeed Enterprise converter script.\n"
+echo -e "\nThis script will:"
+echo -e "\n1. Backup current $LS_DIR/conf directory to $STORE_DIR"
+echo -e "\n2. Read current OpenLiteSpeed configuration files to get domains, PHP version, PHP user/group and SSL cert/key file"
+echo -e "\n3. From above read information, it will generate the Aapche configuration file"
+echo -e "\n4. Uninstall OpenLiteSpeed"
+echo -e "\n5. Install LiteSpeed Enterprise and configure it to use Apache configuration file from step 3"
+echo -e "\nNote: In case LiteSpeed Enterprise installation failed , please run script with \e[31m--resotre\e[39m to restore OpenLiteSpeed\n"
+}
+
+webadmin_reset() {
+    if [[ -f $LS_DIR/admin/fcgi-bin/admin_php ]] ; then
+  	  php_command="admin_php"
+    else
+  	  php_command="admin_php5"
+    fi
+
+    WEBADMIN_PASS=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 16 ; echo '')
+    TEMP=`$LS_DIR/admin/fcgi-bin/${php_command} $LS_DIR/admin/misc/htpasswd.php ${WEBADMIN_PASS}`
+    echo "" > $LS_DIR/admin/conf/htpasswd
+    echo "admin:$TEMP" > $LS_DIR/admin/conf/htpasswd
+    echo -e "\nWebAdmin Console password has been set to: $WEBADMIN_PASS\n"
+    echo -e "\nYou can reset by command:\n"
+    echo -e "$LS_DIR/admin/misc/admpass.sh"
+}
 
 check_pkg_manage(){
     if hash apt > /dev/null 2>&1 ; then
@@ -27,33 +54,34 @@ check_pkg_manage
 restore_ols() {
     echo -e "Restore OpenLiteSpeed in case LiteSpeed Enterprise installation failed..."
     echo -e "Listing all the backup files\n"
-    ls /root/.litespeed_conf/ | grep OLS_  --color=never
+    ls $STORE_DIR | grep OLS_  --color=never
     echo -e "\nPlease input the backup directory :\n"
     printf "%s" "e.g. OLS_backup_2020-01-01_1111: "
     read ols_backup_dir
 
-    if [[ ! -d /root/.litespeed_conf/$ols_backup_dir ]] ; then
+    if [[ ! -d $STORE_DIR/$ols_backup_dir ]] ; then
       echo -e "the dir seems not exists."
       exit 1
     else
-      if [[ ! -f /root/.litespeed_conf/$ols_backup_dir/conf/httpd_config.conf ]] ; then
+      if [[ ! -f $STORE_DIR/$ols_backup_dir/conf/httpd_config.conf ]] ; then
           echo -e "main conf file is missing..."
           exit 1
       else
           $pkg_tool install openlitespeed -y
-          rm -rf /usr/local/lsws/conf/*
-          cp -a /root/.litespeed_conf/$ols_backup_dir/conf/* /usr/local/lsws/conf/
-          chown -R lsadm:lsadm /usr/local/lsws/conf
-          chown root:root /usr/local/lsws/logs
-          chmod 755 /usr/local/lsws/logs
+          rm -rf $LS_DIR/conf/*
+          cp -a $STORE_DIR/$ols_backup_dir/conf/* $LS_DIR/conf/
+          chown -R lsadm:lsadm $LS_DIR/conf
+          chown root:root $LS_DIR/logs
+          chmod 755 $LS_DIR/logs
           systemctl stop lsws
-          /usr/local/lsws/bin/lswsctrl stop > /dev/null 2>&1
+          $LS_DIR/bin/lswsctrl stop > /dev/null 2>&1
           pkill lsphp
           systemctl start lsws
           check_return
           systemctl status lsws
-          rm -f /usr/local/lsws/autoupdate/*
+          rm -f $LS_DIR/autoupdate/*
           echo -e "OpenLiteSpeed Restored..."
+          webadmin_reset
       fi
     fi
 }
@@ -99,7 +127,7 @@ licesne_input() {
 
 check_license() {
     latest_version=$(curl -s -S http://update.litespeedtech.com/ws/latest.php | head -n 1 | sed -nre 's/^[^0-9]*(([0-9]+\.)*[0-9]+).*/\1/p')
-    major_version=$(echo "${latest_version}" | cut -c 1) 
+    major_version=$(echo "${latest_version}" | cut -c 1)
     bitness=$(uname -m)
     if [ "${bitness}" == "i686" ]; then
         bitness="i386"
@@ -143,33 +171,33 @@ check_return() {
   fi
 }
 
-ols_conf_file="/usr/local/lsws/conf/httpd_config.conf"
+ols_conf_file="$LS_DIR/conf/httpd_config.conf"
 
-if [[ ! -d /root/.litespeed_conf ]] ; then
-    mkdir /root/.litespeed_conf
+if [[ ! -d $STORE_DIR ]] ; then
+    mkdir $STORE_DIR
 fi
 #create a dir to save files
 
-if [[ ! -d /root/.litespeed_conf/conf ]] ; then
-    mkdir /root/.litespeed_conf/conf
+if [[ ! -d $STORE_DIR/conf ]] ; then
+    mkdir $STORE_DIR/conf
 fi
-rm -rf /root/.litespeed_conf/conf/*
+rm -rf $STORE_DIR/conf/*
 
-if [[ ! -d /root/.litespeed_conf/conf/vhosts ]] ; then
-    mkdir /root/.litespeed_conf/conf/vhosts
+if [[ ! -d $STORE_DIR/conf/vhosts ]] ; then
+    mkdir $STORE_DIR/conf/vhosts
 fi
-rm -rf /root/.litespeed_conf/conf/vhosts/*
+rm -rf $STORE_DIR/conf/vhosts/*
 
 
 uninstall_ols() {
     DATE=`date +%Y-%m-%d_%H%M`
-    mkdir /root/.litespeed_conf/OLS_backup_$DATE/
-    echo -e "Backing up current OpenLiteSpeed configuration file to /root/.litespeed_conf/OLS_backup_$DATE/"
-    cp -a /usr/local/lsws/conf/ /root/.litespeed_conf/OLS_backup_$DATE/
+    mkdir $STORE_DIR/OLS_backup_$DATE/
+    echo -e "Backing up current OpenLiteSpeed configuration file to $STORE_DIR/OLS_backup_$DATE/"
+    cp -a $LS_DIR/conf/ $STORE_DIR/OLS_backup_$DATE/
 
     echo -e "Uninstalling OpenLiteSpeed..."
 
-    /usr/local/lsws/bin/lswsctrl stop > /dev/null 2>&1
+    $LS_DIR/bin/lswsctrl stop > /dev/null 2>&1
     pkill lsphp
     systemctl stop lsws
 
@@ -230,128 +258,128 @@ install_lsws() {
 }
 
 lsws_conf_file() {
-    if [[ -f /usr/local/lsws/conf/httpd.conf ]] ; then
-        rm -f /usr/local/lsws/conf/httpd.conf
+    if [[ -f $LS_DIR/conf/httpd.conf ]] ; then
+        rm -f $LS_DIR/conf/httpd.conf
     fi
 
-    cp /root/.litespeed_conf/httpd.conf /usr/local/lsws/conf/httpd.conf
+    cp $STORE_DIR/httpd.conf $LS_DIR/conf/httpd.conf
 
     if [[ $pkg_tool == "apt" ]] ; then
-        sed -i $'s/Group nobody/Group www-data/' /usr/local/lsws/conf/httpd.conf
-        sed -i $'s/User nobody/User www-data/' /usr/local/lsws/conf/httpd.conf
+        sed -i $'s/Group nobody/Group www-data/' $LS_DIR/conf/httpd.conf
+        sed -i $'s/User nobody/User www-data/' $LS_DIR/conf/httpd.conf
     fi
-    wget -O /usr/local/lsws/conf/httpd_config.xml https://raw.githubusercontent.com/litespeedtech/ls-cloud-image/master/Setup/conf/ols2ent/httpd_config.xml
+    wget -O $LS_DIR/conf/httpd_config.xml https://raw.githubusercontent.com/litespeedtech/ls-cloud-image/master/Setup/conf/ols2ent/httpd_config.xml
     check_return
     if [[ $pkg_tool == "apt" ]] ; then
-        sed -i $'s/<user>nobody<\/user>/<user>www-data<\/user>/' /usr/local/lsws/conf/httpd_config.xml
-        sed -i $'s/<group>nobody<\/group>/<group>www-data<\/group>/' /usr/local/lsws/conf/httpd_config.xml
+        sed -i $'s/<user>nobody<\/user>/<user>www-data<\/user>/' $LS_DIR/conf/httpd_config.xml
+        sed -i $'s/<group>nobody<\/group>/<group>www-data<\/group>/' $LS_DIR/conf/httpd_config.xml
     fi
 
-    rm -rf /usr/local/lsws/conf/vhosts/*
-    rm -rf /usr/local/lsws/cachedata/*
-    cp -a /root/.litespeed_conf/conf/vhosts/ /usr/local/lsws/conf/
-    chown -R lsadm:lsadm /usr/local/lsws/conf
+    rm -rf $LS_DIR/conf/vhosts/*
+    rm -rf $LS_DIR/cachedata/*
+    cp -a $STORE_DIR/conf/vhosts/ $LS_DIR/conf/
+    chown -R lsadm:lsadm $LS_DIR/conf
 }
 
 write_apache_conf() {
 
-    if [[ ! -f /root/.litespeed_conf/httpd.conf ]] ; then
-        wget -q -O /root/.litespeed_conf/httpd.conf https://raw.githubusercontent.com/litespeedtech/ls-cloud-image/master/Setup/conf/ols2ent/httpd.conf
+    if [[ ! -f $STORE_DIR/httpd.conf ]] ; then
+        wget -q -O $STORE_DIR/httpd.conf https://raw.githubusercontent.com/litespeedtech/ls-cloud-image/master/Setup/conf/ols2ent/httpd.conf
         check_return
     fi
 
     #main httpd.conf only needs to download once.
 
-    if [[ -d /root/.litespeed_conf/conf/vhosts/${domains[i]} ]] ; then
-        rm -rf /root/.litespeed_conf/conf/vhosts/${domains[i]}
+    if [[ -d $STORE_DIR/conf/vhosts/${domains[i]} ]] ; then
+        rm -rf $STORE_DIR/conf/vhosts/${domains[i]}
     fi
 
-    mkdir /root/.litespeed_conf/conf/vhosts/${domains[i]}
+    mkdir $STORE_DIR/conf/vhosts/${domains[i]}
 
-    wget -q -O /root/.litespeed_conf/conf/vhosts/${domains[i]}/${domains[i]}.conf https://raw.githubusercontent.com/litespeedtech/ls-cloud-image/master/Setup/conf/ols2ent/example.conf
+    wget -q -O $STORE_DIR/conf/vhosts/${domains[i]}/${domains[i]}.conf https://raw.githubusercontent.com/litespeedtech/ls-cloud-image/master/Setup/conf/ols2ent/example.conf
     check_return
 
     if [[ ${domains[i]} == "wordpress" ]] ; then
-        sed -i 's|replacement_domain|'$vhDomain'|g' /root/.litespeed_conf/conf/vhosts/${domains[i]}/${domains[i]}.conf
+        sed -i 's|replacement_domain|'$vhDomain'|g' $STORE_DIR/conf/vhosts/${domains[i]}/${domains[i]}.conf
     else
-        sed -i 's|replacement_domain|'${domains[i]}'|g' /root/.litespeed_conf/conf/vhosts/${domains[i]}/${domains[i]}.conf
+        sed -i 's|replacement_domain|'${domains[i]}'|g' $STORE_DIR/conf/vhosts/${domains[i]}/${domains[i]}.conf
     fi
 
     if [[ $vhAliases == "www." ]] ; then
         vhAliases="www.${domains[i]}"
-        sed -i 's|replacement_alias|'$vhAliases'|g' /root/.litespeed_conf/conf/vhosts/${domains[i]}/${domains[i]}.conf
+        sed -i 's|replacement_alias|'$vhAliases'|g' $STORE_DIR/conf/vhosts/${domains[i]}/${domains[i]}.conf
     fi
 
     if [[ $vhAliases == "*" ]] ; then
-        sed -i 's|replacement_alias|'$vhAliases'|g' /root/.litespeed_conf/conf/vhosts/${domains[i]}/${domains[i]}.conf
+        sed -i 's|replacement_alias|'$vhAliases'|g' $STORE_DIR/conf/vhosts/${domains[i]}/${domains[i]}.conf
     elif echo $vhAliases | grep -q -P '(?=^.{4,253}$)(^(?:[a-zA-Z0-9](?:(?:[a-zA-Z0-9\-]){0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$)' ; then
-        sed -i 's|replacement_alias|'$vhAliases'|g' /root/.litespeed_conf/conf/vhosts/${domains[i]}/${domains[i]}.conf
+        sed -i 's|replacement_alias|'$vhAliases'|g' $STORE_DIR/conf/vhosts/${domains[i]}/${domains[i]}.conf
     fi
 
-    sed -i 's|replacement_adminemail|'$adminEmail'|g' /root/.litespeed_conf/conf/vhosts/${domains[i]}/${domains[i]}.conf
+    sed -i 's|replacement_adminemail|'$adminEmail'|g' $STORE_DIR/conf/vhosts/${domains[i]}/${domains[i]}.conf
 
-    sed -i 's|replacement_user|'$php_user'|g' /root/.litespeed_conf/conf/vhosts/${domains[i]}/${domains[i]}.conf
+    sed -i 's|replacement_user|'$php_user'|g' $STORE_DIR/conf/vhosts/${domains[i]}/${domains[i]}.conf
 
-    sed -i 's|replacement_group|'$php_group'|g' /root/.litespeed_conf/conf/vhosts/${domains[i]}/${domains[i]}.conf
+    sed -i 's|replacement_group|'$php_group'|g' $STORE_DIR/conf/vhosts/${domains[i]}/${domains[i]}.conf
 
     if [[ ${domains[i]} == "wordpress" ]] ; then
-        sed -i 's|replacement_adminemail|'$adminEmail'|g' /root/.litespeed_conf/httpd.conf
-        sed -i 's|replacement_user|'$php_user'|g' /root/.litespeed_conf/httpd.conf
-        sed -i 's|replacement_group|'$php_group'|g' /root/.litespeed_conf/httpd.conf
+        sed -i 's|replacement_adminemail|'$adminEmail'|g' $STORE_DIR/httpd.conf
+        sed -i 's|replacement_user|'$php_user'|g' $STORE_DIR/httpd.conf
+        sed -i 's|replacement_group|'$php_group'|g' $STORE_DIR/httpd.conf
         if [[ $server_ipv6 == "" ]] ; then
-            sed -i 's|replacement_IP|'$server_ipv4'|g' /root/.litespeed_conf/httpd.conf
-            sed -i 's|replacement_servername|'$server_ipv4'|g' /root/.litespeed_conf/httpd.conf
+            sed -i 's|replacement_IP|'$server_ipv4'|g' $STORE_DIR/httpd.conf
+            sed -i 's|replacement_servername|'$server_ipv4'|g' $STORE_DIR/httpd.conf
         else
-            sed -i 's|replacement_IP:80|'$server_ipv4':80 '$server_ipv6':80|g' /root/.litespeed_conf/httpd.conf
-            sed -i 's|replacement_IP:443|'$server_ipv4':443 '$server_ipv6':443|g' /root/.litespeed_conf/httpd.conf
-            sed -i 's|replacement_servername|'$server_ipv4'\n\ \ \ \ ServerAlias '$server_ipv4' '$server_ipv6' |g' /root/.litespeed_conf/httpd.conf
+            sed -i 's|replacement_IP:80|'$server_ipv4':80 '$server_ipv6':80|g' $STORE_DIR/httpd.conf
+            sed -i 's|replacement_IP:443|'$server_ipv4':443 '$server_ipv6':443|g' $STORE_DIR/httpd.conf
+            sed -i 's|replacement_servername|'$server_ipv4'\n\ \ \ \ ServerAlias '$server_ipv4' '$server_ipv6' |g' $STORE_DIR/httpd.conf
         fi
 
         if [[ -f $certFile ]] ; then
-            sed -i 's|replacement_cert_file|'$certFile'|g' /root/.litespeed_conf/httpd.conf
+            sed -i 's|replacement_cert_file|'$certFile'|g' $STORE_DIR/httpd.conf
         else
-            sed -i 's|replacement_cert_file|/usr/local/lsws/admin/conf/webadmin.crt|g' /root/.litespeed_conf/httpd.conf
+            sed -i 's|replacement_cert_file|'$LS_DIR'/admin/conf/webadmin.crt|g' $STORE_DIR/httpd.conf
         fi
 
         if [[ -f $keyFile ]] ; then
-            sed -i 's|replacement_key_file|'$keyFile'|g' /root/.litespeed_conf/httpd.conf
+            sed -i 's|replacement_key_file|'$keyFile'|g' $STORE_DIR/httpd.conf
         else
-            sed -i 's|replacement_key_file|/usr/local/lsws/admin/conf/webadmin.key|g' /root/.litespeed_conf/httpd.conf
+            sed -i 's|replacement_key_file|'$LS_DIR'/admin/conf/webadmin.key|g' $STORE_DIR/httpd.conf
         fi
     fi
 
     if [[ $docRoot ==  "\$VH_ROOT" ]] ; then
         docRoot=$VH_ROOT
     fi
-    sed -i 's|replacement_docroot|'$docRoot'|g' /root/.litespeed_conf/conf/vhosts/${domains[i]}/${domains[i]}.conf
-    sed -i 's|replacement_log|'/usr/local/lsws/logs/${domains[i]}-access.log'|g' /root/.litespeed_conf/conf/vhosts/${domains[i]}/${domains[i]}.conf
+    sed -i 's|replacement_docroot|'$docRoot'|g' $STORE_DIR/conf/vhosts/${domains[i]}/${domains[i]}.conf
+    sed -i 's|replacement_log|'$LS_DIR/logs/${domains[i]}-access.log'|g' $STORE_DIR/conf/vhosts/${domains[i]}/${domains[i]}.conf
     php_ver=$(echo $php_binary | tr -dc '0-9')
-    sed -i 's|replacement_php_ver|'php$php_ver'|g' /root/.litespeed_conf/conf/vhosts/${domains[i]}/${domains[i]}.conf
+    sed -i 's|replacement_php_ver|'php$php_ver'|g' $STORE_DIR/conf/vhosts/${domains[i]}/${domains[i]}.conf
 
     if [[ $server_ipv6 == "" ]] ; then
-        sed -i 's|replacement_IP|'$server_ipv4'|g' /root/.litespeed_conf/conf/vhosts/${domains[i]}/${domains[i]}.conf
+        sed -i 's|replacement_IP|'$server_ipv4'|g' $STORE_DIR/conf/vhosts/${domains[i]}/${domains[i]}.conf
     else
-        sed -i 's|replacement_IP:80|'$server_ipv4':80 '$server_ipv6':80|g' /root/.litespeed_conf/conf/vhosts/${domains[i]}/${domains[i]}.conf
-        sed -i 's|replacement_IP:443|'$server_ipv4':443 '$server_ipv6':443|g' /root/.litespeed_conf/conf/vhosts/${domains[i]}/${domains[i]}.conf
+        sed -i 's|replacement_IP:80|'$server_ipv4':80 '$server_ipv6':80|g' $STORE_DIR/conf/vhosts/${domains[i]}/${domains[i]}.conf
+        sed -i 's|replacement_IP:443|'$server_ipv4':443 '$server_ipv6':443|g' $STORE_DIR/conf/vhosts/${domains[i]}/${domains[i]}.conf
     fi
 
     if [[ -f $certFile ]] ; then
-        sed -i 's|replacement_cert_file|'$certFile'|g' /root/.litespeed_conf/conf/vhosts/${domains[i]}/${domains[i]}.conf
+        sed -i 's|replacement_cert_file|'$certFile'|g' $STORE_DIR/conf/vhosts/${domains[i]}/${domains[i]}.conf
     else
-        sed -i 's|replacement_cert_file|/usr/local/lsws/admin/conf/webadmin.crt|g' /root/.litespeed_conf/conf/vhosts/${domains[i]}/${domains[i]}.conf
+        sed -i 's|replacement_cert_file|'$LS_DIR'/admin/conf/webadmin.crt|g' $STORE_DIR/conf/vhosts/${domains[i]}/${domains[i]}.conf
     fi
 
     if [[ -f $keyFile ]] ; then
-        sed -i 's|replacement_key_file|'$keyFile'|g' /root/.litespeed_conf/conf/vhosts/${domains[i]}/${domains[i]}.conf
+        sed -i 's|replacement_key_file|'$keyFile'|g' $STORE_DIR/conf/vhosts/${domains[i]}/${domains[i]}.conf
     else
-        sed -i 's|replacement_key_file|/usr/local/lsws/admin/conf/webadmin.key|g' /root/.litespeed_conf/conf/vhosts/${domains[i]}/${domains[i]}.conf
+        sed -i 's|replacement_key_file|'$LS_DIR'/admin/conf/webadmin.key|g' $STORE_DIR/conf/vhosts/${domains[i]}/${domains[i]}.conf
     fi
     #replace cert/key to webadmin's if there is none.
 
     if [[ $phpmyadmin == "ON" ]] ; then
-        sed -i 's|php_my_admin_directive|Alias /phpmyadmin/ /var/www/phpmyadmin/|g' /root/.litespeed_conf/conf/vhosts/${domains[i]}/${domains[i]}.conf
+        sed -i 's|php_my_admin_directive|Alias /phpmyadmin/ /var/www/phpmyadmin/|g' $STORE_DIR/conf/vhosts/${domains[i]}/${domains[i]}.conf
     else
-        sed -i "/\b\php_my_admin_directive\b/d" /root/.litespeed_conf/conf/vhosts/${domains[i]}/${domains[i]}.conf
+        sed -i "/\b\php_my_admin_directive\b/d" $STORE_DIR/conf/vhosts/${domains[i]}/${domains[i]}.conf
     fi
 }
 
@@ -462,7 +490,7 @@ fi
 
 
 if [[ $1 == "--restore" ]] || [[ $1 == "-r" ]] || [[ $1 == "restore" ]] ; then
-    if /usr/local/lsws/bin/lshttpd -v | grep -q Open ; then
+    if $LS_DIR/bin/lshttpd -v | grep -q Open ; then
         echo -e "You arelady have OpenLiteSpeed installed..."
         exit 1
     else
@@ -472,13 +500,19 @@ if [[ $1 == "--restore" ]] || [[ $1 == "-r" ]] || [[ $1 == "restore" ]] ; then
     exit
 fi
 
-if /usr/local/lsws/bin/lshttpd -v | grep -q Enterprise ; then
+if [[ $1 == "--help" ]] || [[ $1 == "-h" ]] || [[ $1 == "help" ]] ; then
+    show_help
+    exit 1
+fi
+
+
+if $LS_DIR/bin/lshttpd -v | grep -q Enterprise ; then
     echo -e "You have already installed LiteSpeed Enterprise..."
     exit 1
 fi
 
-server_ipv4=$(curl -S -s -4 https://cyberpanel.sh/?ipv4)
-server_ipv6=$(curl -S -s -6 https://cyberpanel.sh/?ipv6)
+server_ipv4=$(curl -S -s -4 https://openlitespeed.org/?ipv4)
+server_ipv6=$(curl -S -s -6 https://openlitespeed.org/?ipv6)
 
 if [[ $? != "0" ]] ; then
     #no ipv6 , skip it
@@ -535,39 +569,26 @@ while [[ $i -ne ${#domains[@]} ]]
     done
 
 
-if [[ -f /usr/local/lsws/conf/httpd_config.conf ]] ; then
+if [[ -f $LS_DIR/conf/httpd_config.conf ]] ; then
     #check if OLS conf exists or not , if so , back up and uninstall it
     uninstall_ols
 fi
-if [[ ! -f /usr/local/lsws/conf/httpd_config.xml ]] ; then
+if [[ ! -f $LS_DIR/conf/httpd_config.xml ]] ; then
     #check if LSWS conf exists or not , if not , install LSWS
     install_lsws
-    rm -f /usr/local/lsws/autoupdate/*
+    rm -f $LS_DIR/autoupdate/*
 fi
 
 lsws_conf_file
 
-if [[ -f /usr/local/lsws/admin/fcgi-bin/admin_php ]] ; then
-	  php_command="admin_php"
-else
-	  php_command="admin_php5"
-fi
-
-WEBADMIN_PASS=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 16 ; echo '')
-TEMP=`/usr/local/lsws/admin/fcgi-bin/${php_command} /usr/local/lsws/admin/misc/htpasswd.php ${WEBADMIN_PASS}`
-echo "" > /usr/local/lsws/admin/conf/htpasswd
-echo "admin:$TEMP" > /usr/local/lsws/admin/conf/htpasswd
-
-/usr/local/lsws/bin/lswsctrl stop > /dev/null 2>&1
+$LS_DIR/bin/lswsctrl stop > /dev/null 2>&1
 pkill lsphp
 systemctl stop lsws
 systemctl start lsws
 systemctl status lsws
 if [[ $? == "0" ]] ; then
     echo -e "\nLiteSpeed Enterprise has started and running...\n"
-    echo -e "\nNew WebAdmin Console access: admin , $WEBADMIN_PASS\n"
-    echo -e "\nYou can reset by command:\n"
-    echo -e "/usr/local/lsws/admin/misc/admpass.sh"
+    webadmin_reset
 else
     echo -e "Something went wrong , LSWS can not be started."
     exit 1
