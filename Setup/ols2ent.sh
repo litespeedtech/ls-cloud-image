@@ -29,10 +29,10 @@ show_help() {
     echo -e "\nThis script will:"
     echo -e "\n1. Backup current $LS_DIR/conf directory to $STORE_DIR"
     echo -e "\n2. Read current OpenLiteSpeed configuration files to get domains, PHP version, PHP user/group and SSL cert/key file"
-    echo -e "\n3. From above read information, it will generate the Aapche configuration file"
+    echo -e "\n3. From above read information, it will generate the Apache configuration file"
     echo -e "\n4. Uninstall OpenLiteSpeed"
     echo -e "\n5. Install LiteSpeed Enterprise and configure it to use Apache configuration file from step 3"
-    echo -e "\nNote: In case LiteSpeed Enterprise installation failed , please run script with \e[31m--resotre\e[39m to restore OpenLiteSpeed\n"
+    echo -e "\nNote: In case LiteSpeed Enterprise installation failed , please run script with \e[31m--restore\e[39m to restore OpenLiteSpeed\n"
     echow '-L, --lsws'
     echo "${EPACE}${EPACE} Install and switch from OLS to LSWS. "
     echow '-R, --restore'
@@ -75,7 +75,7 @@ check_pkg_manage(){
 
 restore_ols() {
     if $LS_DIR/bin/lshttpd -v | grep -q Open ; then
-        echo -e "You arelady have OpenLiteSpeed installed..."
+        echo -e "You already have OpenLiteSpeed installed..."
         exit 1
     fi
     echo -e "Listing all the backup files\n"
