@@ -430,11 +430,13 @@ update_final_permission(){
 }
 
 ubuntu_config_memcached(){
-   echoG 'Setting Object Cache'
+    echoG 'Setting Object Cache'
+    chown ${USER}:${GROUP} /var/www
     service memcached stop > /dev/null 2>&1
     cat >> "${MEMCACHECONF}" <<END 
 -s /var/www/memcached.sock
 -a 0770
+-p /tmp/memcached.pid
 END
     NEWKEY="-u ${USER}"
     linechange '\-u memcache' ${MEMCACHECONF} "${NEWKEY}"  
@@ -459,6 +461,7 @@ END
 
 centos_config_memcached(){
     echoG 'Setting Object Cache'
+    chown ${USER}:${GROUP} /var/www
     service memcached stop > /dev/null 2>&1 
     cat >> "${MEMCACHESERVICE}" <<END 
 [Unit]
