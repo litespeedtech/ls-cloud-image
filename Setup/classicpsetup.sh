@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # /********************************************************************
-# LiteSpeed WordPress setup Script
+# LiteSpeed ClassicPress setup Script
 # @Author:   LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
-# @Copyright: (c) 2019-2020
-# @Version: 1.0.3
+# @Copyright: (c) 2020-2021
+# @Version: 1.0.0
 # *********************************************************************/
 LSWSFD='/usr/local/lsws'
 DOCHM='/var/www/html.old'
@@ -175,16 +175,17 @@ rm_dummy(){
 }
 
 install_ols_wp(){
-    cd /tmp/; wget -q https://raw.githubusercontent.com/litespeedtech/ols1clk/master/ols1clk.sh
+    #cd /tmp/; wget -q https://raw.githubusercontent.com/litespeedtech/ols1clk/master/ols1clk.sh
+    cd /tmp/; wget -q https://raw.githubusercontent.com/litespeedtech/ols1clk/classicpress/ols1clk.sh
     chmod +x ols1clk.sh
     echo 'Y' | bash ols1clk.sh \
     --lsphp ${PHPVER} \
     --classicpress \
     --classicpresspath ${DOCHM} \
     --dbrootpassword ${root_mysql_pass} \
-    --dbname wordpress \
-    --dbuser wordpress \
-    --dbpassword wordpress
+    --dbname classicpress \
+    --dbuser classicpress \
+    --dbpassword classicpress
     rm -f ols1clk.sh
     wp_conf_path
     rm_dummy
@@ -434,7 +435,6 @@ ubuntu_config_memcached(){
     cat >> "${MEMCACHECONF}" <<END 
 -s /var/www/memcached.sock
 -a 0770
--p /tmp/memcached.pid
 END
     NEWKEY="-u ${USER}"
     linechange '\-u memcache' ${MEMCACHECONF} "${NEWKEY}"  
@@ -542,7 +542,7 @@ END
 }
 
 install_wp_plugin(){
-    echoG 'Setting WordPress'
+    echoG 'Setting ClassicPress'
     for PLUGIN in ${PLUGINLIST}; do
         echoG "Install ${PLUGIN}"
         wget -q -P ${DOCHM}/wp-content/plugins/ https://downloads.wordpress.org/plugin/${PLUGIN}
@@ -560,7 +560,7 @@ set_htaccess(){
         touch ${DOCHM}/.htaccess
     fi   
     cat << EOM > ${DOCHM}/.htaccess
-# BEGIN WordPress
+# BEGIN ClassicPress
 <IfModule mod_rewrite.c>
 RewriteEngine On
 RewriteBase /
@@ -570,7 +570,7 @@ RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule . /index.php [L]
 </IfModule>
 
-# END WordPress
+# END ClassicPress
 EOM
 }
 
