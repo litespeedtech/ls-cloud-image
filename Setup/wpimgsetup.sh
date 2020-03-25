@@ -85,7 +85,7 @@ check_os()
         OSNAME=centos
         USER='nobody'
         GROUP='nobody'
-        PHPINICONF="${LSWSFD}/lsphp73/etc/php.ini"
+        PHPINICONF="${LSWSFD}/lsphp${PHPVER}/etc/php.ini"
         MARIADBCNF='/etc/my.cnf.d/60-server.cnf'
         REDISSERVICE='/lib/systemd/system/redis.service'
         REDISCONF='/etc/redis.conf'
@@ -306,6 +306,9 @@ install_wp_cli(){
         curl -sO https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
         chmod +x wp-cli.phar
         mv wp-cli.phar /usr/local/bin/wp
+    fi
+    if [ ! -f /usr/bin/php ]; then
+        ln -s ${LSWSFD}/lsphp${PHPVER}/bin/php /usr/bin/php
     fi
 }
 

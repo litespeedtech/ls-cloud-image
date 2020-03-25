@@ -160,7 +160,7 @@ system_upgrade() {
 
 wp_conf_path(){
     if [ -f "${LSWSCONF}" ]; then 
-        if [ ! -f $(grep 'configFile.*classicpress' "${LSWSCONF}" | awk '{print $2}') ]; then 
+        if [ ! -f $(grep 'configFile.*wordpress' "${LSWSCONF}" | awk '{print $2}') ]; then 
             WPVHCONF="${EXAMPLECONF}"
         fi
     else
@@ -308,6 +308,9 @@ install_wp_cli(){
         chmod +x wp-cli.phar
         mv wp-cli.phar /usr/local/bin/wp
     fi
+    if [ ! -f /usr/bin/php ]; then
+        ln -s ${LSWSFD}/lsphp${PHPVER}/bin/php /usr/bin/php
+    fi    
 }
 
 centos_config_ols(){

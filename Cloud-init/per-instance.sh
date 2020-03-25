@@ -2,7 +2,7 @@
 # /********************************************************************
 # LiteSpeed Cloud Script
 # @Author:   LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
-# @Copyright: (c) 2018-2020
+# @Copyright: (c) 2018-2021
 # *********************************************************************/
 PANEL=''
 PANELPATH=''
@@ -12,6 +12,8 @@ CONTEXTPATH="${LSDIR}/Example"
 LSHTTPDCFPATH="${LSDIR}/conf/httpd_config.conf"
 if [ -e "${LSDIR}/conf/vhosts/wordpress/vhconf.conf" ]; then
     LSVHCFPATH="${LSDIR}/conf/vhosts/wordpress/vhconf.conf"
+elif [ -e "${LSDIR}/conf/vhosts/classicpress/vhconf.conf" ]; then
+    LSVHCFPATH="${LSDIR}/conf/vhosts/classicpress/vhconf.conf"    
 else
     LSVHCFPATH="${LSDIR}/conf/vhosts/Example/vhconf.conf"
 fi
@@ -106,8 +108,14 @@ update_path()
         else
             APPLICATION='NONE' 
             DOCPATH='/var/www/html.old'
-            WPCT="${PROVIDER}_ols_wordpress"
-            BANNERNAME='wordpress'
+            grep -i ClassicPress ${DOCPATH}/license.txt >/dev/null
+            if [ ${?} = 0 ]; then
+                WPCT="${PROVIDER}_ols_classicpress"
+                BANNERNAME='classicpress'       
+            else
+                WPCT="${PROVIDER}_ols_wordpress"
+                BANNERNAME='wordpress'
+            fi
         fi 
     fi
     PHPMYCFPATH="${PHPMYPATH}/config.inc.php"
@@ -394,7 +402,11 @@ replace_litenerip(){
         for LINENUM in $(grep -n 'map' ${LSHTTPDCFPATH} | cut -d: -f 1)
         do
             if [ -e /var/www/html ] || [ -e /var/www/html.old ]; then 
-                NEWDBPWD="  map                     wordpress ${PUBIP}"
+                if [ "${BANNERNAME}" = 'wordpress' ]; then
+                    NEWDBPWD="  map                     wordpress ${PUBIP}"
+                elif [ "${BANNERNAME}" = 'classicpress' ]; then
+                    NEWDBPWD="  map                     classicpress ${PUBIP}"
+                fi    
             else
                 NEWDBPWD="  map                     Example ${PUBIP}"
             fi    
@@ -406,10 +418,17 @@ replace_litenerip(){
 update_sql_pwd(){
     mysql -uroot -p${ori_root_mysql_pass} \
         -e "SET PASSWORD FOR 'root'@'localhost' = PASSWORD('${root_mysql_pass}');"
-    mysql -uroot -p${root_mysql_pass} \
-        -e "SET PASSWORD FOR 'wordpress'@'localhost' = PASSWORD('${wordpress_mysql_pass}');"
-    mysql -uroot -p${root_mysql_pass} \
-        -e "GRANT ALL PRIVILEGES ON wordpress.* TO wordpress@localhost"
+    if [ "${BANNERNAME}" = 'wordpress' ]; then
+        mysql -uroot -p${root_mysql_pass} \
+            -e "SET PASSWORD FOR 'wordpress'@'localhost' = PASSWORD('${wordpress_mysql_pass}');"
+        mysql -uroot -p${root_mysql_pass} \
+            -e "GRANT ALL PRIVILEGES ON wordpress.* TO wordpress@localhost"
+    elif [ "${BANNERNAME}" = 'classicpress' ]; then
+        mysql -uroot -p${root_mysql_pass} \
+            -e "SET PASSWORD FOR 'classicpress'@'localhost' = PASSWORD('${wordpress_mysql_pass}');"
+        mysql -uroot -p${root_mysql_pass} \
+            -e "GRANT ALL PRIVILEGES ON classicpress.* TO classicpress@localhost"
+    fi    
     #mysql -uroot -p${root_mysql_pass} \
     #      -e "ALTER USER 'debian-sys-maint'@'localhost' IDENTIFIED BY '${debian_sys_maint_mysql_pass}'"
 
@@ -462,10 +481,17 @@ EOM
 
 update_pwd_file(){
     rm -f ${DBPASSPATH}
-    cat >> ${DBPASSPATH} <<EOM
+    if [ "${BANNERNAME}" = 'wordpress' ]; then    
+        cat >> ${DBPASSPATH} <<EOM
 root_mysql_pass="${root_mysql_pass}"
 wordpress_mysql_pass="${wordpress_mysql_pass}"
 EOM
+    elif [ "${BANNERNAME}" = 'classicpress' ]; then 
+        cat >> ${DBPASSPATH} <<EOM 
+root_mysql_pass="${root_mysql_pass}"
+classicpress_mysql_pass="${wordpress_mysql_pass}"
+EOM
+    fi    
 }
 
 upgrade_cyberpanel() {
@@ -647,6 +673,7 @@ fix_wellknown(){
         fi
     fi
 }
+
 
 set_tmp() {
     if [ ${OSNAME} = 'ubuntu' ]; then 
