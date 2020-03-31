@@ -14,11 +14,10 @@ VHDIR="${LSDIR}/conf/vhosts"
 EMAIL='localhost'
 WWW='FALSE'
 BOTCRON='/etc/cron.d/certbot'
-PLUGINLIST="litespeed-cache.zip all-in-one-seo-pack.zip all-in-one-wp-migration.zip \
-google-analytics-for-wordpress.zip jetpack.zip wp-mail-smtp.zip"
+PLUGINLIST="litespeed-cache.zip"
 CKREG="^[a-z0-9!#\$%&'*+/=?^_\`{|}~-]+(\.[a-z0-9!#$%&'*+/=?^_\`{|}~-]+)*\
 @([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+[a-z0-9]([a-z0-9-]*[a-z0-9])?\$"
-THEME='twentynineteen'
+THEME='twentytwenty'
 PHPVER=lsphp73
 USER='www-data'
 GROUP='www-data'
@@ -149,10 +148,14 @@ line_insert(){
     fi  
 }
 install_wp_cli() {
-    curl -sO https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
-    chmod +x wp-cli.phar
-    mv wp-cli.phar /usr/bin/wp
-    ln -s ${LSDIR}/${PHPVER}/bin/php /usr/bin/php
+    if [ ! -e /usr/local/bin/wp ]; then
+        curl -sO https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
+        chmod +x wp-cli.phar
+        mv wp-cli.phar /usr/bin/wp
+        if [ ! -f /usr/bin/php ]; then
+            ln -s ${LSDIR}/${PHPVER}/bin/php /usr/bin/php
+        fi    
+    fi    
 }
 gen_password(){
     ROOT_PASS=$(cat ${HM_PATH}/.db_password | head -n 1 | awk -F '"' '{print $2}')
