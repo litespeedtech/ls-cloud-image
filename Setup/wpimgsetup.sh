@@ -577,6 +577,14 @@ RewriteRule . /index.php [L]
 EOM
 }
 
+get_theme_name(){
+    THEME_NAME=$(grep WP_DEFAULT_THEME ${DOCHM}/wp-includes/default-constants.php | grep -v '!' | awk -F "'" '{print $4}')
+    echo "${THEME_NAME}" | grep 'twenty' >/dev/null 2>&1
+    if [ ${?} = 0 ]; then
+        THEME="${THEME_NAME}"
+    fi
+}
+
 set_lscache(){ 
     cat << EOM > "${WPCONSTCONF}" 
 ; This is the default LSCWP configuration file
@@ -801,6 +809,7 @@ ubuntu_main_config(){
 wp_config(){
     install_wp_plugin
     set_htaccess
+    get_theme_name
     set_lscache
 }
 

@@ -29,6 +29,7 @@ TMP_YN='OFF'
 ISSUECERT='OFF'
 FORCE_HTTPS='OFF'
 WORDPRESS='OFF'
+EPACE='        '
 
 echoR() {
     echo -e "\e[31m${1}\e[39m"
@@ -42,19 +43,29 @@ echoY() {
 echoB() {
     echo -e "\033[1;4;94m${1}\033[0m"
 }
+echow(){
+    FLAG=${1}
+    shift
+    echo -e "\033[1m${EPACE}${FLAG}\033[0m${@}"
+}
+
 show_help() {
     case ${1} in
     "1")
-        echo "########################################################################################"
-        echoY "-d  or --domain:      for domain, if you wish to add www domain , please attach www"
-        echoY "-le or --letsencrypt: issue let's ecnrypt certificate, must follow with E-mail address."
-        echoY "-f  or --force-https: this will add a force HTTPS rule in htaccess file"
-        echoY "-w  or --wordpress:   this will install a Wordpress with LiteSpeed Cache plugin."
-        echoY "Example: ./vhsetup.sh -d www.example.com -le admin@example.com -f -w"
-        echoY "Above example will create a virtual host with www.example.com and example.com domain"
-        echoY "issue and install Let's encrypt certificate and Wordpress with LiteSpeed Cache plugin."
-        echo "########################################################################################"
-        echo ''
+        echo -e "\033[1mOPTIONS\033[0m"
+        echow "-d, --domain [DOMAIN_NAME]"
+        echo "${EPACE}${EPACE}If you wish to add www domain , please attach domain with www"
+        echow "-le, --letsencrypt [EMAIL]"
+        echo "${EPACE}${EPACE}Issue let's ecnrypt certificate, must follow with E-mail address."
+        echow "-f, --force-https"
+        echo "${EPACE}${EPACE}This will add a force HTTPS rule in htaccess file"
+        echow "-w, --wordpress"
+        echo "${EPACE}${EPACE}This will install a Wordpress with LiteSpeed Cache plugin."
+        echo "${EPACE}${EPACE}Example: ./vhsetup.sh -d www.example.com -le admin@example.com -f -w"
+        echo "${EPACE}${EPACE}Above example will create a virtual host with www.example.com and example.com domain"
+        echo "${EPACE}${EPACE}Issue and install Let's encrypt certificate and Wordpress with LiteSpeed Cache plugin."
+        echow '-H, --help'
+        echo "${EPACE}${EPACE}Display help and exit."
         exit 0
     ;;    
     "2")
@@ -151,11 +162,11 @@ install_wp_cli() {
     if [ ! -e /usr/local/bin/wp ]; then
         curl -sO https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
         chmod +x wp-cli.phar
-        mv wp-cli.phar /usr/bin/wp
-        if [ ! -f /usr/bin/php ]; then
-            ln -s ${LSDIR}/${PHPVER}/bin/php /usr/bin/php
-        fi    
+        mv wp-cli.phar /usr/local/bin/wp
     fi    
+    if [ ! -f /usr/bin/php ]; then
+        ln -s ${LSDIR}/${PHPVER}/bin/php /usr/bin/php
+    fi      
 }
 gen_password(){
     ROOT_PASS=$(cat ${HM_PATH}/.db_password | head -n 1 | awk -F '"' '{print $2}')
@@ -163,6 +174,15 @@ gen_password(){
     WP_USER=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 8; echo '')
     WP_PASS=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 48; echo '')
 }
+
+get_theme_name(){
+    THEME_NAME=$(grep WP_DEFAULT_THEME ${DOCHM}/wp-includes/default-constants.php | grep -v '!' | awk -F "'" '{print $4}')
+    echo "${THEME_NAME}" | grep 'twenty' >/dev/null 2>&1
+    if [ ${?} = 0 ]; then
+        THEME="${THEME_NAME}"
+    fi
+}
+
 install_wp() {
     if [ -e ${HM_PATH}/.db_password ]; then
         gen_password
@@ -172,13 +192,12 @@ install_wp() {
             mysql -uroot -p${ROOT_PASS} -e "GRANT ALL PRIVILEGES ON * . * TO '${WP_USER}'@'localhost';"
             mysql -uroot -p${ROOT_PASS} -e "FLUSH PRIVILEGES;"
             rm -f ${DOCHM}/index.php
-            if [ ! -f /usr/bin/wp ]; then
-                install_wp_cli
-            fi
+            install_wp_cli
             export WP_CLI_CACHE_DIR=${WWW_PATH}/.wp-cli/
             wp core download --path=${DOCHM} --allow-root --quiet
             wp core config --dbname=${WP_DB} --dbuser=${WP_USER} --dbpass=${WP_PASS} \
                 --dbhost=localhost --dbprefix=wp_ --path=${DOCHM} --allow-root --quiet
+            get_theme_name
             config_wp
             change_owner
             echoG "WP downloaded, please access your domain to complete the setup."
