@@ -2,8 +2,8 @@
 # /********************************************************************
 # LiteSpeed domain setup Script
 # @Author:   LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
-# @Copyright: (c) 2019-2020
-# @Version: 1.0.1
+# @Copyright: (c) 2019-2021
+# @Version: 2.0.0
 # *********************************************************************/
 MY_DOMAIN=''
 MY_DOMAIN2=''
@@ -29,6 +29,8 @@ TMP_YN='OFF'
 ISSUECERT='OFF'
 FORCE_HTTPS='OFF'
 WORDPRESS='OFF'
+CLASSICPRESS='OFF'
+DB_TEST=0
 EPACE='        '
 
 echoR() {
@@ -53,17 +55,19 @@ show_help() {
     case ${1} in
     "1")
         echo -e "\033[1mOPTIONS\033[0m"
-        echow "-d, --domain [DOMAIN_NAME]"
+        echow "-D, --domain [DOMAIN_NAME]"
         echo "${EPACE}${EPACE}If you wish to add www domain , please attach domain with www"
-        echow "-le, --letsencrypt [EMAIL]"
+        echow "-LE, --letsencrypt [EMAIL]"
         echo "${EPACE}${EPACE}Issue let's ecnrypt certificate, must follow with E-mail address."
-        echow "-f, --force-https"
+        echow "-F, --force-https"
         echo "${EPACE}${EPACE}This will add a force HTTPS rule in htaccess file"
-        echow "-w, --wordpress"
+        echow "-W, --wordpress"
         echo "${EPACE}${EPACE}This will install a Wordpress with LiteSpeed Cache plugin."
         echo "${EPACE}${EPACE}Example: ./vhsetup.sh -d www.example.com -le admin@example.com -f -w"
         echo "${EPACE}${EPACE}Above example will create a virtual host with www.example.com and example.com domain"
         echo "${EPACE}${EPACE}Issue and install Let's encrypt certificate and Wordpress with LiteSpeed Cache plugin."
+        echow "-C, --classicpress"
+        echo "${EPACE}${EPACE}This will install a ClassicPress with LiteSpeed Cache plugin."   
         echow '-H, --help'
         echo "${EPACE}${EPACE}Display help and exit."
         exit 0
@@ -165,7 +169,12 @@ install_wp_cli() {
         mv wp-cli.phar /usr/local/bin/wp
     fi    
     if [ ! -f /usr/bin/php ]; then
-        ln -s ${LSDIR}/${PHPVER}/bin/php /usr/bin/php
+        if [ -e ${LSDIR}/${PHPVER}/bin/php ]; then
+            ln -s ${LSDIR}/${PHPVER}/bin/php /usr/bin/php
+        else
+            echoR "${LSDIR}/${PHPVER}/bin/php not exist, please check your PHP version!"
+            exit 1 
+        fi        
     fi      
 }
 gen_password(){
@@ -173,6 +182,39 @@ gen_password(){
     WP_DB=$(echo "${MY_DOMAIN}" | sed -e 's/\.//g; s/-//g')
     WP_USER=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 8; echo '')
     WP_PASS=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 48; echo '')
+}
+
+check_which_cms(){
+    if [ ${SILENT} = 'OFF' ]; then
+		while true; do
+			echo -e "Please choose whether to install WordPress or ClassicPress"
+            if [ "${WORDPRESS}" = 'OFF' ] && [ "${CLASSICPRESS}" = 'OFF' ]; then
+                printf "%s" "Install WordPress? [y/N]: "
+                read TMP_YN
+                if [[ "${TMP_YN}" =~ ^(y|Y) ]]; then
+                    WORDPRESS='ON'
+                fi
+            fi
+            if [ "${WORDPRESS}" = 'OFF' ] && [ "${CLASSICPRESS}" = 'OFF' ]; then 
+                printf "%s" "Install ClassicPress? [y/N]: "
+                read TMP_YN
+                if [[ "${TMP_YN}" =~ ^(y|Y) ]]; then
+                    CLASSICPRESS='ON'
+                fi
+            fi
+            if [ "${WORDPRESS}" = 'ON' ]; then
+                printf "%s" "The Application you input is WordPress. [y/N]: "
+            elif [ "${CLASSICPRESS}" = 'ON' ]; then
+                printf "%s" "The Application you input is ClassicPress. [y/N]: "
+            else
+                printf "%s" "The Application you input is None. [y/N]: "
+            fi
+            read TMP_YN
+            if [[ "${TMP_YN}" =~ ^(y|Y) ]]; then
+                break
+            fi
+		done
+	fi
 }
 
 get_theme_name(){
@@ -183,34 +225,7 @@ get_theme_name(){
     fi
 }
 
-install_wp() {
-    if [ -e ${HM_PATH}/.db_password ]; then
-        gen_password
-        mysql -uroot -p${ROOT_PASS} -e "create database ${WP_DB};"
-        if [ ${?} = 0 ]; then
-            mysql -uroot -p${ROOT_PASS} -e "CREATE USER '${WP_USER}'@'localhost' IDENTIFIED BY '${WP_PASS}';"
-            mysql -uroot -p${ROOT_PASS} -e "GRANT ALL PRIVILEGES ON * . * TO '${WP_USER}'@'localhost';"
-            mysql -uroot -p${ROOT_PASS} -e "FLUSH PRIVILEGES;"
-            rm -f ${DOCHM}/index.php
-            install_wp_cli
-            export WP_CLI_CACHE_DIR=${WWW_PATH}/.wp-cli/
-            wp core download --path=${DOCHM} --allow-root --quiet
-            wp core config --dbname=${WP_DB} --dbuser=${WP_USER} --dbpass=${WP_PASS} \
-                --dbhost=localhost --dbprefix=wp_ --path=${DOCHM} --allow-root --quiet
-            get_theme_name
-            config_wp
-            change_owner
-            echoG "WP downloaded, please access your domain to complete the setup."
-        else
-            echoR "something went wrong when create new database, please proceed to manual installtion."
-        fi
-    else
-        echoR "No DataBase Password, skip!"  
-        show_help 3
-    fi
-}
-config_wp() {
-    echoG 'Setting WordPress'
+install_wp_plugin(){
     for PLUGIN in ${PLUGINLIST}; do
         echoG "Install ${PLUGIN}"
         wget -q -P ${DOCHM}/wp-content/plugins/ https://downloads.wordpress.org/plugin/${PLUGIN}
@@ -221,19 +236,9 @@ config_wp() {
         fi
     done
     rm -f ${DOCHM}/wp-content/plugins/*.zip
-    create_file "${DOCHM}/.htaccess"
-    cat <<EOM >${DOCHM}/.htaccess
-# BEGIN WordPress
-<IfModule mod_rewrite.c>
-RewriteEngine On
-RewriteBase /
-RewriteRule ^index\.php$ - [L]
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule . /index.php [L]
-</IfModule>
-# END WordPress
-EOM
+}
+
+set_lscache(){
     if [ ! -f ${DOCHM}/wp-content/themes/${THEME}/functions.php.bk ]; then
         cp ${DOCHM}/wp-content/themes/${THEME}/functions.php ${DOCHM}/wp-content/themes/${THEME}/functions.php.bk
         install_ed
@@ -250,14 +255,69 @@ w
 q
 END
     fi
+}
+
+create_db_user(){
+    if [ -e ${HM_PATH}/.db_password ]; then
+        gen_password
+        mysql -uroot -p${ROOT_PASS} -e "create database ${WP_DB};"
+        if [ ${?} = 0 ]; then
+            mysql -uroot -p${ROOT_PASS} -e "CREATE USER '${WP_USER}'@'localhost' IDENTIFIED BY '${WP_PASS}';"
+            mysql -uroot -p${ROOT_PASS} -e "GRANT ALL PRIVILEGES ON * . * TO '${WP_USER}'@'localhost';"
+            mysql -uroot -p${ROOT_PASS} -e "FLUSH PRIVILEGES;"
+        else
+            echoR "something went wrong when create new database, please proceed to manual installtion."
+            DB_TEST=1
+        fi
+    else
+        echoR "No DataBase Password, skip!"  
+        DB_TEST=1
+        show_help 3
+    fi    
+}
+
+install_wp() {
+    create_db_user
+    if [ ${DB_TEST} = 0 ]; then
+        install_wp_cli
+        rm -f ${DOCHM}/index.php
+        export WP_CLI_CACHE_DIR=${WWW_PATH}/.wp-cli/
+        wp core download --path=${DOCHM} --allow-root --quiet
+        wp core config --dbname=${WP_DB} --dbuser=${WP_USER} --dbpass=${WP_PASS} \
+            --dbhost=localhost --dbprefix=wp_ --path=${DOCHM} --allow-root --quiet
+        get_theme_name
+        config_wp
+        change_owner
+        echoG "WP downloaded, please access your domain to complete the setup."    
+    fi
+}
+
+set_wp_htaccess(){
+    create_file "${DOCHM}/.htaccess"
+    cat <<EOM >${DOCHM}/.htaccess
+# BEGIN WordPress
+<IfModule mod_rewrite.c>
+RewriteEngine On
+RewriteBase /
+RewriteRule ^index\.php$ - [L]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . /index.php [L]
+</IfModule>
+# END WordPress
+EOM
+}
+
+config_wp() {
+    echoG 'Setting WordPress'
+    install_wp_plugin
+    set_wp_htaccess
+    set_lscache
     echoG 'Finish WordPress'
 }
-check_install_wp() {
-    if [ ${SILENT} = 'OFF' ]; then
-        printf "%s" "Do you wish to install WordPress on this new domain? [y/N]: "
-        read TMP_YN
-    fi    
-    if [[ "${TMP_YN}" =~ ^(y|Y) ]] || [ ${WORDPRESS} = 'ON' ]; then
+
+check_install_wp() { 
+    if [ ${WORDPRESS} = 'ON' ]; then
         check_process 'mysqld'
         if [ ${?} = 0 ]; then
             if [ ! -f ${DOCHM}/wp-config.php ]; then
@@ -270,6 +330,64 @@ check_install_wp() {
         fi                
     fi
 }
+
+install_cp() {
+    create_db_user
+    if [ ${DB_TEST} = 0 ]; then
+        install_wp_cli
+        export WP_CLI_CACHE_DIR=${WWW_PATH}/.wp-cli/
+        cd ${DOCHM}
+        wget -q --no-check-certificate https://www.classicpress.net/latest.tar.gz -O classicpress.tar.gz
+        tar -xzvf classicpress.tar.gz --strip-components=1 -C ${DOCHM}  >/dev/null 2>&1
+        rm -rf classicpress.tar.gz
+        wp core config --dbname=${WP_DB} --dbuser=${WP_USER} --dbpass=${WP_PASS} \
+            --dbhost=localhost --dbprefix=cp_ --path=${DOCHM} --allow-root --quiet
+        get_theme_name
+        config_cp
+        change_owner
+        echoG "ClassicPress downloaded, please access your domain to complete the setup." 
+    fi    
+}
+
+set_cp_htaccess(){
+    create_file "${DOCHM}/.htaccess"
+    cat <<EOM >${DOCHM}/.htaccess
+# BEGIN ClassicPress
+<IfModule mod_rewrite.c>
+RewriteEngine On
+RewriteBase /
+RewriteRule ^index\.php$ - [L]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . /index.php [L]
+</IfModule>
+# END ClassicPress
+EOM
+}
+
+config_cp() {
+    echoG 'Setting ClassicPress'
+    install_wp_plugin
+    set_cp_htaccess
+    set_lscache
+    echoG 'Finish ClassicPress'
+}
+
+check_install_cp() {
+    if [ "${CLASSICPRESS}" = 'ON' ]; then
+        check_process 'mysqld'
+        if [ ${?} = 0 ]; then
+            if [ ! -f ${DOCHM}/wp-config.php ]; then
+                install_cp
+            else
+                echoR "ClassicPress already exists at ${DOCHM}. Skip!"   
+            fi    
+        else
+            echoR 'No MySQL environment, skip!'
+        fi                
+    fi
+}
+
 check_duplicate() {
     grep -w "${1}" ${2} >/dev/null 2>&1
 }
@@ -382,7 +500,6 @@ restrained              1
 }" >>${WEBCF}
 }
 update_vh_conf(){
-    #replace user input email for locahost
     sed -i 's|localhost|'${EMAIL}'|g' ${VHDIR}/${MY_DOMAIN}/vhconf.conf
     sed -i 's|'${LSDIR}'/conf/example.key|/etc/letsencrypt/live/'${MY_DOMAIN}'/privkey.pem|g' ${VHDIR}/${MY_DOMAIN}/vhconf.conf
     sed -i 's|'${LSDIR}'/conf/example.crt|/etc/letsencrypt/live/'${MY_DOMAIN}'/fullchain.pem|g' ${VHDIR}/${MY_DOMAIN}/vhconf.conf
@@ -540,6 +657,11 @@ issue_cert(){
         fi    
     fi
 }
+
+end_msg(){
+    echoG 'Setup finished!'
+}    
+
 main() {
     check_root
     check_provider
@@ -548,13 +670,16 @@ main() {
     domain_input
     main_set_vh ${MY_DOMAIN}
     issue_cert
+	check_which_cms
     check_install_wp
+	check_install_cp
     force_https
+    end_msg
 }
 
 while [ ! -z "${1}" ]; do
     case $1 in
-        -d | --domain) shift
+        -[dD] | --domain) shift
             if [ "${1}" = '' ]; then
                 show_help 1
             else
@@ -562,7 +687,7 @@ while [ ! -z "${1}" ]; do
                 SILENT='ON'
             fi
         ;;
-        -le | --letsencrypt) shift
+        -le | -LE | --letsencrypt) shift
             if [ "${1}" = '' ] || [[ ! ${1} =~ ${CKREG} ]]; then
                 echoR "\nPlease enter a valid E-mail, exit!\n"   
                 exit 1
@@ -571,15 +696,18 @@ while [ ! -z "${1}" ]; do
                 EMAIL="${1}"
             fi
         ;;
-        -f | --force-https)
+        -[fF] | --force-https)
             FORCE_HTTPS='ON'
         ;;
-        -h | --help)
+        -[hH] | --help)
             show_help 1
         ;;
-        -w | --wordpress)
+        -[wW] | --wordpress)
             WORDPRESS='ON'
         ;;
+        -[cC] | --classicpress)
+            CLASSICPRESS='ON'
+        ;;        
         *)
             echoR "unknown argument..."
             show_help 1
@@ -588,5 +716,4 @@ while [ ! -z "${1}" ]; do
     shift
 done
 main
-echoG 'Setup finished!'
 exit 0
