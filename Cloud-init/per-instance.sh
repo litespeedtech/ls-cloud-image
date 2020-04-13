@@ -140,7 +140,7 @@ os_home_path()
         PUBIP=$(curl -s http://checkip.amazonaws.com || printf "0.0.0.0")        
     else
         HMPATH='/root'
-        PUBIP=$(ip -4 route get 8.8.8.8 | awk {'print $7'} | tr -d '\n')
+        PUBIP=$(curl -s http://checkip.amazonaws.com || printf "0.0.0.0")
     fi   
 }
 

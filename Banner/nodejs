@@ -47,7 +47,7 @@ elif [ "$(dmidecode -s system-product-name | cut -c 1-7)" = 'Alibaba' ]; then
 elif [ "$(dmidecode -s system-manufacturer)" = 'Microsoft Corporation' ];then    
     MYIP=$(curl -s http://checkip.amazonaws.com || printf "0.0.0.0")    
 else    
-    MYIP=$(ip -4 route get 8.8.8.8 | awk {'print $7'} | tr -d '\n')
+    MYIP=$(curl -s http://checkip.amazonaws.com || printf "0.0.0.0")
 fi    
 #MYIP=$(curl -s ifconfig.me)
 
