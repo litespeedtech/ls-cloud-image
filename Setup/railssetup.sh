@@ -15,6 +15,7 @@ LSWSVHCONF="${LSWSFD}/conf/vhosts/Example/vhconf.conf"
 PROJNAME='demo'
 VHDOCROOT='/usr/local/lsws/Example/html'
 DEMOPROJECT="${VHDOCROOT}/${PROJNAME}"
+CLONE_PATH='/opt'
 ALLERRORS=0
 RUBYV='2.7.1'
 NOWPATH=$(pwd)
@@ -114,10 +115,11 @@ ubuntu_install_basic(){
 }
 
 install_ols(){
+    echoG '[Start] Install OpenLiteSpeed'
     cd /tmp/; wget -q https://raw.githubusercontent.com/litespeedtech/ols1clk/master/ols1clk.sh
     chmod +x ols1clk.sh
-    echo 'Y' | bash ols1clk.sh \
-    --lsphp ${PHPVER}
+    echo 'Y' | bash ols1clk.sh --lsphp ${PHPVER} >/dev/null 2>&1
+    echoG '[End] Install OpenLiteSpeed'
 }
 
 centos_install_ols(){
@@ -133,8 +135,8 @@ centos_install_nodejs(){
     ### Install nodejs with version 12 by using EPEL repository
     curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash - > /dev/null 2>&1
     yum install nodejs -y > /dev/null 2>&1
-    echoG "NodeJS: $(node --version)"
-    echoG "NPM:    $(npm --version)"
+    NODE_V="$(node --version)"
+    NPM_V="$(npm --version)"
 }
 
 ubuntu_install_nodejs(){
@@ -142,8 +144,8 @@ ubuntu_install_nodejs(){
     ### Install nodejs with version 12 by using EPEL repository
     curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash - > /dev/null 2>&1
     apt-get install nodejs -y > /dev/null 2>&1 
-    echoG "NodeJS: $(node --version)"
-    echoG "NPM:    $(npm --version)"    
+    NODE_V="$(node --version)"
+    NPM_V="$(npm --version)"  
 }
 
 centos_install_rbenv(){
@@ -153,78 +155,78 @@ centos_install_rbenv(){
     echo 'eval "$(rbenv init -)"' >> ~/.bash_profile
     export PATH="$HOME/.rbenv/bin:$PATH"
     eval "$(rbenv init -)"
-    git clone git://github.com/sstephenson/ruby-build.git ~/.rbenv/plugins/ruby-build
+    git clone git://github.com/sstephenson/ruby-build.git ${CLONE_PATH}/.rbenv/plugins/ruby-build
     echo 'export PATH="$HOME/.rbenv/plugins/ruby-build/bin:$PATH"' >> ~/.bash_profile
     export PATH="$HOME/.rbenv/plugins/ruby-build/bin:$PATH"
-    rbenv -v
-    output_msg "${?}" 'rbenv'      
+    RBEN_V="$(rbenv -v)"
+    output_msg "${?}" 'rbenv'
 }
+
 centos_install_ruby(){
     echoG 'Install ruby'
     rbenv install -v ${RUBYV}
     rbenv global ${RUBYV}
-    ruby -v 
+    RUBY_V="$(ruby -v)"
     output_msg "${?}" 'ruby'    
 }
+
 centos_install_bundler(){
     echoG 'Install bundler'
     echo "gem: --no-document" > ~/.gemrc
     gem install bundler
-    bundler -v
+    BUNDLER_V=$(bundler -v)
     output_msg "${?}" 'bundler'  
 }
 
 centos_install_lsapi(){
-    gem install rack -v 1.6.11
-    gem install ruby-lsapi    
+    echoG '[Start] Install LSAPI'
+    gem install rack >/dev/null 2>&1
+    gem install ruby-lsapi >/dev/null 2>&1
+    echoG '[End] Install LSAPI'  
 }
 
 centos_install_rails(){
     echoG 'Install rails'
     gem install rails
-    rails -v
+    RAILS_V="$(rails -v)"
     output_msg "${?}" 'rails'   
 }
 
 ubuntu_install_rbenv(){
     echoG 'Install rbenv'
-    #cd; git clone https://github.com/rbenv/rbenv.git ~/.rbenv
-    #echo 'export PATH="$HOME/.rbenv/bin:$PATH"' >> ~/.bashrc
-    #echo 'eval "$(rbenv init -)"' >> ~/.bashrc
-    #export PATH="$HOME/.rbenv/bin:$PATH"
-    #eval "$(rbenv init -)"
-    #git clone https://github.com/rbenv/ruby-build.git ~/.rbenv/plugins/ruby-build
-    git clone https://github.com/rbenv/ruby-build.git ~/.rbenv/plugins/ruby-build
-    apt install rbenv libreadline-dev ruby-dev -y
-    rbenv -v
-    output_msg "${?}" 'rbenv'     
+    git clone --quiet https://github.com/rbenv/ruby-build.git ${CLONE_PATH}/.rbenv/plugins/ruby-build
+    apt install rbenv libreadline-dev ruby-dev -y >/dev/null 2>&1
+    RBEN_V="$(rbenv -v)"
+    output_msg "${?}" 'rbenv'
 }
 
 ubuntu_install_ruby(){
     echoG 'Install ruby'
-    rbenv install ${RUBYV}
-    rbenv global ${RUBYV}
-    ruby -v
+    rbenv install ${RUBYV} >/dev/null 2>&1
+    rbenv global ${RUBYV} >/dev/null 2>&1
+    RUBY_V="$(ruby -v)"
     output_msg "${?}" 'ruby'   
 }
 
 ubuntu_install_bundler(){
     echoG 'Install bundler'
     echo "gem: --no-document" > ~/.gemrc
-    gem install bundler
-    bundler -v
+    gem install bundler >/dev/null 2>&1
+    BUNDLER_V=$(bundler -v)
     output_msg "${?}" 'bundler'         
 }
 
 ubuntu_install_lsapi(){
-    gem install rack -v 1.6.11
-    gem install ruby-lsapi    
+    echoG '[Start] Install LSAPI'
+    gem install rack >/dev/null 2>&1
+    gem install ruby-lsapi >/dev/null 2>&1
+    echoG '[End] Install LSAPI' 
 }
 
 ubuntu_install_rails(){
     echoG 'Install rails'
-    gem install rails
-    rails -v
+    gem install rails >/dev/null 2>&1
+    RAILS_V="$(rails -v)"
     output_msg "${?}" 'rails'     
 }
 
@@ -360,13 +362,13 @@ acme_folder(){
 
 app_setup(){
     echoG '[Start] Install app'
-    cd ${VHDOCROOT}
-    rails new ${PROJNAME}
-    cd ${PROJNAME}; rails generate controller Welcome index
+    cd ${VHDOCROOT}; rails new ${PROJNAME} >/dev/null 2>&1
+    echoG 'Generate Welcome'
+    cd ${PROJNAME}; rails generate controller Welcome index >/dev/null 2>&1
     grep welcome config/routes.rb >/dev/null 2>&1
     if [ ${?} = 0 ]; then
         NEWKEY='  get "/", to: "rails/welcome#index"'
-        linechange 'index' ${PROJNAME}/config/routes.rb "${NEWKEY}"
+        linechange 'index' config/routes.rb "${NEWKEY}"
     else 
         echoR 'Welcome not exist! Skip setting'
     fi        
@@ -473,11 +475,23 @@ ubuntu_main_config(){
     ubuntu_config_firewall
 }
 
+list_version(){
+    echoG '=============Installed Versions============'
+    printf "%-7s version: %-10s \n" 'NodeJS' "${NODE_V}"
+    printf "%-7s version: %-10s \n" 'NPM'    "${NPM_V}"
+    printf "%-7s version: %-10s \n" 'rbenv' "${RBEN_V}"
+    printf "%-7s version: %-10s \n" 'Ruby' "${RUBY_V}"
+    printf "%-7s version: %-10s \n" 'Bundler' "${BUNDLER_V}"
+    printf "%-7s version: %-10s \n" 'Rails' "${RAILS_V}"
+    echoG '==========================================='
+}
+
 end_message(){
     rm_dummy
     END_TIME="$(date -u +%s)"
     ELAPSED="$((${END_TIME}-${START_TIME}))"
     echoY "***Total of ${ELAPSED} seconds to finish process***"
+    list_version
 }
 
 main(){
@@ -498,5 +512,4 @@ main(){
 }
 
 main
-#rm -- "$0"
 exit 0    
