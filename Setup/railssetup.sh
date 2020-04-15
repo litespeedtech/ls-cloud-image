@@ -19,6 +19,7 @@ CLONE_PATH='/opt'
 ALLERRORS=0
 RUBYV='2.7.1'
 NOWPATH=$(pwd)
+RUBY_PATH='/usr/bin/ruby'
 
 echoY(){
     echo -e "\033[38;5;148m${1}\033[39m"
@@ -77,7 +78,7 @@ centos_sys_upgrade(){
     echoG 'Updating system'
     echo -ne '#                         (5%)\r'
     yum update -y > /dev/null 2>&1
-    echo -ne '#######################   (100%)\r'   
+    echo -e '#######################   (100%)\r'   
 }
 
 ubuntu_sys_upgrade(){
@@ -90,7 +91,7 @@ ubuntu_sys_upgrade(){
     echo -ne '####################      (99%)\r'
     apt-get clean > /dev/null 2>&1
     apt-get autoclean > /dev/null 2>&1
-    echo -ne '#######################   (100%)\r'    
+    echo -e '#######################   (100%)\r'    
 }    
 
 output_msg(){
@@ -104,8 +105,8 @@ output_msg(){
 
 centos_install_basic(){
     yum -y install wget > /dev/null 2>&1
-    yum -y install git-core zlib zlib-devel gcc-c++ patch readline readline-devel libyaml-devel \
-     libffi-devel openssl-devel make bzip2 autoconf automake libtool bison curl sqlite-devel > /dev/null 2>&1
+    yum -y install git-core zlib zlib-devel gcc-c++ patch readline readline-devel libyaml-devel rubygems\
+      libffi-devel openssl-devel make bzip2 autoconf automake libtool bison curl sqlite-devel > /dev/null 2>&1
 }
 
 ubuntu_install_basic(){
@@ -143,59 +144,73 @@ ubuntu_install_nodejs(){
     echoG 'Install nodejs'
     ### Install nodejs with version 12 by using EPEL repository
     curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash - > /dev/null 2>&1
-    apt-get install nodejs -y > /dev/null 2>&1 
+    apt-get install nodejs -y > /dev/null 2>&1
     NODE_V="$(node --version)"
     NPM_V="$(npm --version)"  
 }
 
 centos_install_rbenv(){
     echoG 'Install rbenv'
-    cd; git clone git://github.com/sstephenson/rbenv.git .rbenv
-    echo 'export PATH="$HOME/.rbenv/bin:$PATH"' >> ~/.bash_profile
-    echo 'eval "$(rbenv init -)"' >> ~/.bash_profile
-    export PATH="$HOME/.rbenv/bin:$PATH"
+    git clone --quiet https://github.com/rbenv/rbenv.git ${CLONE_PATH}/.rbenv
+    git clone --quiet https://github.com/rbenv/ruby-build.git ${CLONE_PATH}/.rbenv/plugins/ruby-build   
+    echo "export PATH=\"${CLONE_PATH}/.rbenv/bin:$PATH\"" >> ~/.bashrc
+    echo "export PATH=\"${CLONE_PATH}/.rbenv/plugins/ruby-build/bin:$PATH\"" >> ~/.bashrc
+    echo 'eval "$(rbenv init --)"' >> ~/.bashrc
+    export PATH="${CLONE_PATH}/.rbenv/bin:$PATH"
+    export PATH="${CLONE_PATH}/.rbenv/plugins/ruby-build/bin:$PATH"
     eval "$(rbenv init -)"
-    git clone git://github.com/sstephenson/ruby-build.git ${CLONE_PATH}/.rbenv/plugins/ruby-build
-    echo 'export PATH="$HOME/.rbenv/plugins/ruby-build/bin:$PATH"' >> ~/.bash_profile
-    export PATH="$HOME/.rbenv/plugins/ruby-build/bin:$PATH"
+    echo "RBENV_ROOT=${CLONE_PATH}/.rbenv" >> ~/.bashrc
+    export RBENV_ROOT=${CLONE_PATH}/.rbenv
     RBEN_V="$(rbenv -v)"
     output_msg "${?}" 'rbenv'
 }
 
 centos_install_ruby(){
     echoG 'Install ruby'
-    rbenv install -v ${RUBYV}
-    rbenv global ${RUBYV}
+    rbenv install ${RUBYV} > /dev/null 2>&1
+    rbenv global ${RUBYV} > /dev/null 2>&1
+    ln -s ${CLONE_PATH}/.rbenv/versions/${RUBYV}/bin/ruby ${RUBY_PATH}
+    chmod 777 ${RUBY_PATH}
     RUBY_V="$(ruby -v)"
-    output_msg "${?}" 'ruby'    
+    output_msg "${?}" 'ruby'
 }
 
 centos_install_bundler(){
     echoG 'Install bundler'
-    echo "gem: --no-document" > ~/.gemrc
-    gem install bundler
+    # echo "gem: --no-document" > ~/.gemrc
+    gem install bundler --no-document > /dev/null 2>&1
     BUNDLER_V=$(bundler -v)
     output_msg "${?}" 'bundler'  
 }
 
 centos_install_lsapi(){
     echoG '[Start] Install LSAPI'
-    gem install rack >/dev/null 2>&1
-    gem install ruby-lsapi >/dev/null 2>&1
+    gem install rack --no-document >/dev/null 2>&1
+    gem install ruby-lsapi --no-document >/dev/null 2>&1
     echoG '[End] Install LSAPI'  
 }
 
 centos_install_rails(){
     echoG 'Install rails'
-    gem install rails
+    gem install rails >/dev/null 2>&1
     RAILS_V="$(rails -v)"
     output_msg "${?}" 'rails'   
 }
 
 ubuntu_install_rbenv(){
     echoG 'Install rbenv'
-    git clone --quiet https://github.com/rbenv/ruby-build.git ${CLONE_PATH}/.rbenv/plugins/ruby-build
-    apt install rbenv libreadline-dev ruby-dev -y >/dev/null 2>&1
+    git clone --quiet https://github.com/rbenv/rbenv.git ${CLONE_PATH}/.rbenv
+    git clone --quiet https://github.com/rbenv/ruby-build.git ${CLONE_PATH}/.rbenv/plugins/ruby-build 
+    echo "export PATH=\"${CLONE_PATH}/.rbenv/bin:$PATH\"" >> ~/.bashrc
+    echo "export PATH=\"${CLONE_PATH}/.rbenv/plugins/ruby-build/bin:$PATH\"" >> ~/.bashrc
+    echo 'eval "$(rbenv init --)"' >> ~/.bashrc
+    export PATH="${CLONE_PATH}/.rbenv/bin:$PATH"
+    export PATH="${CLONE_PATH}/.rbenv/plugins/ruby-build/bin:$PATH"
+    eval "$(rbenv init -)"
+    echo "RBENV_ROOT=${CLONE_PATH}/rbenv" >> ~/.bashrc
+    export RBENV_ROOT=${CLONE_PATH}/rbenv
+    #git clone --quiet https://github.com/rbenv/ruby-build.git ${CLONE_PATH}/.rbenv/plugins/ruby-build
+    #apt install rbenv libreadline-dev ruby-dev -y >/dev/null 2>&1
     RBEN_V="$(rbenv -v)"
     output_msg "${?}" 'rbenv'
 }
@@ -210,16 +225,15 @@ ubuntu_install_ruby(){
 
 ubuntu_install_bundler(){
     echoG 'Install bundler'
-    echo "gem: --no-document" > ~/.gemrc
-    gem install bundler >/dev/null 2>&1
+    gem install bundler --no-document >/dev/null 2>&1
     BUNDLER_V=$(bundler -v)
     output_msg "${?}" 'bundler'         
 }
 
 ubuntu_install_lsapi(){
     echoG '[Start] Install LSAPI'
-    gem install rack >/dev/null 2>&1
-    gem install ruby-lsapi >/dev/null 2>&1
+    gem install rack --no-document >/dev/null 2>&1
+    gem install ruby-lsapi --no-document >/dev/null 2>&1
     echoG '[End] Install LSAPI' 
 }
 
@@ -479,10 +493,10 @@ list_version(){
     echoG '=============Installed Versions============'
     printf "%-7s version: %-10s \n" 'NodeJS' "${NODE_V}"
     printf "%-7s version: %-10s \n" 'NPM'    "${NPM_V}"
-    printf "%-7s version: %-10s \n" 'rbenv' "${RBEN_V}"
-    printf "%-7s version: %-10s \n" 'Ruby' "${RUBY_V}"
-    printf "%-7s version: %-10s \n" 'Bundler' "${BUNDLER_V}"
-    printf "%-7s version: %-10s \n" 'Rails' "${RAILS_V}"
+    printf "%-7s version: %-10s \n" 'rbenv' "$(echo ${RBEN_V} | awk '{print $2}')"
+    printf "%-7s version: %-10s \n" 'Ruby' "$(echo ${RUBY_V} | awk '{print $2}')"
+    printf "%-7s version: %-10s \n" 'Bundler' "$(echo ${BUNDLER_V} | awk '{print $3}')"
+    printf "%-7s version: %-10s \n" 'Rails' "$(echo ${RAILS_V} | awk '{print $2}')"
     echoG '==========================================='
 }
 
