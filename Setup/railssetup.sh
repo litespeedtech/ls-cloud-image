@@ -3,7 +3,7 @@
 # LiteSpeed Rails setup Script
 # @Author:   LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
 # @Copyright: (c) 2020-2021
-# @Version: 1.0
+# @Version: 1.1
 # *********************************************************************/
 LSWSFD='/usr/local/lsws'
 PHPVER=73
@@ -18,6 +18,7 @@ DEMOPROJECT="${VHDOCROOT}/${PROJNAME}"
 CLONE_PATH='/opt'
 ALLERRORS=0
 RUBYV='2.7.1'
+NODEJSV='12'
 NOWPATH=$(pwd)
 RUBY_PATH='/usr/bin/ruby'
 
@@ -103,9 +104,18 @@ output_msg(){
     fi  
 }
 
+symlink(){
+    if [ -e "${2}" ]; then
+        echoG "Backup ${2}"
+        mv "${2}" "${2}.bk"
+    fi
+    ln -s "${1}" "${2}"
+    chmod 777 ${2}
+}
+
 centos_install_basic(){
     yum -y install wget > /dev/null 2>&1
-    yum -y install git-core zlib zlib-devel gcc-c++ patch readline readline-devel libyaml-devel rubygems\
+    yum -y install git-core zlib zlib-devel gcc-c++ patch readline readline-devel libyaml-devel\
       libffi-devel openssl-devel make bzip2 autoconf automake libtool bison curl sqlite-devel > /dev/null 2>&1
 }
 
@@ -133,8 +143,9 @@ ubuntu_install_ols(){
 
 centos_install_nodejs(){
     echoG 'Install nodejs'
-    ### Install nodejs with version 12 by using EPEL repository
-    curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash - > /dev/null 2>&1
+    ### Install nodejs by using EPEL repository
+    curl -sL https://rpm.nodesource.com/setup_${NODEJSV}.x | sudo -E bash - > /dev/null 2>&1
+    yum clean all > /dev/null 2>&1
     yum install nodejs -y > /dev/null 2>&1
     NODE_V="$(node --version)"
     NPM_V="$(npm --version)"
@@ -142,14 +153,14 @@ centos_install_nodejs(){
 
 ubuntu_install_nodejs(){
     echoG 'Install nodejs'
-    ### Install nodejs with version 12 by using EPEL repository
-    curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash - > /dev/null 2>&1
+    ### Install nodejs by using EPEL repository
+    curl -sL https://deb.nodesource.com/setup_${NODEJSV}.x | sudo -E bash - > /dev/null 2>&1
     apt-get install nodejs -y > /dev/null 2>&1
     NODE_V="$(node --version)"
     NPM_V="$(npm --version)"  
 }
 
-centos_install_rbenv(){
+install_rbenv(){
     echoG 'Install rbenv'
     git clone --quiet https://github.com/rbenv/rbenv.git ${CLONE_PATH}/.rbenv
     git clone --quiet https://github.com/rbenv/ruby-build.git ${CLONE_PATH}/.rbenv/plugins/ruby-build   
@@ -165,87 +176,94 @@ centos_install_rbenv(){
     output_msg "${?}" 'rbenv'
 }
 
-centos_install_ruby(){
+install_ruby(){
     echoG 'Install ruby'
     rbenv install ${RUBYV} > /dev/null 2>&1
     rbenv global ${RUBYV} > /dev/null 2>&1
-    ln -s ${CLONE_PATH}/.rbenv/versions/${RUBYV}/bin/ruby ${RUBY_PATH}
-    chmod 777 ${RUBY_PATH}
+    symlink "${CLONE_PATH}/.rbenv/versions/${RUBYV}/bin/ruby" "${RUBY_PATH}"
     RUBY_V="$(ruby -v)"
     output_msg "${?}" 'ruby'
 }
 
-centos_install_bundler(){
+install_gem(){
+    symlink "${CLONE_PATH}/.rbenv/versions/${RUBYV}/bin/gem" '/usr/bin/gem'
+    GEM_V="$(gem -v)"
+    output_msg "${?}" 'gem'
+}
+
+install_bundler(){
     echoG 'Install bundler'
-    # echo "gem: --no-document" > ~/.gemrc
     gem install bundler --no-document > /dev/null 2>&1
+    symlink "${CLONE_PATH}/.rbenv/versions/${RUBYV}/bin/bundler" '/usr/bin/bundler'
     BUNDLER_V=$(bundler -v)
     output_msg "${?}" 'bundler'  
 }
 
-centos_install_lsapi(){
+install_lsapi(){
     echoG '[Start] Install LSAPI'
     gem install rack --no-document >/dev/null 2>&1
     gem install ruby-lsapi --no-document >/dev/null 2>&1
     echoG '[End] Install LSAPI'  
 }
 
-centos_install_rails(){
+install_rails(){
     echoG 'Install rails'
     gem install rails >/dev/null 2>&1
+    symlink "${CLONE_PATH}/.rbenv/versions/${RUBYV}/bin/rails" '/usr/bin/rails'
     RAILS_V="$(rails -v)"
     output_msg "${?}" 'rails'   
 }
 
+centos_install_rbenv(){
+    install_rbenv
+}
+
+centos_install_ruby(){
+    install_ruby
+}
+
+centos_install_gem(){
+    install_gem    
+}
+
+centos_install_bundler(){
+    install_bundler 
+}
+
+centos_install_lsapi(){
+    install_lsapi
+}
+
+centos_install_rails(){
+    install_rails 
+}
+
 ubuntu_install_rbenv(){
-    echoG 'Install rbenv'
-    git clone --quiet https://github.com/rbenv/rbenv.git ${CLONE_PATH}/.rbenv
-    git clone --quiet https://github.com/rbenv/ruby-build.git ${CLONE_PATH}/.rbenv/plugins/ruby-build 
-    echo "export PATH=\"${CLONE_PATH}/.rbenv/bin:$PATH\"" >> ~/.bashrc
-    echo "export PATH=\"${CLONE_PATH}/.rbenv/plugins/ruby-build/bin:$PATH\"" >> ~/.bashrc
-    echo 'eval "$(rbenv init --)"' >> ~/.bashrc
-    export PATH="${CLONE_PATH}/.rbenv/bin:$PATH"
-    export PATH="${CLONE_PATH}/.rbenv/plugins/ruby-build/bin:$PATH"
-    eval "$(rbenv init -)"
-    echo "RBENV_ROOT=${CLONE_PATH}/rbenv" >> ~/.bashrc
-    export RBENV_ROOT=${CLONE_PATH}/rbenv
-    #git clone --quiet https://github.com/rbenv/ruby-build.git ${CLONE_PATH}/.rbenv/plugins/ruby-build
-    #apt install rbenv libreadline-dev ruby-dev -y >/dev/null 2>&1
-    RBEN_V="$(rbenv -v)"
-    output_msg "${?}" 'rbenv'
+    install_rbenv
 }
 
 ubuntu_install_ruby(){
-    echoG 'Install ruby'
-    rbenv install ${RUBYV} >/dev/null 2>&1
-    rbenv global ${RUBYV} >/dev/null 2>&1
-    RUBY_V="$(ruby -v)"
-    output_msg "${?}" 'ruby'   
+    install_ruby
+}
+
+ubuntu_install_gem(){
+    install_gem    
 }
 
 ubuntu_install_bundler(){
-    echoG 'Install bundler'
-    gem install bundler --no-document >/dev/null 2>&1
-    BUNDLER_V=$(bundler -v)
-    output_msg "${?}" 'bundler'         
+    install_bundler        
 }
 
 ubuntu_install_lsapi(){
-    echoG '[Start] Install LSAPI'
-    gem install rack --no-document >/dev/null 2>&1
-    gem install ruby-lsapi --no-document >/dev/null 2>&1
-    echoG '[End] Install LSAPI' 
+    install_lsapi
 }
 
 ubuntu_install_rails(){
-    echoG 'Install rails'
-    gem install rails >/dev/null 2>&1
-    RAILS_V="$(rails -v)"
-    output_msg "${?}" 'rails'     
+    install_rails   
 }
 
 centos_install_certbot(){
-    echoG "Install CertBot"
+    echoG "[Start] Install CertBot"
     if [ ${OSVER} = 8 ]; then
         wget -q https://dl.eff.org/certbot-auto
         mv certbot-auto /usr/local/bin/certbot
@@ -256,20 +274,20 @@ centos_install_certbot(){
         yum -y install certbot  > /dev/null 2>&1
     fi
     if [ -e /usr/bin/certbot ]; then 
-        echoG 'Install CertBot finished'
+        echoG '[End] Install CertBot'
     else 
         echoR 'Please check CertBot'    
     fi    
 }
 
 ubuntu_install_certbot(){
-    echoG "Install CertBot"
+    echoG "[Start] Install CertBot"
     add-apt-repository universe > /dev/null 2>&1
     echo -ne '\n' | add-apt-repository ppa:certbot/certbot > /dev/null 2>&1
     apt-get update > /dev/null 2>&1
     apt-get -y install certbot > /dev/null 2>&1
     if [ -e /usr/bin/certbot ]; then 
-        echoG 'Install CertBot finished'
+        echoG '[End] Install CertBot'
     else 
         echoR 'Please check CertBot'    
     fi
@@ -398,30 +416,31 @@ ubuntu_set_app(){
 }
 
 centos_install_firewall(){
-    echoG 'Install Firewall'
+    echoG '[Start] Install Firewall'
     if [ ! -e /usr/sbin/firewalld ]; then 
         yum -y install firewalld > /dev/null 2>&1
     fi
     service firewalld start > /dev/null 2>&1
     systemctl enable firewalld > /dev/null 2>&1
+    echoG '[End] Install Firewall'
 }
 
 centos_config_firewall(){
-    echoG 'Setting Firewall'
+    echoG '[Start] Setting Firewall'
     for PORT in ${FIREWALLLIST}; do 
         firewall-cmd --permanent --add-port=${PORT}/tcp > /dev/null 2>&1
     done 
     firewall-cmd --reload > /dev/null 2>&1
     firewall-cmd --list-all | grep 80 > /dev/null 2>&1
     if [ ${?} = 0 ]; then 
-        echoG 'firewalld rules setup success'
+        echoG '[End] Setting Firewall'
     else 
-        echoR 'Please check firewalld rules'
+        echoR '[X] Please check firewalld rules'
     fi 
 }
 
 ubuntu_config_firewall(){
-    echoG 'Setting Firewall'
+    echoG '[Start] Setting Firewall'
     ufw status verbose | grep inactive > /dev/null 2>&1
     if [ ${?} = 0 ]; then 
         for PORT in ${FIREWALLLIST}; do
@@ -431,9 +450,9 @@ ubuntu_config_firewall(){
 
         ufw status | grep '80.*ALLOW' > /dev/null 2>&1
         if [ ${?} = 0 ]; then 
-            echoG 'firewalld rules setup success'
+            echoG '[End] Setting Firewall'
         else 
-            echoR 'Please check ufw rules'    
+            echoR '[X] Please check ufw rules'    
         fi 
     else
         echoG "ufw already enabled"    
@@ -441,9 +460,9 @@ ubuntu_config_firewall(){
 }
 
 rm_dummy(){
-    echoG 'Remove dummy file'
+    echoG '[Start] Remove dummy file'
     rm -f "${NOWPATH}/example.csr" "${NOWPATH}/privkey.pem"
-    echoG 'Finished dummy file'
+    echoG '[End] Remove dummy file'
 }
 
 init_check(){
@@ -458,6 +477,7 @@ centos_main_install(){
     centos_install_nodejs
     centos_install_rbenv
     centos_install_ruby
+    centos_install_gem
     centos_install_bundler
     centos_install_lsapi
     centos_install_rails
@@ -477,6 +497,7 @@ ubuntu_main_install(){
     ubuntu_install_nodejs
     ubuntu_install_rbenv
     ubuntu_install_ruby
+    ubuntu_install_gem
     ubuntu_install_bundler
     ubuntu_install_lsapi
     ubuntu_install_rails    
@@ -495,6 +516,7 @@ list_version(){
     printf "%-7s version: %-10s \n" 'NPM'    "${NPM_V}"
     printf "%-7s version: %-10s \n" 'rbenv' "$(echo ${RBEN_V} | awk '{print $2}')"
     printf "%-7s version: %-10s \n" 'Ruby' "$(echo ${RUBY_V} | awk '{print $2}')"
+    printf "%-7s version: %-10s \n" 'gem' "${GEM_V}"
     printf "%-7s version: %-10s \n" 'Bundler' "$(echo ${BUNDLER_V} | awk '{print $3}')"
     printf "%-7s version: %-10s \n" 'Rails' "$(echo ${RAILS_V} | awk '{print $2}')"
     echoG '==========================================='
@@ -526,4 +548,4 @@ main(){
 }
 
 main
-exit 0    
+exit 0
