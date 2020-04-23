@@ -179,20 +179,20 @@ ct_version()
 
 setup_domain(){
     if [ ! -e /opt/domainsetup.sh ]; then  
-        curl -s https://raw.githubusercontent.com/litespeedtech/ls-cloud-image/master/Setup/domainsetup.sh \
-        -o /opt/domainsetup.sh
-        if [ ${?} != 0 ];  then 
+        STATUS="$(curl -s https://raw.githubusercontent.com/litespeedtech/ls-cloud-image/master/Setup/domainsetup.sh \
+        -o /opt/domainsetup.sh -w "%{http_code}")"
+        if [ ${?} != 0 ] || [ "${STATUS}" != '200' ]; then
             curl -s https://cloud.litespeed.sh/Setup/domainsetup.sh -o /opt/domainsetup.sh
-        fi    
+        fi
         chmod +x /opt/domainsetup.sh
     fi    
 }    
 setup_banner(){
-    if [ ! -e ${BANNERDST} ]; then  
-        curl -s https://raw.githubusercontent.com/litespeedtech/ls-cloud-image/master/Banner/${BANNERNAME} \
-        -o ${BANNERDST}  
-        if [ ${?} != 0 ];  then 
-            curl -s https://cloud.litespeed.sh/Banner/${BANNERNAME} -o ${BANNERDST}  
+    if [ ! -e ${BANNERDST} ]; then
+        STATUS="$(curl -s https://raw.githubusercontent.com/litespeedtech/ls-cloud-image/master/Banner/${BANNERNAME} \
+        -o ${BANNERDST} -w "%{http_code}")"  
+        if [ ${?} != 0 ] || [ "${STATUS}" != '200' ]; then
+            curl -s https://cloud.litespeed.sh/Banner/${BANNERNAME} -o ${BANNERDST}
         fi  
         chmod +x ${BANNERDST}
     fi
