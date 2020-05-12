@@ -430,22 +430,6 @@ update_sql_pwd(){
         mysql -uroot -p${root_mysql_pass} \
             -e "GRANT ALL PRIVILEGES ON classicpress.* TO classicpress@localhost"
     fi    
-    #mysql -uroot -p${root_mysql_pass} \
-    #      -e "ALTER USER 'debian-sys-maint'@'localhost' IDENTIFIED BY '${debian_sys_maint_mysql_pass}'"
-
-    #cat > /etc/mysql/debian.cnf <<EOM
-    ### Automatically generated for Debian scripts. DO NOT TOUCH!
-    #[client]
-    #host     = localhost
-    #user     = debian-sys-maint
-    #password = ${debian_sys_maint_mysql_pass}
-    #socket   = /var/run/mysqld/mysqld.sock
-    #[mysql_upgrade]
-    #host     = localhost
-    #user     = debian-sys-maint
-    #password = ${debian_sys_maint_mysql_pass}
-    #socket   = /var/run/mysqld/mysqld.sock
-    #EOM
 }
 
 renew_wpsalt(){
@@ -640,12 +624,14 @@ update_phpmyadmin() {
         if [ "${PANEL}" = 'cyber' ]; then
             USER='root'
             GROUP='root'
-            chown -R ${USER}:${GROUP} ${INSTALL_PATH}/
-        else
+        elif [ -f /etc/redhat-release ]; then
+            USER='nobody'
+            GROUP='nobody'
+        else    
             USER='www-data'
             GROUP='www-data'     
-            chown -R ${USER}:${GROUP} ${INSTALL_PATH}/ 
         fi 
+        chown -R ${USER}:${GROUP} ${INSTALL_PATH}/
         sudo rm -rf /tmp/phpMyAdmin-${LATEST_VERSION}-all-languages*
     fi
 }

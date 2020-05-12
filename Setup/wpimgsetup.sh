@@ -295,7 +295,8 @@ install_phpmyadmin(){
         echoG "move phpmyadmin to ${PHPCONF}"
         mv phpMyAdmin-*-all-languages ${PHPCONF}
         mv ${PHPCONF}/config.sample.inc.php ${PHPCONF}/config.inc.php
-    fi    
+    fi
+    change_owner ${PHPCONF}
 }  
 
 install_wp_cli(){
