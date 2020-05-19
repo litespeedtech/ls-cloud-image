@@ -192,6 +192,7 @@ ubuntu_install_certbot(){
 
 restart_lsws(){
     echoG 'Restart LiteSpeed Web Server'
+    ${LSWSFD}/bin/lswsctrl stop >/dev/null 2>&1
     systemctl stop lsws >/dev/null 2>&1
     systemctl start lsws >/dev/null 2>&1
 }
