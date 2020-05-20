@@ -613,7 +613,7 @@ set_lscache(){
 ;; -------------------------------------------------- ;;
 
 ; O_AUTO_UPGRADE
-auto_upgrade = false
+auto_upgrade = true
 
 ; O_API_KEY
 api_key = ''
