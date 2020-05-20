@@ -93,7 +93,16 @@ check_os()
         MEMCACHECONF='/etc/sysconfig/memcached'
         OSVER=$(cat /etc/redhat-release | awk '{print substr($4,1,1)}')
     elif [ -f /etc/lsb-release ] ; then
-        OSNAME=ubuntu    
+        OSNAME=ubuntu
+        OSNAMEVER=''
+        cat /etc/lsb-release | grep "DISTRIB_RELEASE=18." >/dev/null
+        if [ ${?} = 0 ] ; then
+            OSNAMEVER=UBUNTU18
+        fi
+        cat /etc/lsb-release | grep "DISTRIB_RELEASE=20." >/dev/null
+        if [ $? = 0 ] ; then
+            OSNAMEVER=UBUNTU20
+        fi    
     elif [ -f /etc/debian_version ] ; then
         OSNAME=debian
     fi         
@@ -276,7 +285,9 @@ ubuntu_install_postfix(){
 ubuntu_install_certbot(){       
     echoG "Install CertBot" 
     add-apt-repository universe > /dev/null 2>&1
-    echo -ne '\n' | add-apt-repository ppa:certbot/certbot > /dev/null 2>&1
+    if [ "${OSNAMEVER}" = 'UBUNTU18' ]; then
+        echo -ne '\n' | add-apt-repository ppa:certbot/certbot > /dev/null 2>&1
+    fi    
     apt-get update > /dev/null 2>&1
     apt-get -y install certbot > /dev/null 2>&1
     if [ -e /usr/bin/certbot ] || [ -e /usr/local/bin/certbot ]; then 
