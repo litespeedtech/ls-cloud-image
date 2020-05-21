@@ -196,7 +196,7 @@ certbothook(){
     if [ ${?} = 0 ]; then 
         echoG 'Web Server Restart hook already set!'
     else
-        if [ "${OSNAME}" = 'ubuntu' ] || [ "${OSNAME}" = 'debian'] ; then
+        if [ "${OSNAME}" = 'ubuntu' ] || [ "${OSNAME}" = 'debian' ] ; then
             sed -i 's/0.*/&  --deploy-hook "systemctl restart lsws"/g' ${BOTCRON}
         elif [ "${OSNAME}" = 'centos' ]; then
             if [ "${OSVER}" = '7' ]; then
