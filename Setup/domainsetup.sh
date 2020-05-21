@@ -39,6 +39,7 @@ echoB(){
 check_os(){
     if [ -f /etc/redhat-release ] ; then
         OSNAME=centos
+        OSVER=$(cat /etc/redhat-release | awk '{print substr($4,1,1)}')
     elif [ -f /etc/lsb-release ] ; then
         OSNAME=ubuntu    
     elif [ -f /etc/debian_version ] ; then
@@ -191,13 +192,32 @@ emailinput(){
 }
 
 certbothook(){
-    sed -i 's/0.*/&  --deploy-hook "\/usr\/local\/lsws\/bin\/lswsctrl restart"/g' ${BOTCRON}
-    grep 'restart' ${BOTCRON} > /dev/null 2>&1
-    if [ $? = 0 ]; then 
-        echoG 'Certbot hook update success'
-    else 
-        echoY 'Please check certbot crond'
-    fi        
+    grep 'restart lsws' ${BOTCRON} >/dev/null 2>&1
+    if [ ${?} = 0 ]; then 
+        echoG 'Web Server Restart hook already set!'
+    else
+        if [ "${OSNAME}" = 'ubuntu' ] || [ "${OSNAME}" = 'debian'] ; then
+            sed -i 's/0.*/&  --deploy-hook "systemctl restart lsws"/g' ${BOTCRON}
+        elif [ "${OSNAME}" = 'centos' ]; then
+            if [ "${OSVER}" = '7' ]; then
+                echo "0 0,12 * * * root python -c 'import random; import time; time.sleep(random.random() * 3600)' \
+                && certbot renew -q --deploy-hook 'systemctl restart lsws'" \
+                | sudo tee -a /etc/crontab > /dev/null
+            elif [ "${OSVER}" = '8' ]; then
+                echo "0 0,12 * * * root python3 -c 'import random; import time; time.sleep(random.random() * 3600)' \
+                && /usr/local/bin/certbot-auto renew -q --deploy-hook 'systemctl restart lsws'" \
+                | sudo tee -a /etc/crontab > /dev/null
+            else
+                echoY 'Please check certbot crontab'
+            fi
+        fi    
+        grep 'restart lsws' ${BOTCRON} > /dev/null 2>&1
+        if [ ${?} = 0 ]; then 
+            echoG 'Certbot hook update success'
+        else 
+            echoY 'Please check certbot crond'
+        fi
+    fi       
 }
 
 lecertapply(){
