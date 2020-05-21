@@ -200,12 +200,10 @@ certbothook(){
             sed -i 's/0.*/&  --deploy-hook "systemctl restart lsws"/g' ${BOTCRON}
         elif [ "${OSNAME}" = 'centos' ]; then
             if [ "${OSVER}" = '7' ]; then
-                echo "0 0,12 * * * root python -c 'import random; import time; time.sleep(random.random() * 3600)' \
-                && certbot renew -q --deploy-hook 'systemctl restart lsws'" \
+                echo "0 0,12 * * * root python -c 'import random; import time; time.sleep(random.random() * 3600)' && certbot renew -q --deploy-hook 'systemctl restart lsws'" \
                 | sudo tee -a /etc/crontab > /dev/null
             elif [ "${OSVER}" = '8' ]; then
-                echo "0 0,12 * * * root python3 -c 'import random; import time; time.sleep(random.random() * 3600)' \
-                && /usr/local/bin/certbot-auto renew -q --deploy-hook 'systemctl restart lsws'" \
+                echo "0 0,12 * * * root python3 -c 'import random; import time; time.sleep(random.random() * 3600)' && /usr/local/bin/certbot renew -q --deploy-hook 'systemctl restart lsws'" \
                 | sudo tee -a /etc/crontab > /dev/null
             else
                 echoY 'Please check certbot crontab'
