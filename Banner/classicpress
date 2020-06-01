@@ -63,7 +63,7 @@ cat <<EOF
 ********************************************************************************
 
 $(echoCYAN 'Welcome to One-Click OpenLiteSpeed ClassicPress Server.')
-To keep this server secure, the UFW firewall is enabled.
+To keep this server secure, the firewall is enabled.
 All ports are BLOCKED except 22 (SSH), 80 (HTTP) and 443 (HTTPS).
 
 ClassicPress One-Click Quickstart guide:
