@@ -160,7 +160,7 @@ cleanup (){
     rm -f /var/log/letsencrypt/letsencrypt.log*
     rm -f /var/log/fail2ban.log* 
     rm -f /var/log/mysql/error.log
-    rm -f /etc/mysql/debian.cnf
+    #rm -f /etc/mysql/debian.cnf
     rm -f /var/log/redis/redis-server.log
     rm -rf /usr/local/lsws/logs/*
     rm -f /root/.mysql_history
