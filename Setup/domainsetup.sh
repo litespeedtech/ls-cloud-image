@@ -49,7 +49,7 @@ check_os(){
 
 providerck()
 {
-  if [ -e /sys/devices/virtual/dmi/id/product_uuid ] && [ "$(sudo cat /sys/devices/virtual/dmi/id/product_uuid | cut -c 1-3)" = 'EC2' ]; then 
+  if [ -e /sys/devices/virtual/dmi/id/product_uuid ] && [[ "$(sudo cat /sys/devices/virtual/dmi/id/product_uuid | cut -c 1-3)" =~ (EC2|ec2) ]]; then 
     PROVIDER='aws'
   elif [ "$(dmidecode -s bios-vendor)" = 'Google' ];then
     PROVIDER='google'      
