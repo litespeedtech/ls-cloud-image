@@ -216,6 +216,9 @@ check_which_cms(){
             read TMP_YN
             if [[ "${TMP_YN}" =~ ^(y|Y) ]]; then
                 break
+            else
+                WORDPRESS='OFF'
+                CLASSICPRESS='OFF'
             fi
 		done
 	fi
