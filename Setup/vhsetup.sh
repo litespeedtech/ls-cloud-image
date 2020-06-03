@@ -74,7 +74,7 @@ show_help() {
     ;;    
     "2")
         echoY "If you need to install cert manually later, please check:" 
-        echoB "https://docs.litespeedtech.com/cloud/OPT-LETSHTTPS/"
+        echoB "https://docs.litespeedtech.com/shared/cloud/OPT-LETSHTTPS/"
         echo ''
     ;;  
     "3")
@@ -193,6 +193,8 @@ check_which_cms(){
                 read TMP_YN
                 if [[ "${TMP_YN}" =~ ^(y|Y) ]]; then
                     WORDPRESS='ON'
+                else
+                    WORDPRESS='OFF'    
                 fi
             fi
             if [ "${WORDPRESS}" = 'OFF' ] && [ "${CLASSICPRESS}" = 'OFF' ]; then 
@@ -200,6 +202,8 @@ check_which_cms(){
                 read TMP_YN
                 if [[ "${TMP_YN}" =~ ^(y|Y) ]]; then
                     CLASSICPRESS='ON'
+                else
+                    CLASSICPRESS='OFF'    
                 fi
             fi
             if [ "${WORDPRESS}" = 'ON' ]; then
