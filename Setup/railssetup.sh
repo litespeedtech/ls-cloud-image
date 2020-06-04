@@ -3,7 +3,7 @@
 # LiteSpeed Rails setup Script
 # @Author:   LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
 # @Copyright: (c) 2020-2021
-# @Version: 1.1
+# @Version: 1.2
 # *********************************************************************/
 LSWSFD='/usr/local/lsws'
 PHPVER=73
@@ -21,6 +21,7 @@ RUBYV='2.7.1'
 NODEJSV='12'
 NOWPATH=$(pwd)
 RUBY_PATH='/usr/bin/ruby'
+RBENV_PATH='/usr/bin/rbenv'
 
 echoY(){
     echo -e "\033[38;5;148m${1}\033[39m"
@@ -131,7 +132,12 @@ centos_install_basic(){
 ubuntu_install_basic(){
     apt-get -y install wget > /dev/null 2>&1
     apt-get -y install autoconf bison build-essential libssl-dev libyaml-dev libreadline6-dev \
-      zlib1g-dev libncurses5-dev libffi-dev libgdbm5 libgdbm-dev libsqlite3-dev > /dev/null 2>&1
+      zlib1g-dev libncurses5-dev libffi-dev libgdbm-dev libsqlite3-dev > /dev/null 2>&1
+    if [ "${OSNAMEVER}" = 'UBUNTU20' ]; then 
+        apt-get -y install libgdbm6 > /dev/null 2>&1
+    else
+        apt-get -y install libgdbm5 > /dev/null 2>&1
+    fi    
 }
 
 install_ols(){
@@ -175,20 +181,21 @@ install_rbenv(){
     git clone --quiet https://github.com/rbenv/ruby-build.git ${CLONE_PATH}/.rbenv/plugins/ruby-build   
     echo "export PATH=\"${CLONE_PATH}/.rbenv/bin:$PATH\"" >> ~/.bashrc
     echo "export PATH=\"${CLONE_PATH}/.rbenv/plugins/ruby-build/bin:$PATH\"" >> ~/.bashrc
-    echo 'eval "$(rbenv init --)"' >> ~/.bashrc
+    #echo 'eval "$(rbenv init --)"' >> ~/.bashrc
     export PATH="${CLONE_PATH}/.rbenv/bin:$PATH"
     export PATH="${CLONE_PATH}/.rbenv/plugins/ruby-build/bin:$PATH"
     eval "$(rbenv init -)"
     echo "RBENV_ROOT=${CLONE_PATH}/.rbenv" >> ~/.bashrc
     export RBENV_ROOT=${CLONE_PATH}/.rbenv
+    symlink "${CLONE_PATH}/.rbenv/libexec/rbenv" "${RBENV_PATH}"
     RBEN_V="$(rbenv -v)"
     output_msg "${?}" 'rbenv'
 }
 
 install_ruby(){
     echoG 'Install ruby'
-    rbenv install ${RUBYV} > /dev/null 2>&1
-    rbenv global ${RUBYV} > /dev/null 2>&1
+    rbenv install ${RUBYV} #> /dev/null 2>&1
+    rbenv global ${RUBYV} #> /dev/null 2>&1
     symlink "${CLONE_PATH}/.rbenv/versions/${RUBYV}/bin/ruby" "${RUBY_PATH}"
     RUBY_V="$(ruby -v)"
     output_msg "${?}" 'ruby'
