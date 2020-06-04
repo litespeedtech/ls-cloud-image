@@ -181,7 +181,6 @@ install_rbenv(){
     git clone --quiet https://github.com/rbenv/ruby-build.git ${CLONE_PATH}/.rbenv/plugins/ruby-build   
     echo "export PATH=\"${CLONE_PATH}/.rbenv/bin:$PATH\"" >> ~/.bashrc
     echo "export PATH=\"${CLONE_PATH}/.rbenv/plugins/ruby-build/bin:$PATH\"" >> ~/.bashrc
-    #echo 'eval "$(rbenv init --)"' >> ~/.bashrc
     export PATH="${CLONE_PATH}/.rbenv/bin:$PATH"
     export PATH="${CLONE_PATH}/.rbenv/plugins/ruby-build/bin:$PATH"
     eval "$(rbenv init -)"
@@ -194,8 +193,8 @@ install_rbenv(){
 
 install_ruby(){
     echoG 'Install ruby'
-    rbenv install ${RUBYV} #> /dev/null 2>&1
-    rbenv global ${RUBYV} #> /dev/null 2>&1
+    rbenv install ${RUBYV} > /dev/null 2>&1
+    rbenv global ${RUBYV} > /dev/null 2>&1
     symlink "${CLONE_PATH}/.rbenv/versions/${RUBYV}/bin/ruby" "${RUBY_PATH}"
     RUBY_V="$(ruby -v)"
     output_msg "${?}" 'ruby'
