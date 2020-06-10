@@ -2,8 +2,7 @@
 # /********************************************************************
 # LiteSpeed WordPress setup Script
 # @Author:   LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
-# @Copyright: (c) 2019-2020
-# @Version: 1.0.3
+# @Copyright: (c) 2019-2021
 # *********************************************************************/
 LSWSFD='/usr/local/lsws'
 DOCHM='/var/www/html.old'
@@ -12,13 +11,14 @@ PHPCONF='/var/www/phpmyadmin'
 LSWSCONF="${LSWSFD}/conf/httpd_config.conf"
 WPVHCONF="${LSWSFD}/conf/vhosts/wordpress/vhconf.conf"
 EXAMPLECONF="${LSWSFD}/conf/vhosts/wordpress/vhconf.conf"
-PHPINICONF="${LSWSFD}/lsphp73/etc/php/7.3/litespeed/php.ini"
+PHPINICONF="${LSWSFD}/lsphp74/etc/php/7.4/litespeed/php.ini"
 MEMCACHECONF='/etc/memcached.conf'
 REDISSERVICE='/lib/systemd/system/redis-server.service'
 REDISCONF='/etc/redis/redis.conf'
 WPCONSTCONF="${DOCHM}/wp-content/plugins/litespeed-cache/data/const.default.ini"
+MARIADBSERVICE='/lib/systemd/system/mariadb.service'
 MARIADBCNF='/etc/mysql/mariadb.conf.d/60-server.cnf'
-PHPVER=73
+PHPVER=74
 FIREWALLLIST="22 80 443"
 USER='www-data'
 GROUP='www-data'
@@ -436,9 +436,9 @@ config_php(){
     echoG 'Updating PHP Paremeter'
     NEWKEY='max_execution_time = 360'
     linechange 'max_execution_time' ${PHPINICONF} "${NEWKEY}"
-    NEWKEY='post_max_size = 16M'
+    NEWKEY='post_max_size = 64M'
     linechange 'post_max_size' ${PHPINICONF} "${NEWKEY}"
-    NEWKEY='upload_max_filesize = 16M'
+    NEWKEY='upload_max_filesize = 64M'
     linechange 'upload_max_filesize' ${PHPINICONF} "${NEWKEY}"
     echoG 'Finish PHP Paremeter'
 }
@@ -511,8 +511,8 @@ END
     fi    
     semanage permissive -a memcached_t
     setsebool -P httpd_can_network_memcache 1
-    systemctl daemon-reload > /dev/null 2>&1
-    service memcached start > /dev/null 2>&1
+    systemctl daemon-reload > /dev/null
+    service memcached start > /dev/null
 }
 
 centos_config_redis(){
@@ -525,8 +525,8 @@ unixsocketperm 775
 END
     BIND_LINE=$(grep -n -m 1 '^bind 127' ${REDISCONF} | awk -F ':' '{print $1}')
     sed -i "${BIND_LINE}s/::1//" ${REDISCONF}
-    systemctl daemon-reload > /dev/null 2>&1
-    service redis start > /dev/null 2>&1
+    systemctl daemon-reload > /dev/null
+    service redis start > /dev/null
     echoG 'Finish Object Cache'
 }
 
@@ -552,7 +552,13 @@ config_mysql(){
             mysql -u root -p${EXISTSQLPASS} \     
                 -e "update mysql.user set authentication_string=password('${root_mysql_pass}') where user='root';" 
         fi        
-    fi   
+    fi
+    if [ -e ${MARIADBSERVICE} ]; then
+        grep -i LogLevelMax ${MARIADBSERVICE} >/dev/null 2>&1
+        if [ ${?} = 1 ]; then
+            echo 'LogLevelMax=1' >> ${MARIADBSERVICE}
+        fi
+    fi
     if [ ! -e ${MARIADBCNF} ]; then 
     touch ${MARIADBCNF}
     cat > ${MARIADBCNF} <<END 
@@ -560,6 +566,8 @@ config_mysql(){
 sql_mode="NO_ENGINE_SUBSTITUTION,NO_AUTO_CREATE_USER"
 END
     fi
+    systemctl daemon-reload > /dev/null 2>&1
+    systemctl restart mariadb > /dev/null
     echoG 'Finish DataBase'
 }
 

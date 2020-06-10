@@ -18,6 +18,7 @@ else
     LSVHCFPATH="${LSDIR}/conf/vhosts/Example/vhconf.conf"
 fi
 CLOUDPERINSTPATH='/var/lib/cloud/scripts/per-instance'
+DEBIANCNF='/etc/mysql/debian.cnf'
 WPCT='noneclassified'
 OSNAME=''
 BANNERNAME=''
@@ -432,6 +433,21 @@ update_sql_pwd(){
     fi    
 }
 
+add_sql_debian(){
+    if [ ! -e ${DEBIANCNF} ]; then
+        touch ${DEBIANCNF}
+        chmod 600 ${DEBIANCNF}
+    fi
+    sudo cat >> ${DEBIANCNF} <<EOM
+[client]
+host     = localhost
+user     = root
+password = ${root_mysql_pass}
+socket   = /var/run/mysqld/mysqld.sock
+EOM
+
+}
+
 renew_wpsalt(){
     for KEY in "'AUTH_KEY'" "'SECURE_AUTH_KEY'" "'LOGGED_IN_KEY'" "'NONCE_KEY'" "'AUTH_SALT'" "'SECURE_AUTH_SALT'" "'LOGGED_IN_SALT'" "'NONCE_SALT'"
     do
@@ -731,6 +747,7 @@ maincloud(){
         fix_wellknown
     elif [ "${APPLICATION}" = 'NONE' ]; then
         update_sql_pwd
+        add_sql_debian
         renew_wp_pwd
         update_pwd_file
         renew_wpsalt
