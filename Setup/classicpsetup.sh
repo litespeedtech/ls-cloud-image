@@ -12,13 +12,13 @@ PHPCONF='/var/www/phpmyadmin'
 LSWSCONF="${LSWSFD}/conf/httpd_config.conf"
 WPVHCONF="${LSWSFD}/conf/vhosts/classicpress/vhconf.conf"
 EXAMPLECONF="${LSWSFD}/conf/vhosts/classicpress/vhconf.conf"
-PHPINICONF="${LSWSFD}/lsphp73/etc/php/7.3/litespeed/php.ini"
+PHPINICONF="${LSWSFD}/lsphp74/etc/php/7.4/litespeed/php.ini"
 MEMCACHECONF='/etc/memcached.conf'
 REDISSERVICE='/lib/systemd/system/redis-server.service'
 REDISCONF='/etc/redis/redis.conf'
 WPCONSTCONF="${DOCHM}/wp-content/plugins/litespeed-cache/data/const.default.ini"
 MARIADBCNF='/etc/mysql/mariadb.conf.d/60-server.cnf'
-PHPVER=73
+PHPVER=74
 FIREWALLLIST="22 80 443"
 USER='www-data'
 GROUP='www-data'
@@ -461,7 +461,7 @@ ubuntu_config_memcached(){
 END
     NEWKEY="-u ${USER}"
     linechange '\-u memcache' ${MEMCACHECONF} "${NEWKEY}"  
-    systemctl daemon-reload > /dev/null 2>&1
+    systemctl daemon-reload > /dev/null
     service memcached start > /dev/null 2>&1
 }
 
@@ -475,7 +475,7 @@ unixsocketperm 775
 END
     BIND_LINE=$(grep -n -m 1 '^bind 127' ${REDISCONF} | awk -F ':' '{print $1}')
     sed -i "${BIND_LINE}s/::1//" ${REDISCONF}
-    systemctl daemon-reload > /dev/null 2>&1
+    systemctl daemon-reload > /dev/null
     service redis-server start > /dev/null 2>&1
     echoG 'Finish Object Cache'
 }
@@ -513,7 +513,7 @@ END
     fi    
     semanage permissive -a memcached_t
     setsebool -P httpd_can_network_memcache 1
-    systemctl daemon-reload > /dev/null 2>&1
+    systemctl daemon-reload > /dev/null
     service memcached start > /dev/null 2>&1
 }
 
@@ -554,7 +554,13 @@ config_mysql(){
             mysql -u root -p${EXISTSQLPASS} \     
                 -e "update mysql.user set authentication_string=password('${root_mysql_pass}') where user='root';" 
         fi        
-    fi   
+    fi
+    if [ -e ${MARIADBSERVICE} ]; then
+        grep -i LogLevelMax ${MARIADBSERVICE} >/dev/null 2>&1
+        if [ ${?} = 1 ]; then
+            echo 'LogLevelMax=1' >> ${MARIADBSERVICE}
+        fi
+    fi
     if [ ! -e ${MARIADBCNF} ]; then 
     touch ${MARIADBCNF}
     cat > ${MARIADBCNF} <<END 
@@ -562,6 +568,8 @@ config_mysql(){
 sql_mode="NO_ENGINE_SUBSTITUTION,NO_AUTO_CREATE_USER"
 END
     fi
+    systemctl daemon-reload > /dev/null
+    systemctl restart mariadb > /dev/null
     echoG 'Finish DataBase'
 }
 
