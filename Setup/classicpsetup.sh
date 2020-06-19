@@ -17,6 +17,7 @@ MEMCACHECONF='/etc/memcached.conf'
 REDISSERVICE='/lib/systemd/system/redis-server.service'
 REDISCONF='/etc/redis/redis.conf'
 WPCONSTCONF="${DOCHM}/wp-content/plugins/litespeed-cache/data/const.default.ini"
+MARIADBSERVICE='/lib/systemd/system/mariadb.service'
 MARIADBCNF='/etc/mysql/mariadb.conf.d/60-server.cnf'
 PHPVER=74
 FIREWALLLIST="22 80 443"
