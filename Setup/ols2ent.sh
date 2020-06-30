@@ -5,7 +5,7 @@
 # 3. create vhost with Apache conf
 # 4. webadmin console pass will be reset when convert.
 
-TOTAL_RAM=$(free -m | awk '/Mem\:/ { print $2 }')
+TOTAL_RAM=$(free -m | awk '/Mem:/ { print $2 }')
 LICENSE_KEY=""
 ADMIN_PASS="1234567"
 LS_DIR='/usr/local/lsws'
@@ -372,6 +372,13 @@ write_apache_conf() {
         else
             sed -i 's|replacement_key_file|'$LS_DIR'/admin/conf/webadmin.key|g' $STORE_DIR/httpd.conf
         fi
+        
+        if [[ $phpmyadmin == "ON" ]] ; then
+            sed -i 's|Alias /phpmyadmin/|Alias '$phpmyadmin_context'|g' $STORE_DIR/httpd.conf
+        else
+            sed -i '/phpmyadmin/d' $STORE_DIR/httpd.conf
+        fi
+        
     fi
 
     if [[ $docRoot ==  "\$VH_ROOT" ]] ; then
@@ -402,7 +409,7 @@ write_apache_conf() {
     fi
 
     if [[ $phpmyadmin == "ON" ]] ; then
-        sed -i 's|php_my_admin_directive|Alias /phpmyadmin/ /var/www/phpmyadmin/|g' $STORE_DIR/conf/vhosts/${domains[i]}/${domains[i]}.conf
+        sed -i 's|php_my_admin_directive|Alias '$phpmyadmin_context' /var/www/phpmyadmin/|g' $STORE_DIR/conf/vhosts/${domains[i]}/${domains[i]}.conf
     else
         sed -i "/\b\php_my_admin_directive\b/d" $STORE_DIR/conf/vhosts/${domains[i]}/${domains[i]}.conf
     fi
@@ -416,9 +423,14 @@ get_conf_from_vhconf() {
     echo "main domain detected: ${domains[i]}"
     echo "vhost root detected: $VH_ROOT"
 
-    grep -q "phpmyadmin" $VH_CONF
+    grep -q "/var/www/phpmyadmin/" $VH_CONF
     if [[ $? == 0 ]] ; then
-        phpmyadmin="ON"
+        temp_line=$(grep -n "/var/www/phpmyadmin/" $VH_CONF | cut -d: -f1)
+        temp_line=$((temp_line - 1))
+        temp_name=$(sed "${temp_line}q;d" $VH_CONF)
+        temp_name=${temp_name/context/}
+        temp_name=${temp_name/\{/}
+	    phpmyadmin_context=$(echo $temp_name | tr -d '[:space:]' )
     else
         phpmyadmin="OFF"
     fi
