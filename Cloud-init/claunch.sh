@@ -43,6 +43,14 @@ check_root(){
     fi
 }
 
+set_ssh_alive(){
+    if [ "${PROVIDER}" = 'azure' ]; then
+        sed -i '/ClientAliveInterval/d' /etc/ssh/sshd_config
+        echo 'ClientAliveInterval 235' >> /etc/ssh/sshd_config
+    fi
+}
+
+
 stop_aegis(){
     killall -9 aegis_cli aegis_update aegis_cli aegis_quartz >/dev/null 2>&1
     killall -9 AliYunDun AliHids AliYunDunUpdate >/dev/null 2>&1
@@ -201,6 +209,7 @@ main_claunch(){
     check_os
     check_root
     #uninstall_aegis
+    set_ssh_alive
     install_cloudinit
     setup_cloud
     cleanup
