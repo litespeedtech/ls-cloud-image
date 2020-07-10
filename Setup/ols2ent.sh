@@ -24,6 +24,41 @@ echow(){
     echo -e "\033[1m${EPACE}${FLAG}\033[0m${@}"
 }
 
+check_os() {
+    if [ -f /etc/redhat-release ] ; then
+        OSNAME=centos
+    elif [ -f /etc/lsb-release ] ; then
+        OSNAME=ubuntu
+    elif [ -f /etc/debian_version ] ; then
+        OSNAME=debian
+    fi
+}
+
+providerck() {
+    if ! hash dmidecode > /dev/null 2>&1 ; then
+        if [[ $OSNAME == "ubuntu" ]] || [[ $OSNAME == "debian" ]] ; then 
+            apt install -y dmidecode
+        fi
+        if [[ $OSNAME == "centos" ]] ; then 
+            yum install -y dmidecode
+        fi 
+    fi 
+    
+    if [ -e /sys/devices/virtual/dmi/id/product_uuid ] && [[ "$(sudo cat /sys/devices/virtual/dmi/id/product_uuid | cut -c 1-3)" =~ (EC2|ec2) ]]; then 
+        PROVIDER='aws'
+    elif [ "$(dmidecode -s bios-vendor)" = 'Google' ];then
+        PROVIDER='google'      
+    elif [ "$(dmidecode -s bios-vendor)" = 'DigitalOcean' ];then
+        PROVIDER='do'
+    elif [ "$(dmidecode -s system-product-name | cut -c 1-7)" = 'Alibaba' ];then
+        PROVIDER='aliyun'
+    elif [ "$(dmidecode -s system-manufacturer)" = 'Microsoft Corporation' ];then    
+        PROVIDER='azure'
+    else
+        PROVIDER='undefined'  
+    fi
+}
+
 show_help() {
     echo -e "\nOpenLiteSpeed to LiteSpeed Enterprise converter script.\n"
     echo -e "\nThis script will:"
@@ -533,6 +568,12 @@ check_ip(){
         server_ipv6="[$server_ipv6]"
         #enclose it with [ ] as Apache requires it
     fi
+    
+    if [[ $PROVIDER == "google" ]] ; then 
+        server_ipv4="*"
+    fi 
+    #uses * for GCP , use public IP will make LSWS fail to bind to IP that does not show up in server 
+    #and result 404 on everything 
 }
 
 check_no_lsws(){
@@ -599,6 +640,10 @@ main_to_lsws(){
     restart_lsws
     webadmin_reset
 }
+
+check_os
+
+providerck
 
 case ${1} in
     -[hH] | -help | --help)
