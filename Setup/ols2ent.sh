@@ -570,9 +570,9 @@ check_ip(){
     fi
     
     if [[ $PROVIDER == "google" ]] ; then 
-        server_ipv4=$(hostname -I)
+        server_ipv4="*"
     fi 
-    #GCP uses internal IP , use public IP will make LSWS fail to bind to IP that does not show up in server 
+    #uses * for GCP , use public IP will make LSWS fail to bind to IP that does not show up in server 
     #and result 404 on everything 
 }
 
@@ -640,6 +640,10 @@ main_to_lsws(){
     restart_lsws
     webadmin_reset
 }
+
+check_os
+
+providerck
 
 case ${1} in
     -[hH] | -help | --help)
