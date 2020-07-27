@@ -315,7 +315,7 @@ panel_admin_update()
 panel_sshkey_update()
 {
     if [ "${PANEL}" = 'cyber' ]; then
-        ssh-keygen -f /root/.ssh/cyberpanel -t rsa -N ''
+        echo 'y' | ssh-keygen -f /root/.ssh/cyberpanel -t rsa -N ''
     fi
 }
 
@@ -726,7 +726,7 @@ maincloud(){
     gen_secretkey
     rm_dummy
     add_profile
-    set_tmp
+    #set_tmp
     if [ "${PANEL}" = 'cyber' ]; then
         panel_admin_update
         panel_sshkey_update
