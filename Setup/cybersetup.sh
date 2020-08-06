@@ -48,6 +48,9 @@ upgrade() {
         echo -ne '#######################   (100%)\r'
     else
         echo -ne '#                         (5%)\r'
+        echoG 'Setting SELinux to permissive'
+        setenforce 0
+        sed -i 's|^SELINUX.*|SELINUX=permissive|g' /etc/selinux/config
         yum update -y > /dev/null 2>&1
         echo -ne '#######################   (100%)\r'
     fi  
