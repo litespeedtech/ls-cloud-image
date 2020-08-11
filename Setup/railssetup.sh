@@ -6,7 +6,7 @@
 # @Version: 1.2
 # *********************************************************************/
 LSWSFD='/usr/local/lsws'
-PHPVER=73
+PHPVER=74
 USER='nobody'
 GROUP='nogroup'
 FIREWALLLIST="22 80 443"

@@ -18,7 +18,7 @@ PLUGINLIST="litespeed-cache.zip"
 CKREG="^[a-z0-9!#\$%&'*+/=?^_\`{|}~-]+(\.[a-z0-9!#$%&'*+/=?^_\`{|}~-]+)*\
 @([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+[a-z0-9]([a-z0-9-]*[a-z0-9])?\$"
 THEME='twentytwenty'
-PHPVER=lsphp73
+PHPVER=lsphp74
 USER='www-data'
 GROUP='www-data'
 DOMAIN_PASS='ON'
@@ -128,6 +128,13 @@ check_root(){
 }
 check_process(){
     ps aux | grep ${1} | grep -v grep >/dev/null 2>&1
+}
+check_php_version(){
+    PHP_MA="$(php -r 'echo PHP_MAJOR_VERSION;')"
+    PHP_MI="$(php -r 'echo PHP_MINOR_VERSION;')"
+    if [ -e ${LSDIR}/lsphp${PHP_MA}${PHP_MI}/bin/php ]; then
+        PHPVER="lsphp${PHP_MA}${PHP_MI}"
+    fi
 }
 install_ed() {
     if [ -f /bin/ed ]; then
@@ -674,6 +681,7 @@ main() {
     check_provider
     check_home_path
     check_os
+    check_php_version
     domain_input
     main_set_vh ${MY_DOMAIN}
     issue_cert
