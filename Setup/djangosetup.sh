@@ -19,6 +19,7 @@ VHDOCROOT='/usr/local/lsws/Example/html'
 DEMOPROJECT="${VHDOCROOT}/${PROJNAME}"
 DEMOSETTINGS="${DEMOPROJECT}/${PROJNAME}/settings.py"
 ALLERRORS=0
+V_ENV='ON'
 NOWPATH=$(pwd)
 
 echoY() {
@@ -143,10 +144,13 @@ centos_install_python(){
     echoG 'Compiling from source code'
     ./configure > /dev/null 2>&1
     if [ -e Makefile ]; then 
-        make && sudo make install > /dev/null 2>&1
+        make > /dev/null 2>&1
+        make install > /dev/null 2>&1
         if [ -e sqlite3 ]; then 
             echoG 'Make success, replacing sqlite bin file'
-            mv /usr/bin/sqlite3 /usr/bin/sqlite3.bk
+            if [ -e /usr/bin/sqlite3 ]; then
+                mv /usr/bin/sqlite3 /usr/bin/sqlite3.bk
+            fi    
             mv sqlite3 /usr/bin/
             export LD_LIBRARY_PATH="/usr/local/lib"
             echo 'export LD_LIBRARY_PATH="/usr/local/lib"' >> /etc/profile
@@ -243,7 +247,7 @@ ubuntu_install_wsgi(){
     install_wsgi
 }
 
-config_ols(){
+config_venv_ols(){
     echoG 'Setting Web Server config'
     cat > ${LSWSVHCONF} <<END 
 docRoot                   \$VH_ROOT/html/
@@ -321,34 +325,122 @@ rewrite  {
 END
 }
 
+config_ols(){
+    echoG 'Setting Web Server config'
+    cat > ${LSWSVHCONF} <<END 
+docRoot                   \$VH_ROOT/html/
+enableGzip                1
+
+errorlog \$VH_ROOT/logs/error.log {
+  useServer               1
+  logLevel                DEBUG
+  rollingSize             10M
+}
+
+accesslog \$VH_ROOT/logs/access.log {
+  useServer               0
+  rollingSize             10M
+  keepDays                7
+  compressArchive         0
+}
+
+index  {
+  useServer               0
+  indexFiles              index.html, index.php
+  autoIndex               0
+  autoIndexURI            /_autoindex/default.php
+}
+
+errorpage 404 {
+  url                     /error404.html
+}
+
+expires  {
+  enableExpires           1
+}
+
+accessControl  {
+  allow                   *
+}
+
+realm SampleProtectedArea {
+
+  userDB  {
+    location              conf/vhosts/Example/htpasswd
+    maxCacheSize          200
+    cacheTimeout          60
+  }
+
+  groupDB  {
+    location              conf/vhosts/Example/htgroup
+    maxCacheSize          200
+    cacheTimeout          60
+  }
+}
+
+context /.well-known/ {
+  location                ${VHDOCROOT}/.well-known/
+  allowBrowse             1
+  addDefaultCharset       off
+}
+
+context / {
+  type                    appserver
+  location                ${VHDOCROOT}/${PROJNAME}/
+  binPath                 ${LSWSFD}/fcgi-bin/lswsgi
+  appType                 wsgi
+  startupFile             ${PROJNAME}/wsgi.py
+  addDefaultCharset       off
+}
+
+rewrite  {
+  enable                  1
+  autoLoadHtaccess        1
+  logLevel                0
+}
+
+END
+}
+
 centos_set_ols(){
-    config_ols
+    if [ "${V_ENV}" = 'ON' ]; then
+        config_venv_ols
+    else    
+        config_ols
+    fi    
 }    
 
 ubuntu_set_ols(){
-    config_ols
+    if [ "${V_ENV}" = 'ON' ]; then
+        config_venv_ols
+    else    
+        config_ols
+    fi 
 } 
 
 centos_set_env(){
-    echoG 'Setting django venv'
-    virtualenv --system-site-packages -p python3 ${VHDOCROOT} > /dev/null 2>&1
-    if [ ${?} = 1 ]; then 
-        echoR 'Create virtualenv failed'
-    fi    
-    echoG 'Source'
-    source ${VHDOCROOT}/bin/activate
-    ### Currently CentOS 7 + 2.2 have 500 error 
-    pip3 install -I django==2.1.8> /dev/null 2>&1
+    if [ "${V_ENV}" = 'ON' ]; then
+        echoG 'Setting django venv'
+        virtualenv --system-site-packages -p /usr/bin/python3 ${VHDOCROOT} > /dev/null 2>&1
+        if [ ${?} = 1 ]; then 
+            echoR 'Create virtualenv failed'
+        fi
+        echoG 'Source'
+        source ${VHDOCROOT}/bin/activate
+    fi
+    pip3 install django > /dev/null 2>&1
 }
 
 ubuntu_set_env(){
-    echoG 'Setting django venv'
-    virtualenv --system-site-packages -p python3 ${VHDOCROOT} > /dev/null 2>&1
-    if [ ${?} = 1 ]; then 
-        echoR 'Create virtualenv failed'
-    fi    
-    echoG 'Source'
-    source ${VHDOCROOT}/bin/activate
+    if [ "${V_ENV}" = 'ON' ]; then
+        echoG 'Setting django venv'
+        virtualenv --system-site-packages -p python3 ${VHDOCROOT} > /dev/null 2>&1
+        if [ ${?} = 1 ]; then 
+            echoR 'Create virtualenv failed'
+        fi    
+        echoG 'Source'
+        source ${VHDOCROOT}/bin/activate
+    fi
     pip3 install -I django > /dev/null 2>&1
 }
 
@@ -369,8 +461,8 @@ STATIC_ROOT = '${DEMOPROJECT}/public/static'
 END
     echoG 'Collect files'
     mkdir -p ${DEMOPROJECT}/public/static
-    python manage.py collectstatic > /dev/null 2>&1
-    python manage.py migrate > /dev/null 2>&1
+    python3 manage.py collectstatic > /dev/null 2>&1
+    python3 manage.py migrate > /dev/null 2>&1
 
     echoG 'update views'
     cat > "${DEMOPROJECT}/${PROJAPPNAME}/views.py" <<END 
@@ -407,7 +499,9 @@ urlpatterns = [
     path('admin/', admin.site.urls),
 ]
 END
-    deactivate
+    if [ "${V_ENV}" = 'ON' ]; then
+        deactivate
+    fi    
     echoG 'Finish django'
 }
 
@@ -533,6 +627,11 @@ main(){
     end_message
 }
 
+case ${1} in
+    -NOVENV|--no-venv)
+        V_ENV='OFF'
+        ;;
+esac
+
 main
-#rm -- "$0"
 exit 0    
