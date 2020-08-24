@@ -148,12 +148,12 @@ cleanup (){
     rm -f /var/log/wtmp*
     rm -f /var/log/yum.log*
     rm -f /var/log/secure
-    rm -f /var/log/messages
-    rm -f /var/log/dmesg
-    rm -f /var/log/audit/audit.log
-    rm -f /var/log/maillog
+    rm -f /var/log/messages*
+    rm -f /var/log/dmesg*
+    rm -f /var/log/audit/audit.log*
+    rm -f /var/log/maillog*
     rm -f /var/tuned/tuned.log
-    rm -f /var/log/fontconfig.log
+    rm -f /var/log/fontconfig.log*
     #aws
     rm -f /var/log/amazon/ssm/*
     #azure
