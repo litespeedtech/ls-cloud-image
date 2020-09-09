@@ -67,7 +67,7 @@ To keep this Droplet secure, the firewalld is enabled.
 All ports are BLOCKED except 22 (SSH), 80 (HTTP) and 443 (HTTPS).
 
 The Rails OLS One-Click Quickstart guide:
-* $(echoB 'https://docs.litespeedtech.com/cloud/rails')
+* $(echoB 'https://docs.litespeedtech.com/cloud/images/rails/')
 
 In a web browser, you can view:
 * The sample rails site: $(echoY "http://$MYIP/")

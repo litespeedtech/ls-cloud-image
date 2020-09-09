@@ -67,7 +67,7 @@ cat <<EOF
 $(echoCYAN 'Welcome to LiteSpeed One-Click CyberPanel Server.')
 To keep this server secure, the firewalld is enabled.
 CyberPanel One-Click Quickstart guide:
-* $(echoB 'https://docs.litespeedtech.com/cloud/cyberpanel')
+* $(echoB 'https://docs.litespeedtech.com/cloud/images/cyberpanel/')
 
 In a web browser, you can view:
 * CyberPanel: $(echoY "https://$MYIP:8090")

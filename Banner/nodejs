@@ -68,7 +68,7 @@ To keep this Droplet secure, the firewalld is enabled.
 All ports are BLOCKED except 22 (SSH), 80 (HTTP) and 443 (HTTPS).
 
 The Node.js OLS One-Click Quickstart guide:
-* $(echoB 'https://docs.litespeedtech.com/cloud/nodejs')
+* $(echoB 'https://docs.litespeedtech.com/cloud/images/nodejs/')
 
 In a web browser, you can view:
 * The sample node site: $(echoY "http://$MYIP/")

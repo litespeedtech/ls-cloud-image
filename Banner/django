@@ -68,7 +68,7 @@ To keep this Droplet secure, the firewalld is enabled.
 All ports are BLOCKED except 22 (SSH), 80 (HTTP) and 443 (HTTPS).
 
 The Django OLS One-Click Quick start guide:
-* $(echoB 'https://docs.litespeedtech.com/cloud/django')
+* $(echoB 'https://docs.litespeedtech.com/cloud/images/django/')
 
 In a web browser, you can view:
 * The sample Django site: $(echoY "http://$MYIP/")

@@ -67,7 +67,7 @@ To keep this server secure, the firewall is enabled.
 All ports are BLOCKED except 22 (SSH), 80 (HTTP) and 443 (HTTPS).
 
 ClassicPress One-Click Quickstart guide:
-* $(echoB 'https://docs.litespeedtech.com/cloud/classicpress')
+* $(echoB 'https://docs.litespeedtech.com/cloud/images/classicpress/')
 
 In a web browser, you can view:   
 * The new ClassicPress site: $(echoY "http://$MYIP")

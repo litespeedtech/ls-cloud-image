@@ -67,7 +67,7 @@ To keep this server secure, the firewall is enabled.
 All ports are BLOCKED except 22 (SSH), 80 (HTTP) and 443 (HTTPS).
 
 WordPress One-Click Quickstart guide:
-* $(echoB 'https://docs.litespeedtech.com/cloud/wordpress')
+* $(echoB 'https://docs.litespeedtech.com/cloud/images/wordpress/')
 
 In a web browser, you can view:   
 * The new WordPress site: $(echoY "http://$MYIP")
