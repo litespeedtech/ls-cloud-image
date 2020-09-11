@@ -3,10 +3,9 @@
 # LiteSpeed Django setup Script
 # @Author:   LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
 # @Copyright: (c) 2019-2020
-# @Version: 1.1
+# @Version: 1.2
 # *********************************************************************/
 LSWSFD='/usr/local/lsws'
-PHPVER=74
 USER='nobody'
 GROUP='nogroup'
 FIREWALLLIST="22 80 443"
@@ -19,6 +18,7 @@ VHDOCROOT='/usr/local/lsws/Example/html'
 DEMOPROJECT="${VHDOCROOT}/${PROJNAME}"
 DEMOSETTINGS="${DEMOPROJECT}/${PROJNAME}/settings.py"
 ALLERRORS=0
+PY_V=''
 V_ENV='ON'
 NOWPATH=$(pwd)
 
@@ -114,8 +114,7 @@ ubuntu_install_basic(){
 install_ols(){
     cd /tmp/; wget -q https://raw.githubusercontent.com/litespeedtech/ols1clk/master/ols1clk.sh
     chmod +x ols1clk.sh
-    echo 'Y' | bash ols1clk.sh \
-    --lsphp ${PHPVER}
+    echo 'Y' | bash ols1clk.sh
 }
 
 centos_install_ols(){
@@ -312,7 +311,8 @@ context / {
   binPath                 ${LSWSFD}/fcgi-bin/lswsgi
   appType                 wsgi
   startupFile             ${PROJNAME}/wsgi.py
-  env                     PYTHONHOME=${VHDOCROOT}/
+  env                     PYTHONPATH=${VHDOCROOT}/lib/${PY_V}:${VHDOCROOT}/${PROJNAME}
+  env                     LS_PYTHONBIN=${VHDOCROOT}/bin/python
   addDefaultCharset       off
 }
 
@@ -418,6 +418,10 @@ ubuntu_set_ols(){
     fi 
 } 
 
+get_envpy_ver(){
+    PY_V="$(ls ${VHDOCROOT}/lib/ | head -1)"
+}
+
 centos_set_env(){
     if [ "${V_ENV}" = 'ON' ]; then
         echoG 'Setting django venv'
@@ -506,10 +510,12 @@ END
 }
 
 centos_set_app(){
+    get_envpy_ver
     app_setup
 }
 
 ubuntu_set_app(){
+    get_envpy_ver
     app_setup
 }
 
