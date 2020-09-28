@@ -115,12 +115,16 @@ output_msg(){
 }
 
 symlink(){
-    if [ -e "${2}" ]; then
-        echoG "Backup ${2}"
-        mv "${2}" "${2}.bk"
-    fi
-    ln -s "${1}" "${2}"
-    chmod 777 ${2}
+    if [ -e "${1}" ]; then
+        if [ -e "${2}" ]; then
+            echoG "Backup ${2}"
+            mv "${2}" "${2}.bk"
+        fi
+        ln -s "${1}" "${2}"
+        chmod 777 ${2}
+    else
+        echoR "${1} does not exist, skip!"    
+    fi    
 }
 
 centos_install_basic(){
@@ -201,9 +205,15 @@ install_ruby(){
 }
 
 install_gem(){
+    echoG 'Install gem'
     symlink "${CLONE_PATH}/.rbenv/versions/${RUBYV}/bin/gem" '/usr/bin/gem'
     GEM_V="$(gem -v)"
     output_msg "${?}" 'gem'
+}
+
+install_bundle(){
+    echoG 'Install bundle'
+    symlink "${CLONE_PATH}/.rbenv/versions/${RUBYV}/bin/bundle" '/usr/bin/bundle'
 }
 
 install_bundler(){
@@ -212,6 +222,11 @@ install_bundler(){
     symlink "${CLONE_PATH}/.rbenv/versions/${RUBYV}/bin/bundler" '/usr/bin/bundler'
     BUNDLER_V=$(bundler -v)
     output_msg "${?}" 'bundler'  
+}
+
+install_spring(){
+    echoG 'Install spring'
+    symlink "${CLONE_PATH}/.rbenv/versions/${RUBYV}/bin/spring" '/usr/bin/spring'
 }
 
 install_lsapi(){
@@ -245,6 +260,14 @@ centos_install_bundler(){
     install_bundler 
 }
 
+centos_install_bundle(){
+    install_bundle 
+}
+
+centos_install_spring(){
+    install_spring
+}
+
 centos_install_lsapi(){
     install_lsapi
 }
@@ -267,6 +290,14 @@ ubuntu_install_gem(){
 
 ubuntu_install_bundler(){
     install_bundler        
+}
+
+ubuntu_install_bundle(){
+    install_bundle 
+}
+
+ubuntu_install_spring(){
+    install_spring
 }
 
 ubuntu_install_lsapi(){
@@ -413,6 +444,11 @@ acme_folder(){
 app_setup(){
     echoG '[Start] Install app'
     cd ${VHDOCROOT}; rails new ${PROJNAME} >/dev/null 2>&1
+    if [ ${?} = 0 ]; then
+        echoG "${PROJNAME} project create success!"
+    else
+        echoR 'Something went wrong, please check!'
+    fi
     echoG 'Generate Welcome'
     cd ${PROJNAME}; rails generate controller Welcome index >/dev/null 2>&1
     grep welcome config/routes.rb >/dev/null 2>&1
@@ -497,6 +533,7 @@ centos_main_install(){
     centos_install_ruby
     centos_install_gem
     centos_install_bundler
+    centos_install_bundle
     centos_install_lsapi
     centos_install_rails
     centos_install_certbot
@@ -517,6 +554,7 @@ ubuntu_main_install(){
     ubuntu_install_ruby
     ubuntu_install_gem
     ubuntu_install_bundler
+    ubuntu_install_bundle
     ubuntu_install_lsapi
     ubuntu_install_rails    
     ubuntu_install_certbot
@@ -560,7 +598,7 @@ main(){
         ubuntu_main_config
     fi
     acme_folder
-    restart_lsws 
+    restart_lsws
     change_owner
     end_message
 }
