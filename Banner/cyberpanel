@@ -50,10 +50,10 @@ LOCAL_VERSION=$(cat /usr/local/CyberCP/version.txt | sed -z 's/\n/./g')
 LAST_VERSION=$(curl -s https://raw.githubusercontent.com/usmannasir/cyberpanel/stable/version.txt | grep -Eo '[0-9]'|sed -z 's/\n/./g')
 MYIP=$(cat /etc/cyberpanel/machineIP)
 
-if [ -e /home/ubuntu ]; then 
-    HMUBUNTU='/home/ubuntu/' 
-elif [ "$(dmidecode -s system-manufacturer)" = 'Microsoft Corporation' ];then
-    HMUBUNTU='/root/'    
+if [ "$(dmidecode -s system-manufacturer)" = 'Microsoft Corporation' ];then
+    HMUBUNTU='/root/'
+elif [ -e /home/ubuntu ]; then 
+    HMUBUNTU='/home/ubuntu/'  
 else
     HMUBUNTU=''
 fi
