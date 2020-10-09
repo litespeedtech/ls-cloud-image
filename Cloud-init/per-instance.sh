@@ -19,6 +19,7 @@ else
 fi
 CLOUDPERINSTPATH='/var/lib/cloud/scripts/per-instance'
 DEBIANCNF='/etc/mysql/debian.cnf'
+APPNAME_PATH='/opt/.app_name'
 WPCT='noneclassified'
 OSNAME=''
 BANNERNAME=''
@@ -90,6 +91,18 @@ update_path()
     if [ "${PANEL}" = 'cyber' ]; then 
         PHPMYPATH="${PANELPATH}/public/phpmyadmin"
         WPCT="${PROVIDER}_ols_cyberpanel"
+        if [ -e "${APPNAME_PATH}" ]; then
+            if grep -i cyberpanel_joomla "${APPNAME_PATH}" >/dev/null; then
+                WPCT="${PROVIDER}_ols_joomla"
+                BANNERNAME='cyberjoomla'
+            elif grep -i cyberpanel_drupal "${APPNAME_PATH}" >/dev/null; then
+                WPCT="${PROVIDER}_ols_drupal"
+                BANNERNAME='cyberdrupal'
+            elif grep -i cyberpanel_wordpress "${APPNAME_PATH}" >/dev/null; then
+                WPCT="${PROVIDER}_ols_wordpress"
+                BANNERNAME='cyberwordpress'
+            fi
+        fi
     elif [ "${PANEL}" = '' ]; then
         PHPMYPATH='/var/www/phpmyadmin' 
         DOCPATH='/var/www/html'
