@@ -92,13 +92,13 @@ update_path()
         PHPMYPATH="${PANELPATH}/public/phpmyadmin"
         WPCT="${PROVIDER}_ols_cyberpanel"
         if [ -e "${APPNAME_PATH}" ]; then
-            if grep -i cyberpanel_joomla "${APPNAME_PATH}" >/dev/null; then
+            if grep -i 'cyberpanel-joomla' "${APPNAME_PATH}" >/dev/null; then
                 WPCT="${PROVIDER}_ols_joomla"
                 BANNERNAME='cyberjoomla'
-            elif grep -i cyberpanel_drupal "${APPNAME_PATH}" >/dev/null; then
+            elif grep -i 'cyberpanel-drupal' "${APPNAME_PATH}" >/dev/null; then
                 WPCT="${PROVIDER}_ols_drupal"
                 BANNERNAME='cyberdrupal'
-            elif grep -i cyberpanel_wordpress "${APPNAME_PATH}" >/dev/null; then
+            elif grep -i 'cyberpanel-wordpress' "${APPNAME_PATH}" >/dev/null; then
                 WPCT="${PROVIDER}_ols_wordpress"
                 BANNERNAME='cyberwordpress'
             fi
