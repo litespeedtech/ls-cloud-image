@@ -69,11 +69,16 @@ To keep this server secure, the firewalld is enabled.
 Joomla One-Click Quickstart guide:
 * $(echoB 'https://docs.litespeedtech.com/cloud/images/joomla/')
 
-In a web browser, you can view:
-* Joomla: https://MY_DOMAIN/ (After Quick Setup)
+Quick Setup:
+* Create website:
+$(echoY 'cyberpanel createWebsite --package Default --owner admin --domainName example.com --email support@example.com --php 7.4')
+* Create Joomla:
+$(echoY 'cyberpanel installJoomla --domainName example.com --password yourpassword --siteTitle "Demo Site"')
+
+After Quick Setup, you can view:
+* Joomla: https://MY_DOMAIN/
+* Joomla admin: https://MY_DOMAIN/administrator
 * CyberPanel: $(echoY "https://$MYIP:8090")
-* phpMyAdmin: https://$MYIP:8090/phpmyadmin
-* Rainloop:   https://$MYIP:8090/rainloop
 
 On the server:
 * You can get the CyberPanel admin password with the following command:
