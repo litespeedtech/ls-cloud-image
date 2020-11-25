@@ -89,7 +89,9 @@ domainhelp(){
 }
 
 restart_lsws(){
-    ${LSDIR}/bin/lswsctrl restart >/dev/null
+    ${LSDIR}/bin/lswsctrl stop >/dev/null 2>&1
+    systemctl stop lsws >/dev/null 2>&1
+    systemctl start lsws >/dev/null 2>&1    
 }   
 
 domain_filter(){
