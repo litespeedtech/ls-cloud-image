@@ -3,7 +3,7 @@
 # LiteSpeed domain setup Script
 # @Author:   LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
 # @Copyright: (c) 2019-2021
-# @Version: 2.0.0
+# @Version: 2.0.1
 # *********************************************************************/
 MY_DOMAIN=''
 MY_DOMAIN2=''
@@ -257,7 +257,7 @@ set_lscache(){
         cp ${DOCHM}/wp-content/themes/${THEME}/functions.php ${DOCHM}/wp-content/themes/${THEME}/functions.php.bk
         install_ed
         ed ${DOCHM}/wp-content/themes/${THEME}/functions.php <<END >>/dev/null 2>&1
-19i
+2i
 require_once( WP_CONTENT_DIR.'/../wp-admin/includes/plugin.php' );
 \$path = 'litespeed-cache/litespeed-cache.php' ;
 if (!is_plugin_active( \$path )) {
@@ -405,9 +405,13 @@ check_install_cp() {
 check_duplicate() {
     grep -w "${1}" ${2} >/dev/null 2>&1
 }
+
 restart_lsws(){
-    ${LSDIR}/bin/lswsctrl restart >/dev/null
-}   
+    ${LSDIR}/bin/lswsctrl stop >/dev/null 2>&1
+    systemctl stop lsws >/dev/null 2>&1
+    systemctl start lsws >/dev/null 2>&1   
+}
+
 set_vh_conf() {
     create_folder "${DOCHM}"
     create_folder "${VHDIR}/${MY_DOMAIN}"
@@ -578,15 +582,34 @@ apply_lecert() {
         exit 1
     fi
 }
-hook_certbot() {
-    sed -i 's/0.*/&  --deploy-hook "\/usr\/local\/lsws\/bin\/lswsctrl restart"/g' ${BOTCRON}
-    check_duplicate 'restart' ${BOTCRON}
-    if [ ${?} = 0 ]; then
-        echoG 'Certbot hook update success'
+
+certbothook() {
+    grep 'restart lsws' ${BOTCRON} >/dev/null 2>&1
+    if [ ${?} = 0 ]; then 
+        echoG 'Web Server Restart hook already set!'
     else
-        echoY 'Please check certbot crond!'
+        if [ "${OSNAME}" = 'ubuntu' ] || [ "${OSNAME}" = 'debian' ] ; then
+            sed -i 's/0.*/&  --deploy-hook "systemctl restart lsws"/g' ${BOTCRON}
+        elif [ "${OSNAME}" = 'centos' ]; then
+            if [ "${OSVER}" = '7' ]; then
+                echo "0 0,12 * * * root python -c 'import random; import time; time.sleep(random.random() * 3600)' && certbot renew -q --deploy-hook 'systemctl restart lsws'" \
+                | sudo tee -a /etc/crontab > /dev/null
+            elif [ "${OSVER}" = '8' ]; then
+                echo "0 0,12 * * * root python3 -c 'import random; import time; time.sleep(random.random() * 3600)' && /usr/local/bin/certbot renew -q --deploy-hook 'systemctl restart lsws'" \
+                | sudo tee -a /etc/crontab > /dev/null
+            else
+                echoY 'Please check certbot crontab'
+            fi
+        fi    
+        grep 'restart lsws' ${BOTCRON} > /dev/null 2>&1
+        if [ ${?} = 0 ]; then 
+            echoG 'Certbot hook update success'
+        else 
+            echoY 'Please check certbot crond'
+        fi
     fi
 }
+
 force_https() {
     if [ ${SILENT} = 'OFF' ]; then
         printf "%s" "Do you wish to add a force https redirection rule? [y/N]: "
@@ -664,7 +687,7 @@ issue_cert(){
             input_email
             if [ ${EMAIL_SKIP} = 'OFF' ]; then
                 apply_lecert
-                hook_certbot
+                certbothook
             fi    
         else
             show_help 2   
