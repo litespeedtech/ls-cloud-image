@@ -31,7 +31,7 @@ You don't need to stick with our prebuilt cloud images. You can create your own 
 ## System requirements
 Recommended instance/machine size:
 
-1. CPU Cored - the more the better
+1. CPU Core - the more the better
 2. At least 1GB RAM
 3. At least 10GB of harddrive (Debian 10 Buster + LSWS + small WP site takes around 7GB)  
 
