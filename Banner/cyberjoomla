@@ -74,6 +74,8 @@ Quick Setup:
 $(echoY 'cyberpanel createWebsite --package Default --owner admin --domainName example.com --email support@example.com --php 7.4')
 * Create Joomla:
 $(echoY 'cyberpanel installJoomla --domainName example.com --password yourpassword --siteTitle "Demo Site"')
+* Issue SSL:
+$(echoY 'cyberpanel issueSSL --domainName example.com')
 
 After Quick Setup, you can view:
 * Joomla: https://MY_DOMAIN/
