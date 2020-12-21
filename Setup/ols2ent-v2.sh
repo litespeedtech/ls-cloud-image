@@ -8,6 +8,7 @@ TOTAL_RAM=$(free -m | awk '/Mem:/ { print $2 }')
 LICENSE_KEY=""
 PHP='php'
 ADMIN_PASS='12345678'
+PANEL=''
 LS_DIR='/usr/local/lsws'
 STORE_DIR='/opt/.litespeed_conf'
 ols_conf_file="${LS_DIR}/conf/httpd_config.conf"
@@ -67,6 +68,22 @@ webadmin_reset() {
     echo "admin:$TEMP" > ${LS_DIR}/admin/conf/htpasswd
     echoG "WebAdmin Console password has been set to: ${WEBADMIN_PASS}"
 }
+
+check_no_panel(){
+    if [ -d /usr/local/CyberCP ]; then
+        PANEL='cyberpanel'
+    elif [ -d /usr/local/cpanel ]; then
+        PANEL='cpanel'
+    elif [ -d /usr/local/plesk ]; then
+        PANEL='plesk'
+    elif [ -d /usr/local/directadmin ]; then
+        PANEL='directadmin'
+    fi
+    if [ ! -z "${PANEL}" ]; then
+        echoR "Detect control panel: ${PANEL}, exit!"; exit 1 
+    fi 
+}
+
 
 check_pkg_manage(){
     if hash apt > /dev/null 2>&1 ; then
@@ -145,6 +162,37 @@ gen_ent_config(){
             cp "${FILE}" ${STORE_DIR}/ent_conf/
         fi    
     done
+}
+
+set_ent_cache(){
+    grep '<cache>' ${LS_DIR}/conf/httpd_config.xml >/dev/null
+    if [ ${?} = 0 ]; then
+        echoG 'Detect cache, skip!'
+    else
+        echoG 'Enable Cache'
+        sed -i '/<\/scriptHandlerList>/a\
+  <cache> \
+    <cacheEngine>7</cacheEngine> \
+    <storage> \
+      <cacheStorePath>/home/lscache</cacheStorePath> \
+    </storage> \
+  </cache>
+' ${LS_DIR}/conf/httpd_config.xml
+    fi
+}
+
+set_ent_htaccess(){
+    grep '<htAccess>' ${LS_DIR}/conf/httpd_config.xml >/dev/null
+    if [ ${?} = 0 ]; then
+        echoG 'Detect htaccess, skip!'
+    else
+        echoG 'Enable htaccess'
+        sed -i '/<\/logging>/a\
+  <htAccess> \
+    <allowOverride>31</allowOverride> \
+  </htAccess>
+' ${LS_DIR}/conf/httpd_config.xml
+    fi
 }
 
 restore_ols() {
@@ -340,6 +388,8 @@ install_lsws() {
         done
     fi
     echoG 'LiteSpeed Enterprise installed...'
+    set_ent_cache
+    set_ent_htaccess
     rm_lsws_autoupdate
     restart_lsws
 }
@@ -360,6 +410,7 @@ check_no_lsws(){
 
 main_pre_check(){
     check_root_user
+    check_no_panel
     check_no_lsws
     check_pkg_manage
     check_php
@@ -400,5 +451,5 @@ case ${1} in
         ;;
     *) 
         main_to_lsws; exit 0
-        ;;                  
+        ;;
 esac
