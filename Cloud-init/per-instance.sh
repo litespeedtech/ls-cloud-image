@@ -181,7 +181,8 @@ rm_dummy(){
         fi
         if [ "${PROVIDER}" = 'ali' ]; then
             mv /etc/motd /etc/motd.bk
-        fi      
+        fi
+        userdel -r eric >/dev/null 2>&1
     fi
 }
 
