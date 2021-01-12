@@ -430,13 +430,13 @@ vhAliases                 www.$VH_DOMAIN
 adminEmails               localhost
 enableGzip                1
 
-errorlog $SERVER_ROOT/logs/$VH_NAME.error_log {
+errorlog \$SERVER_ROOT/logs/\$VH_NAME.error_log {
 useServer               0
 logLevel                ERROR
 rollingSize             10M
 }
 
-accesslog $SERVER_ROOT/logs/$VH_NAME.access_log {
+accesslog \$SERVER_ROOT/logs/\$VH_NAME.access_log {
 useServer               0
 logFormat               "%v %h %l %u %t "%r" %>s %b"
 logHeaders              5
