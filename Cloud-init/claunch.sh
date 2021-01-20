@@ -2,7 +2,6 @@
 # /********************************************************************
 # LiteSpeed Cloud Script
 # @Author:   LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
-# @Copyright: (c) 2019-2020
 # *********************************************************************/
 
 CLDINITPATH='/var/lib/cloud/scripts/per-instance'
@@ -34,7 +33,6 @@ providerck()
         PROVIDER='undefined'  
     fi
 }
-providerck
 
 check_root(){
     if [ $(id -u) -ne 0 ]; then
@@ -125,6 +123,11 @@ cleanup (){
     if [ -f /etc/legal ]; then
         mv /etc/legal /etc/legal.bk
     fi
+    #empty tmp
+    mkdir -p /tmp
+    rm -rf /tmp/*
+    rm -rf /var/tmp/*
+    chmod 1777 /tmp
     #cloud-init here
     rm -f /var/log/cloud-init.log
     rm -f /var/log/cloud-init-output.log
@@ -145,7 +148,6 @@ cleanup (){
     rm -rf /var/log/journal/*
     rm -f /var/log/syslog*
     rm -f /var/log/btmp*
-    rm -f /var/log/wtmp*
     rm -f /var/log/yum.log*
     rm -f /var/log/secure
     rm -f /var/log/messages*
@@ -154,6 +156,8 @@ cleanup (){
     rm -f /var/log/maillog*
     rm -f /var/tuned/tuned.log
     rm -f /var/log/fontconfig.log*
+    rm -rf /var/log/*.[0-9]
+    rm -f /var/lib/systemd/random-seed
     #aws
     rm -f /var/log/amazon/ssm/*
     #azure
@@ -168,7 +172,7 @@ cleanup (){
     rm -f /var/log/letsencrypt/letsencrypt.log*
     rm -f /var/log/fail2ban.log* 
     rm -f /var/log/mysql/error.log
-    #rm -f /etc/mysql/debian.cnf
+    rm -rf /var/log/*.gz
     rm -f /var/log/redis/redis-server.log
     rm -rf /usr/local/lsws/logs/*
     rm -f /root/.mysql_history
@@ -182,9 +186,19 @@ cleanup (){
     #key
     rm -f /root/.ssh/authorized_keys
     rm -f /root/.ssh/cyberpanel*
+    touch /etc/ssh/revoked_keys
+    chmod 600 /etc/ssh/revoked_keys
+    #machine identifier
+    rm -f /etc/machine-id
+    touch /etc/machine-id
+    #history
+    rm -f /root/.bash_history
+    cat /dev/null > /var/log/lastlog
+    rm -f /var/log/wtmp*
+    unset HISTFILE
     #password
     rm -f /root/.litespeed_password
-    rm -f /root/.bash_history
+
     if [ "${PROVIDER}" = 'aws' ]; then
         sudo passwd -d root >/dev/null 2>&1
         sudo sed -i 's/root::/root:*:/g' /etc/shadow >/dev/null 2>&1
@@ -208,9 +222,9 @@ cleanup (){
 }
 
 main_claunch(){
+    providerck
     check_os
     check_root
-    #uninstall_aegis
     set_ssh_alive
     install_cloudinit
     setup_cloud
