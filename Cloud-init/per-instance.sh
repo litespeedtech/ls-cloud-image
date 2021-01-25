@@ -73,6 +73,8 @@ check_provider()
         PROVIDER='google'     
     elif [ "$(dmidecode -s bios-vendor)" = 'DigitalOcean' ];then
         PROVIDER='do'
+    elif [ "$(dmidecode -s bios-vendor)" = 'Vultr' ];then
+        PROVIDER='vultr'        
     elif [ "$(dmidecode -s system-product-name | cut -c 1-7)" = 'Alibaba' ];then
         PROVIDER='ali'
     elif [ "$(dmidecode -s system-manufacturer)" = 'Microsoft Corporation' ];then    
@@ -188,7 +190,6 @@ rm_dummy(){
 
 ct_version()
 {
-    #curl "https://wp.api.litespeedtech.com/v?t=image&src=${WPCT}" > /dev/null 2>&1
     curl "https://api.quic.cloud/data/1click_ver?t=image&src=${WPCT}" > /dev/null 2>&1
     echo "cloud-${PROVIDER}" > ${LSDIR}/PLAT
 }
