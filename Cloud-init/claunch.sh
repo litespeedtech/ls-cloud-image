@@ -95,7 +95,9 @@ install_cloudinit(){
             else
                 yum install cloud-init -y >/dev/null 2>&1
             fi    
-        fi    
+        fi
+        systemctl start cloud-init >/dev/null 2>&1
+        systemctl enable cloud-init >/dev/null 2>&1
     fi    
 }
 
