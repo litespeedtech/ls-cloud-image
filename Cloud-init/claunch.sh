@@ -25,6 +25,8 @@ providerck()
         PROVIDER='google'      
     elif [ "$(dmidecode -s bios-vendor)" = 'DigitalOcean' ];then
         PROVIDER='do'
+    elif [ "$(dmidecode -s bios-vendor)" = 'Vultr' ];then
+        PROVIDER='vultr'        
     elif [ "$(dmidecode -s system-product-name | cut -c 1-7)" = 'Alibaba' ];then
         PROVIDER='ali'
     elif [ "$(dmidecode -s system-manufacturer)" = 'Microsoft Corporation' ];then    
@@ -82,7 +84,13 @@ install_cloudinit(){
     which cloud-init >/dev/null 2>&1
     if [ ${?} = 1 ]; then
         if [ ${OSNAME} = 'ubuntu' ]; then
-            apt-get install cloud-init -y >/dev/null 2>&1
+            if [ "${PROVIDER}" = 'vultr' ]; then 
+                cd /tmp
+                wget https://ewr1.vultrobjects.com/cloud_init_beta/cloud-init_universal_latest.deb > /dev/null 2>&1
+                wget https://ewr1.vultrobjects.com/cloud_init_beta/universal_latest_MD5 > /dev/null 2>&1
+                apt-get update -y > /dev/null 2>&1
+                apt-get install -y /tmp/cloud-init_universal_latest.deb > /dev/null 2>&1
+            fi    
         else
             if [ "${PROVIDER}" = 'ali' ]; then
                 yum -y install python-pip > /dev/null 2>&1
@@ -92,6 +100,11 @@ install_cloudinit(){
                 OS_VER=$(cat /etc/redhat-release | awk '{printf $4}'| awk -F'.' '{printf $1}')
                 bash /tmp/cloud-init-*/tools/deploy.sh centos ${OS_VER}
                 rm -rf ali-cloud-init-latest.tgz cloud-init-*
+            elif [ "${PROVIDER}" = 'vultr' ]; then
+                cd /tmp
+                wget https://ewr1.vultrobjects.com/cloud_init_beta/cloud-init_rhel_latest.rpm > /dev/null 2>&1
+                wget https://ewr1.vultrobjects.com/cloud_init_beta/rhel_latest_MD5 > /dev/null 2>&1
+                yum install -y cloud-init_rhel_latest.rpm > /dev/null 2>&1
             else
                 yum install cloud-init -y >/dev/null 2>&1
             fi    

@@ -334,7 +334,7 @@ main_upgrade(){
     else
         yumupgradelist
     fi    
-    if [ "${UPDATE}" = 'TRUE' ]; then
+    #if [ "${UPDATE}" = 'TRUE' ]; then
         printf "%s"   "Do you wish to update the system now? This will update the web server as well. [Y/n]? "
         read TMP_YN
         if [[ ! "${TMP_YN}" =~ ^(n|N) ]]; then
@@ -346,9 +346,9 @@ main_upgrade(){
             fi    
             echoG "\nUpdate complete" 
         fi    
-    else
-        echoG 'Your system is up to date'
-    fi
+    #else
+    #    echoG 'Your system is up to date'
+    #fi
     if [ ! -d /usr/local/CyberCP ]; then
         echoG "\nEnjoy your accelarated OpenLiteSpeed server!\n"
     else
