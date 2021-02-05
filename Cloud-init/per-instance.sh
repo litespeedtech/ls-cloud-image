@@ -541,7 +541,7 @@ add_profile(){
 }
 
 add_hosts(){
-    if [ -d /home/ubuntu ]; then
+    if [ -d /home/ubuntu ] || [ "${PROVIDER}" = 'vultr' ]; then
         NEWKEY="127.0.0.1 localhost $(hostname)"
         linechange '127.0.0.1' /etc/hosts "${NEWKEY}"
     fi
