@@ -2,7 +2,7 @@
 # /********************************************************************
 # LiteSpeed Django setup Script
 # @Author:   LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
-# @Copyright: (c) 2019-2020
+# @Copyright: (c) 2019-2021
 # @Version: 1.2
 # *********************************************************************/
 LSWSFD='/usr/local/lsws'
@@ -11,7 +11,7 @@ GROUP='nogroup'
 FIREWALLLIST="22 80 443"
 LSWSCONF="${LSWSFD}/conf/httpd_config.conf"
 LSWSVHCONF="${LSWSFD}/conf/vhosts/Example/vhconf.conf"
-WSGINAME='wsgi-lsapi-1.6'
+WSGINAME='wsgi-lsapi-1.8'
 PROJNAME='demo'
 PROJAPPNAME='app'
 VHDOCROOT='/usr/local/lsws/Example/html'
