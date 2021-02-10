@@ -70,6 +70,16 @@ remove_aegis(){
     fi  
 }
 
+remove_user(){
+    if [ -e /usr/bin/logname ]; then
+        USER_NAME="$(logname)"
+        if [ ! -z "${USER_NAME}" ] && [ "${USER_NAME}" != 'root' ] && [ "${USER_NAME}" != 'ubuntu' ] && [ "${USER_NAME}" != 'centos' ]; then
+            echo "Cleanup user: ${USER_NAME}"
+            userdel -rf ${USER_NAME} >/dev/null 2>&1
+        fi
+    fi
+}
+
 uninstall_aegis(){
     if [ "${PROVIDER}" = 'ali' ]; then 
         stop_aegis
@@ -240,6 +250,7 @@ main_claunch(){
     providerck
     check_os
     check_root
+    remove_user
     set_ssh_alive
     install_cloudinit
     setup_cloud
