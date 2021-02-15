@@ -52,6 +52,8 @@ MYIP=$(cat /etc/cyberpanel/machineIP)
 
 if [ "$(dmidecode -s system-manufacturer)" = 'Microsoft Corporation' ];then
     HMUBUNTU='/root/'
+elif [ -e /root/StackScript ]; then
+    HMUBUNTU='/root/'
 elif [ -e /home/ubuntu ]; then 
     HMUBUNTU='/home/ubuntu/'  
 else

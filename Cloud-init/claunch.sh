@@ -184,7 +184,7 @@ cleanup (){
     rm -rf /var/log/*.[0-9]
     rm -f /var/lib/systemd/random-seed
     #aws
-    rm -f /var/log/amazon/ssm/*
+    rm -rf /var/log/amazon/ssm/*
     #azure
     rm -f /var/log/azure/*
     rm -f /var/log/waagent.log
