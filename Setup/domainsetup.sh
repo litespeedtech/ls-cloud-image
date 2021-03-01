@@ -290,7 +290,7 @@ aptgetupgrade() {
         ### an apt bug
         mv  /etc/apt/sources.list.d/mariadb_repo.list /tmp/
     fi    
-    DEBIAN_FRONTEND=noninteractive apt-get -y -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' dist-upgrade > /dev/null 2>&1
+    #DEBIAN_FRONTEND=noninteractive apt-get -y -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' dist-upgrade > /dev/null 2>&1
     echo -ne '####################      (99%)\r'
     apt-get clean > /dev/null 2>&1
     apt-get autoclean > /dev/null 2>&1
