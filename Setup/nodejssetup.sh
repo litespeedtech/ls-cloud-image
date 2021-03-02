@@ -16,7 +16,7 @@ PROJNAME='node'
 VHDOCROOT='/usr/local/lsws/Example/html'
 DEMOPROJECT="${VHDOCROOT}/${PROJNAME}"
 ALLERRORS=0
-NODEJSV='12'
+NODEJSV='14'
 NOWPATH=$(pwd)
 
 echoY(){
