@@ -184,7 +184,6 @@ rm_dummy(){
         if [ "${PROVIDER}" = 'ali' ]; then
             mv /etc/motd /etc/motd.bk
         fi
-        userdel -r eric >/dev/null 2>&1
     fi
 }
 
@@ -741,7 +740,6 @@ maincloud(){
     gen_secretkey
     rm_dummy
     add_profile
-    #set_tmp
     if [ "${PANEL}" = 'cyber' ]; then
         panel_admin_update
         panel_sshkey_update
@@ -757,9 +755,9 @@ maincloud(){
         install_firewalld  
     elif [ "${APPLICATION}" = 'PYTHON' ]; then
         update_secretkey
-        fix_wellknown
+        #fix_wellknown
     elif [ "${APPLICATION}" = 'NODE' ]; then
-        fix_wellknown
+        #fix_wellknown
     elif [ "${APPLICATION}" = 'NONE' ]; then
         update_sql_pwd
         add_sql_debian
@@ -767,7 +765,7 @@ maincloud(){
         update_pwd_file
         renew_wpsalt
         update_phpmyadmin
-        fix_phpmyadmin
+        #fix_phpmyadmin
         renew_blowfish
         setup_after_ssh
     fi
