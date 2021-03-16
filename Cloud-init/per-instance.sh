@@ -756,7 +756,7 @@ maincloud(){
     elif [ "${APPLICATION}" = 'PYTHON' ]; then
         update_secretkey
         #fix_wellknown
-    elif [ "${APPLICATION}" = 'NODE' ]; then
+    #elif [ "${APPLICATION}" = 'NODE' ]; then
         #fix_wellknown
     elif [ "${APPLICATION}" = 'NONE' ]; then
         update_sql_pwd
