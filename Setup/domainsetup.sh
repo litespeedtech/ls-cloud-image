@@ -153,11 +153,11 @@ domainadd(){
 }
 
 domainverify(){
-    curl -Is http://${DOMAIN}/ | grep -i LiteSpeed > /dev/null 2>&1
+    curl -Is http://${DOMAIN}/ | grep -i 'LiteSpeed\|cloudflare' > /dev/null 2>&1
     if [ ${?} = 0 ]; then
         echoG "[OK] ${DOMAIN} is accessible."
         TYPE=1
-        curl -Is http://${WWW_DOMAIN}/ | grep -i LiteSpeed > /dev/null 2>&1
+        curl -Is http://${WWW_DOMAIN}/ | grep -i 'LiteSpeed\|cloudflare' > /dev/null 2>&1
         if [ ${?} = 0 ]; then
             echoG "[OK] ${WWW_DOMAIN} is accessible."
             TYPE=2
