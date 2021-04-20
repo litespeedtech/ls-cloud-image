@@ -535,6 +535,13 @@ EOM
     sudo chmod 755 /etc/profile.d/afterssh.sh
 }
 
+update_conntrack_max(){
+    if [ "${PROVIDER}" = 'do' ] || [ "${PROVIDER}" = 'vultr' ] || [ "${PROVIDER}" = 'linode' ]; then
+        sysctl -w net.netfilter.nf_conntrack_max=262144
+        echo "net.netfilter.nf_conntrack_max=262144" >> /etc/sysctl.conf
+    fi    
+}
+
 add_profile(){
     echo "sudo /opt/domainsetup.sh" >> /etc/profile
 }
@@ -666,32 +673,6 @@ update_phpmyadmin() {
     fi
 }
 
-fix_phpmyadmin(){
-    if [ ${BANNERNAME} = 'wordpress' ]; then 
-        grep -q '    enable' ${LSVHCFPATH}
-        if [ ${?} != 0 ]; then 
-            sed -i "/^  rewrite/a\ \ \ \ \enable                0\n \ \ \ \inherit               0" ${LSVHCFPATH}           
-        fi
-        grep -q '/var/www/phpmyadmin/' ${LSVHCFPATH}
-        if [ ${?} != 0 ]; then
-            sed -i 's|/var/www/phpmyadmin|/var/www/phpmyadmin/|' ${LSVHCFPATH}
-        fi
-    fi 
-}
-
-fix_wellknown(){
-    if [ ${BANNERNAME} = 'nodejs' ] || [ ${BANNERNAME} = 'django' ]; then
-        grep '/usr/local/lsws/Example/html/.well-known/' ${LSVHCFPATH} >/dev/null 2>&1
-        if [ ${?} = 1 ]; then
-            TMP_LINE_NUM=$(grep -n -m 1 '/.well-known/' ${LSVHCFPATH} | awk -F ':' '{print $1}')
-            TMP_LINE=$((TMP_LINE_NUM+1))
-            sed -i "${TMP_LINE}s|/usr/local/lsws/Example/html/|/usr/local/lsws/Example/html/.well-known/|" ${LSVHCFPATH}
-            mkdir ${LSDIR}/Example/html/.well-known/
-        fi
-    fi
-}
-
-
 set_tmp() {
     if [ ${OSNAME} = 'ubuntu' ]; then 
         if ! $(cat /proc/mounts | grep -q '/dev/loop0 /tmp'); then
@@ -735,6 +716,7 @@ maincloud(){
     web_admin_update
     replace_litenerip
     db_passwordfile
+    update_conntrack_max
     gen_sql_pwd
     gen_salt_pwd
     gen_secretkey
@@ -755,9 +737,6 @@ maincloud(){
         install_firewalld  
     elif [ "${APPLICATION}" = 'PYTHON' ]; then
         update_secretkey
-        #fix_wellknown
-    #elif [ "${APPLICATION}" = 'NODE' ]; then
-        #fix_wellknown
     elif [ "${APPLICATION}" = 'NONE' ]; then
         update_sql_pwd
         add_sql_debian
@@ -765,7 +744,6 @@ maincloud(){
         update_pwd_file
         renew_wpsalt
         update_phpmyadmin
-        #fix_phpmyadmin
         renew_blowfish
         setup_after_ssh
     fi
