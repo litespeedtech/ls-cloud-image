@@ -116,6 +116,8 @@ providerck()
         PROVIDER='google'      
     elif [ "$(dmidecode -s bios-vendor)" = 'DigitalOcean' ];then
         PROVIDER='do'
+    elif [ "$(dmidecode -s bios-vendor)" = 'Vultr' ];then
+        PROVIDER='vultr'        
     elif [ "$(dmidecode -s system-product-name | cut -c 1-7)" = 'Alibaba' ];then
         PROVIDER='aliyun'
     elif [ "$(dmidecode -s system-manufacturer)" = 'Microsoft Corporation' ];then    

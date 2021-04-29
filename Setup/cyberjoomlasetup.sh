@@ -3,7 +3,7 @@
 # LiteSpeed CyberPanel Joomla setup Script
 # @Author:   LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
 # @Copyright: (c) 2020-2021
-# @Version: 1.0.0
+# @Version: 1.0.1
 # *********************************************************************/
 
 NOWPATH=$(pwd)
@@ -18,6 +18,25 @@ echoG() {
 echoR()
 {
     echo -e "\033[38;5;203m${1}\033[39m"
+}
+
+providerck()
+{
+    if [ -e /sys/devices/virtual/dmi/id/product_uuid ] && [[ "$(sudo cat /sys/devices/virtual/dmi/id/product_uuid | cut -c 1-3)" =~ (EC2|ec2) ]]; then 
+        PROVIDER='aws'
+    elif [ "$(dmidecode -s bios-vendor)" = 'Google' ];then
+        PROVIDER='google'      
+    elif [ "$(dmidecode -s bios-vendor)" = 'DigitalOcean' ];then
+        PROVIDER='do'
+    elif [ "$(dmidecode -s bios-vendor)" = 'Vultr' ];then
+        PROVIDER='vultr'             
+    elif [ "$(dmidecode -s system-product-name | cut -c 1-7)" = 'Alibaba' ];then
+        PROVIDER='aliyun'
+    elif [ "$(dmidecode -s system-manufacturer)" = 'Microsoft Corporation' ];then    
+        PROVIDER='azure'
+    else
+        PROVIDER='undefined'  
+    fi
 }
 
 check_os()
@@ -93,6 +112,12 @@ rm_agpl_pkg(){
     fi
 }
 
+special_fstab(){
+    if [ "${PROVIDER}" = 'vultr' ]; then 
+        sed -ie '/tmp/ s/^#*/#/' /etc/fstab
+    fi    
+}
+
 rmdummy(){
     rm -f ${NOWPATH}/cyberpanel.sh
     rm -rf ${NOWPATH}/install*
@@ -103,11 +128,13 @@ rmdummy(){
 main(){
     START_TIME="$(date -u +%s)"
     check_os
+    providerck
     upgrade
     install_basic_pkg
     install_cyberpanel
     app_file
     rm_agpl_pkg
+    special_fstab
     rmdummy
     END_TIME="$(date -u +%s)"
     ELAPSED="$((${END_TIME}-${START_TIME}))"
