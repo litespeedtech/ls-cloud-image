@@ -73,7 +73,7 @@ CyberPanel One-Click Quickstart guide:
 
 In a web browser, you can view:
 * CyberPanel: $(echoY "https://$MYIP:8090")
-* phpMyAdmin: https://$MYIP:8090/phpmyadmin
+* phpMyAdmin: https://$MYIP:8090/dataBases/phpMyAdmin
 * Rainloop:   https://$MYIP:8090/rainloop
 
 On the server:
