@@ -537,8 +537,11 @@ EOM
 
 update_conntrack_max(){
     if [ "${PROVIDER}" = 'do' ] || [ "${PROVIDER}" = 'vultr' ] || [ "${PROVIDER}" = 'linode' ]; then
-        sysctl -w net.netfilter.nf_conntrack_max=262144
-        echo "net.netfilter.nf_conntrack_max=262144" >> /etc/sysctl.conf
+        grep nf_conntrack_max /etc/sysctl.conf >/dev/null 2>&1
+        if [ ${?} = 1 ];
+            sysctl -w net.netfilter.nf_conntrack_max=2097152 >/dev/null
+            echo "net.netfilter.nf_conntrack_max=2097152" >> /etc/sysctl.conf
+        fi
     fi    
 }
 
