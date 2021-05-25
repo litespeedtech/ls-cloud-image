@@ -49,24 +49,28 @@ check_os(){
 
 providerck()
 {
-  if [ -e /sys/devices/virtual/dmi/id/product_uuid ] && [[ "$(sudo cat /sys/devices/virtual/dmi/id/product_uuid | cut -c 1-3)" =~ (EC2|ec2) ]]; then 
-    PROVIDER='aws'
-  elif [ "$(dmidecode -s bios-vendor)" = 'Google' ];then
-    PROVIDER='google'      
-  elif [ "$(dmidecode -s bios-vendor)" = 'DigitalOcean' ];then
-    PROVIDER='do'
-  elif [ "$(dmidecode -s system-product-name | cut -c 1-7)" = 'Alibaba' ];then
-    PROVIDER='aliyun'   
-  elif [ "$(dmidecode -s system-manufacturer)" = 'Microsoft Corporation' ];then    
-    PROVIDER='azure'  
-  else
-    PROVIDER='undefined'  
-  fi
+    if [ -e /sys/devices/virtual/dmi/id/product_uuid ] && [[ "$(sudo cat /sys/devices/virtual/dmi/id/product_uuid | cut -c 1-3)" =~ (EC2|ec2) ]]; then 
+        PROVIDER='aws'
+    elif [ ! -d /dev/mem ]; then
+        PROVIDER='vm'
+    elif [ "$(dmidecode -s bios-vendor)" = 'Google' ];then
+        PROVIDER='google'      
+    elif [ "$(dmidecode -s bios-vendor)" = 'DigitalOcean' ];then
+        PROVIDER='do'
+    elif [ "$(dmidecode -s system-product-name | cut -c 1-7)" = 'Alibaba' ];then
+        PROVIDER='aliyun'   
+    elif [ "$(dmidecode -s system-manufacturer)" = 'Microsoft Corporation' ];then    
+        PROVIDER='azure'  
+    else
+        PROVIDER='undefined'  
+    fi
 }
 
 get_ip()
 {
-    if [ ${PROVIDER} = 'aws' ]; then 
+    if [ ${PROVIDER} = 'vm' ]; then 
+        MY_IP=$(curl -s http://checkip.amazonaws.com || printf "0.0.0.0") 
+    elif [ ${PROVIDER} = 'aws' ]; then 
         MY_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4) 
     elif [ ${PROVIDER} = 'google' ]; then 
         MY_IP=$(curl -s -H "Metadata-Flavor: Google" \
