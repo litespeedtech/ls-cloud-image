@@ -51,8 +51,8 @@ providerck()
 {
     if [ -e /sys/devices/virtual/dmi/id/product_uuid ] && [[ "$(sudo cat /sys/devices/virtual/dmi/id/product_uuid | cut -c 1-3)" =~ (EC2|ec2) ]]; then 
         PROVIDER='aws'
-    #elif [ ! -d /dev/mem ]; then
-    #    PROVIDER='vm'
+    elif [ -d /proc/vz/ ]; then
+        PROVIDER='vm'
     elif [ "$(dmidecode -s bios-vendor)" = 'Google' ];then
         PROVIDER='google'      
     elif [ "$(dmidecode -s bios-vendor)" = 'DigitalOcean' ];then
