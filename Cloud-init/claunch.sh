@@ -143,6 +143,9 @@ cleanup (){
     fi
     if [ "${OSNAME}" = 'ubuntu' ]; then
         sudo apt-get remove unattended-upgrades -y > /dev/null 2>&1
+        if [ -e /etc/apt/apt.conf.d/10periodic ]; then 
+            sed -i 's/1/0/g' /etc/apt/apt.conf.d/10periodic
+        fi 
     fi
     # Legal
     if [ -f /etc/legal ]; then
