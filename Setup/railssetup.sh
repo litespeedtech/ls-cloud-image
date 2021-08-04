@@ -129,6 +129,7 @@ symlink(){
 
 centos_install_basic(){
     yum -y install wget > /dev/null 2>&1
+    yum -y install git > /dev/null 2>&1
     yum -y install git-core zlib zlib-devel gcc-c++ patch readline readline-devel libyaml-devel\
       libffi-devel openssl-devel make bzip2 autoconf automake libtool bison curl sqlite-devel > /dev/null 2>&1
 }
