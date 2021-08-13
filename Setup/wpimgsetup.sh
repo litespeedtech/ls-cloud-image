@@ -23,7 +23,7 @@ FIREWALLLIST="22 80 443"
 USER='www-data'
 GROUP='www-data'
 THEME='twentytwenty'
-PLUGINLIST="litespeed-cache.zip all-in-one-seo-pack.zip all-in-one-wp-migration.zip google-analytics-for-wordpress.zip jetpack.zip wp-mail-smtp.zip dologin.zip"
+PLUGINLIST="litespeed-cache.zip all-in-one-wp-migration.zip google-analytics-for-wordpress.zip jetpack.zip dologin.zip"
 root_mysql_pass=$(openssl rand -hex 24)
 ALLERRORS=0
 EXISTSQLPASS=''
@@ -637,9 +637,90 @@ api_key = ''
 ; O_SERVER_IP
 server_ip = ''
 
+; O_GUEST
+guest = false
+
+; O_GUEST_OPTM
+guest_optm = true
+
 ; O_NEWS
 news = false
 
+; O_GUEST_UAS
+guest_uas = 'Lighthouse
+GTmetrix
+Google
+Pingdom
+bot
+PTST
+HeadlessChrome'
+
+; O_GUEST_IPS
+guest_ips = '208.70.247.157
+172.255.48.130
+172.255.48.131
+172.255.48.132
+172.255.48.133
+172.255.48.134
+172.255.48.135
+172.255.48.136
+172.255.48.137
+172.255.48.138
+172.255.48.139
+172.255.48.140
+172.255.48.141
+172.255.48.142
+172.255.48.143
+172.255.48.144
+172.255.48.145
+172.255.48.146
+172.255.48.147
+52.229.122.240
+104.214.72.101
+13.66.7.11
+13.85.24.83
+13.85.24.90
+13.85.82.26
+40.74.242.253
+40.74.243.13
+40.74.243.176
+104.214.48.247
+157.55.189.189
+104.214.110.135
+70.37.83.240
+65.52.36.250
+13.78.216.56
+52.162.212.163
+23.96.34.105
+65.52.113.236
+172.255.61.34
+172.255.61.35
+172.255.61.36
+172.255.61.37
+172.255.61.38
+172.255.61.39
+172.255.61.40
+104.41.2.19
+191.235.98.164
+191.235.99.221
+191.232.194.51
+52.237.235.185
+52.237.250.73
+52.237.236.145
+104.211.143.8
+104.211.165.53
+52.172.14.87
+40.83.89.214
+52.175.57.81
+20.188.63.151
+20.52.36.49
+52.246.165.153
+51.144.102.233
+13.76.97.224
+102.133.169.66
+52.231.199.170
+13.53.162.7
+40.123.218.94'
 
 ;; -------------------------------------------------- ;;
 ;; --------------               Cache           ----------------- ;;
@@ -657,7 +738,7 @@ cache-favicon = true
 
 cache-resources = true
 
-cache-browser = false
+cache-browser = true
 
 cache-mobile = false
 
@@ -724,7 +805,7 @@ cache-ttl_status = '403 3600
 purge-upgrade = true
 
 ; O_PURGE_STALE
-purge-stale = true
+purge-stale = false
 
 purge-post_all  = false
 purge-post_f    = true
@@ -779,8 +860,6 @@ util-heartbeat = true
 
 util-instant_click = false
 
-util-check_advcache = true
-
 util-no_https_vary = false
 
 
@@ -834,12 +913,17 @@ db_optm-revisions_age = 0
 ; O_OPTM_CSS_MIN
 optm-css_min = false
 
-optm-css_inline_min = false
-
 ; O_OPTM_CSS_COMB
 optm-css_comb = false
 
-optm-css_comb_priority = false
+; O_OPTM_CSS_COMB_EXT_INL
+optm-css_comb_ext_inl = true
+
+; O_OPTM_UCSS
+optm-ucss = false
+
+; O_OPTM_UCSS_WHITELIST
+optm-ucss_whitelist = ''
 
 ; O_OPTM_CSS_HTTP2
 optm-css_http2 = false
@@ -849,22 +933,22 @@ optm-css_exc = ''
 ; O_OPTM_JS_MIN
 optm-js_min = false
 
-optm-js_inline_min = false
-
 ; O_OPTM_JS_COMB
 optm-js_comb = false
 
-optm-js_comb_priority = false
+; O_OPTM_JS_COMB_EXT_INL
+optm-js_comb_ext_inl = true
 
 ; O_OPTM_JS_HTTP2
 optm-js_http2 = false
 
-; O_OPTM_EXC_JQ
-optm-js_exc = ''
-
-optm-ttl = 604800
+optm-js_exc = 'jquery.js
+jquery.min.js'
 
 optm-html_min = false
+
+; O_OPTM_HTML_LAZY
+optm-html_lazy=''
 
 optm-qs_rm = false
 
@@ -873,11 +957,8 @@ optm-ggfonts_rm = false
 ; O_OPTM_CSS_ASYNC
 optm-css_async = false
 
-; O_OPTM_CCSS_GEN
-optm-ccss_gen = true
-
-; O_OPTM_CCSS_ASYNC
-optm-ccss_async = true
+; O_OPTM_CCSS_PER_URL
+optm-ccss_per_url = true
 
 ; O_OPTM_CSS_ASYNC_INLINE
 optm-css_async_inline = true
@@ -888,24 +969,32 @@ optm-css_font_display = false
 ; O_OPTM_JS_DEFER
 optm-js_defer = false
 
-; O_OPTM_JS_INLINE_DEFER
-optm-js_inline_defer = false
-
+; O_OPTM_EMOJI_RM
 optm-emoji_rm = false
 
-optm-exc_jq = true
+; O_OPTM_NOSCRIPT_RM
+optm-noscript_rm = false
 
 optm-ggfonts_async = false
-
-optm-max_size = 2
-
-optm-rm_comment = false
 
 optm-exc_roles = ''
 
 optm-ccss_con = ''
 
-optm-js_defer_exc = ''
+; O_OPTM_CCSS_SEP_POSTTYPE
+optm-ccss_sep_posttype = 'page'
+
+; O_OPTM_CCSS_SEP_URI
+optm-ccss_sep_uri = ''
+
+; Analytics JS also measure the load-time as it is being loaded on the website itself and Google sends a report each month to the user. If these files are deferred, The Analytics JS shows a longer page-load time, even if the website isn't actually slow. by Shivam
+optm-js_defer_exc = 'jquery.js
+jquery.min.js
+gtm.js
+analytics.js'
+
+; O_OPTM_GM_JS_EXC
+optm-gm_js_exc = ''
 
 ; O_OPTM_DNS_PREFETCH
 optm-dns_prefetch = ''
@@ -915,11 +1004,8 @@ optm-dns_prefetch_ctrl = false
 
 optm-exc = ''
 
-; O_OPTM_CCSS_SEP_POSTTYPE
-optm-ccss_sep_posttype = ''
-
-; O_OPTM_CCSS_SEP_URI
-optm-ccss_sep_uri = ''
+; O_OPTM_GUEST_ONLY
+optm-guest_only = true
 
 ;; -------------------------------------------------- ;;
 ;; --------------       Object Cache    ----------------- ;;
@@ -1000,23 +1086,29 @@ media-placeholder_resp = false
 ; O_MEDIA_PLACEHOLDER_RESP_COLOR
 media-placeholder_resp_color = '#cfd4db'
 
-; O_MEDIA_PLACEHOLDER_RESP_GENERATOR
-media-placeholder_resp_generator = false
-
 ; O_MEDIA_PLACEHOLDER_RESP_SVG
-media-placeholder_resp_svg = '<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}"><rect width="100%" height="100%" fill="{color}"/></svg>'
+media-placeholder_resp_svg = '<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}"><rect width="100%" height="100%" style="fill:{color};fill-opacity: 0.1;"/></svg>'
 
-; O_MEDIA_PLACEHOLDER_LQIP
-media-placeholder_lqip = false
+; O_MEDIA_LQIP
+media-lqip = false
 
-; O_MEDIA_PLACEHOLDER_LQIP_QUAL
-media-placeholder_lqip_qual = 4
+; O_MEDIA_LQIP_QUAL
+media-lqip_qual = 4
+
+; O_MEDIA_LQIP_MIN_W
+media-lqip_min_w = 150
+
+; O_MEDIA_LQIP_MIN_H
+media-lqip_min_h = 150
 
 ; O_MEDIA_PLACEHOLDER_RESP_ASYNC
 media-placeholder_resp_async = true
 
 ; O_MEDIA_IFRAME_LAZY
 media-iframe_lazy = false
+
+; O_MEDIA_ADD_MISSING_SIZES
+media-add_missing_sizes = false
 
 ; O_MEDIA_LAZYJS_INLINE
 media-lazyjs_inline = false
@@ -1025,7 +1117,7 @@ media-lazyjs_inline = false
 media-lazy_exc = ''
 
 ; O_MEDIA_LAZY_CLS_EXC
-media-lazy_cls_exc = ''
+media-lazy_cls_exc = 'wmu-preview-img'
 
 ; O_MEDIA_LAZY_PARENT_CLS_EXC
 media-lazy_parent_cls_exc = ''
@@ -1038,6 +1130,10 @@ media-iframe_lazy_parent_cls_exc = ''
 
 ; O_MEDIA_LAZY_URI_EXC
 media-lazy_uri_exc = ''
+
+; O_MEDIA_LQIP_EXC
+media-lqip_exc = ''
+
 
 
 
@@ -1054,7 +1150,7 @@ img_optm-ori = true
 
 img_optm-rm_bkup = false
 
-img_optm-webp = false
+img_optm-webp = true
 
 img_optm-lossless = false
 
@@ -1076,24 +1172,11 @@ img_optm-jpg_quality = 82
 
 
 
-
 ;; -------------------------------------------------- ;;
 ;; --------------               Crawler         ----------------- ;;
 ;; -------------------------------------------------- ;;
 
 crawler = false
-
-crawler-inc_posts = true
-
-crawler-inc_pages = true
-
-crawler-inc_cats = true
-
-crawler-inc_tags = true
-
-crawler-exc_cpt = ''
-
-crawler-order_links = 'date_desc'
 
 crawler-usleep = 500
 
@@ -1105,6 +1188,7 @@ crawler-crawl_interval = 302400
 
 crawler-threads = 3
 
+; O_CRAWLER_TIMEOUT
 crawler-timeout = 30
 
 crawler-load_limit = 1
@@ -1114,6 +1198,9 @@ crawler-sitemap = ''
 
 ; O_CRAWLER_DROP_DOMAIN
 crawler-drop_domain = true
+
+; O_CRAWLER_MAP_TIMEOUT
+crawler-map_timeout = 120
 
 crawler-roles = ''
 
@@ -1160,13 +1247,18 @@ misc-heartbeat_editor_ttl = 15
 
 cdn = false
 
+; O_CDN_ATTR
+cdn-attr = '.src
+.data-src
+.href
+.poster
+source.srcset'
+
 cdn-ori = ''
 
 cdn-ori_dir = ''
 
 cdn-exc = ''
-
-cdn-remote_jq = false
 
 cdn-quic = false
 
