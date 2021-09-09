@@ -122,6 +122,8 @@ providerck()
         PROVIDER='aliyun'
     elif [ "$(dmidecode -s system-manufacturer)" = 'Microsoft Corporation' ];then    
         PROVIDER='azure'
+    elif [ -e /etc/oracle-cloud-agent/ ]; then
+        PROVIDER='oracle'
     else
         PROVIDER='undefined'  
     fi
@@ -135,6 +137,8 @@ oshmpath()
         HMPATH='/home/ubuntu'
     elif [ ${PROVIDER} = 'aliyun' ] && [ -d /home/ubuntu ]; then
         HMPATH='/home/ubuntu'
+    elif [ ${PROVIDER} = 'oracle' ] && [ -d /home/ubuntu ]; then
+        HMPATH='/home/ubuntu'        
     else
         HMPATH='/root'
     fi
