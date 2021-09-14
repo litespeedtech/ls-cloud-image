@@ -103,7 +103,9 @@ check_provider()
     elif [ "$(dmidecode -s system-product-name | cut -c 1-7)" = 'Alibaba' ];then
         PROVIDER='aliyun'  
     elif [ "$(dmidecode -s system-manufacturer)" = 'Microsoft Corporation' ];then    
-        PROVIDER='azure'        
+        PROVIDER='azure'    
+    elif [ -e /etc/oracle-cloud-agent/ ]; then
+        PROVIDER='oracle'             
     else
         PROVIDER='undefined'  
     fi
@@ -116,6 +118,8 @@ check_home_path()
         HM_PATH='/home/ubuntu'  
     elif [ ${PROVIDER} = 'aliyun' ] && [ -d /home/ubuntu ]; then
         HM_PATH='/home/ubuntu'
+    elif [ ${PROVIDER} = 'oracle' ] && [ -d /home/ubuntu ]; then
+        HM_PATH='/home/ubuntu'        
     else
         HM_PATH='/root'
     fi    

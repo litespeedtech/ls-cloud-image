@@ -32,7 +32,9 @@ check_provider()
     elif [ "$(dmidecode -s system-product-name | cut -c 1-7)" = 'Alibaba' ];then
         PROVIDER='ali'
     elif [ "$(dmidecode -s system-manufacturer)" = 'Microsoft Corporation' ];then    
-        PROVIDER='azure'        
+        PROVIDER='azure'   
+    elif [ -e /etc/oracle-cloud-agent/ ]; then
+        PROVIDER='oracle'               
     elif [ -e /root/StackScript ]; then
         if grep -q 'linode' /root/StackScript; then
             PROVIDER='linode'

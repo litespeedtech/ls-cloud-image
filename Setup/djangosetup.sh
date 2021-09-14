@@ -64,18 +64,20 @@ check_os(){
 }
 
 check_provider(){
-  if [ -e /sys/devices/virtual/dmi/id/product_uuid ] && [[ "$(sudo cat /sys/devices/virtual/dmi/id/product_uuid | cut -c 1-3)" =~ (EC2|ec2) ]]; then 
-    PROVIDER='aws'
-  elif [ "$(dmidecode -s bios-vendor)" = 'Google' ];then
-    PROVIDER='google'      
-  elif [ "$(dmidecode -s bios-vendor)" = 'DigitalOcean' ];then
-    PROVIDER='do'
-  elif [ "$(dmidecode -s system-product-name | cut -c 1-7)" = 'Alibaba' ];then
-    PROVIDER='aliyun'  
-  elif [ "$(dmidecode -s system-manufacturer)" = 'Microsoft Corporation' ];then    
-    PROVIDER='azure'     
-  else
-    PROVIDER='undefined'  
+    if [ -e /sys/devices/virtual/dmi/id/product_uuid ] && [[ "$(sudo cat /sys/devices/virtual/dmi/id/product_uuid | cut -c 1-3)" =~ (EC2|ec2) ]]; then 
+        PROVIDER='aws'
+    elif [ "$(dmidecode -s bios-vendor)" = 'Google' ];then
+        PROVIDER='google'      
+    elif [ "$(dmidecode -s bios-vendor)" = 'DigitalOcean' ];then
+        PROVIDER='do'
+    elif [ "$(dmidecode -s system-product-name | cut -c 1-7)" = 'Alibaba' ];then
+        PROVIDER='aliyun'  
+    elif [ "$(dmidecode -s system-manufacturer)" = 'Microsoft Corporation' ];then    
+        PROVIDER='azure'    
+    elif [ -e /etc/oracle-cloud-agent/ ]; then
+        PROVIDER='oracle'     
+    else
+        PROVIDER='undefined'  
   fi
 }
 
