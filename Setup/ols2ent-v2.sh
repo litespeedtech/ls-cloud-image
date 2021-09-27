@@ -277,9 +277,13 @@ check_license(){
     fi
 }
 
-licesne_input() {
-    echo -e "\nPlease note that your server has \e[31m$TOTAL_RAM MB\e[39m RAM"
-    echo -e "If you are using \e[31mFree Start\e[39m license, It will not start due to \e[31m2GB RAM limit\e[39m."
+license_input() {
+    echo -e "\nPlease note that your server has \e[31m$TOTAL_RAM MB\e[39m RAM"   
+    if [ "$TOTAL_RAM" -gt 2048 ]; then
+        echo "$TOTAL_RAM is greater than 2048 MB RAM"
+		echo -e "If you are using \e[31mFree Starter\e[39m LiteSpeed license, It will not start due to 2GB RAM limit."
+	fi
+    
     echo -e "If you do not have any license, you can also use trial license (if server has not used trial license before), type \e[31mTRIAL\e[39m\n"
     while true; do
         printf "%s" "Please input your serial number for LiteSpeed WebServer Enterprise: "
@@ -433,7 +437,7 @@ main_to_lsws(){
     main_pre_gen
     gen_ent_config
     download_lsws
-    licesne_input
+    license_input
     uninstall_ols
     install_lsws
     webadmin_reset
