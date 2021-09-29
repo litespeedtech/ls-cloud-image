@@ -1270,6 +1270,18 @@ EOM
     echoG 'Finish db fiile'
 }
 
+oci_iptables(){
+    if [ -e /etc/iptables/rules.v4 ]; then
+        echoG 'Setting Firewall for OCI'
+        sed '/^:InstanceServices/r'<(
+            echo '-A INPUT -p tcp -m state --state NEW -m tcp --dport 80 -j ACCEPT'
+            echo '-A INPUT -p tcp -m state --state NEW -m tcp --dport 443 -j ACCEPT'
+            echo '-A INPUT -p udp -m state --state NEW -m udp --dport 443 -j ACCEPT'
+            echo '-A INPUT -p tcp -m state --state NEW -m tcp --dport 7080 -j ACCEPT'
+        ) -i -- /etc/iptables/rules.v4
+    fi
+}
+
 ubuntu_firewall_add(){
     echoG 'Setting Firewall'
     ufw status verbose | grep inactive > /dev/null 2>&1
@@ -1287,6 +1299,9 @@ ubuntu_firewall_add(){
     else
         echoG "ufw already enabled"    
     fi
+    if [ ${PROVIDER} = 'oracle' ]; then 
+        oci_iptables
+    fi    
 }
 
 centos_firewall_add(){
@@ -1305,7 +1320,10 @@ centos_firewall_add(){
         echoG 'firewalld rules setup success'
     else 
         echoR 'Please check firewalld rules'    
-    fi         
+    fi   
+    if [ ${PROVIDER} = 'oracle' ]; then 
+        oci_iptables
+    fi          
 }
 
 ubuntu_service_check(){

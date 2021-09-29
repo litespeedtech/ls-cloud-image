@@ -61,6 +61,8 @@ providerck()
         PROVIDER='aliyun'   
     elif [ "$(dmidecode -s system-manufacturer)" = 'Microsoft Corporation' ];then    
         PROVIDER='azure'  
+    elif [ -e /etc/oracle-cloud-agent/ ]; then
+        PROVIDER='oracle'          
     else
         PROVIDER='undefined'  
     fi

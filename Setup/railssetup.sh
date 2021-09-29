@@ -472,6 +472,18 @@ ubuntu_set_app(){
     app_setup
 }
 
+oci_iptables(){
+    if [ -e /etc/iptables/rules.v4 ]; then
+        echoG 'Setting Firewall for OCI'
+        sed '/^:InstanceServices/r'<(
+            echo '-A INPUT -p tcp -m state --state NEW -m tcp --dport 80 -j ACCEPT'
+            echo '-A INPUT -p tcp -m state --state NEW -m tcp --dport 443 -j ACCEPT'
+            echo '-A INPUT -p udp -m state --state NEW -m udp --dport 443 -j ACCEPT'
+            echo '-A INPUT -p tcp -m state --state NEW -m tcp --dport 7080 -j ACCEPT'
+        ) -i -- /etc/iptables/rules.v4
+    fi
+}
+
 centos_install_firewall(){
     echoG '[Start] Install Firewall'
     if [ ! -e /usr/sbin/firewalld ]; then 
@@ -494,6 +506,9 @@ centos_config_firewall(){
     else 
         echoR '[X] Please check firewalld rules'
     fi 
+    if [ ${PROVIDER} = 'oracle' ]; then 
+        oci_iptables
+    fi
 }
 
 ubuntu_config_firewall(){
@@ -514,6 +529,9 @@ ubuntu_config_firewall(){
     else
         echoG "ufw already enabled"    
     fi
+    if [ ${PROVIDER} = 'oracle' ]; then 
+        oci_iptables
+    fi    
 }
 
 rm_dummy(){
