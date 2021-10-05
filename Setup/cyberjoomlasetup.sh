@@ -90,7 +90,16 @@ install_cyberpanel(){
     printf "%s\n" 1 1 | bash install.sh
     echoG 'Finish CyberPanel'
     rm -rf cyberpanel cyberpanel.sh install.sh requirements.txt
-}   
+} 
+
+joomla_version3(){
+    if [ -e /usr/local/CyberCP/plogical/applicationInstaller.py ]; then
+        grep 'skip-create-statement' /usr/local/CyberCP/plogical/applicationInstaller.py | grep release >/dev/null
+        if [ ${?} = 1 ]; then
+            sed -i 's/--skip-create-statement/--skip-create-statement --release=3/g' /usr/local/CyberCP/plogical/applicationInstaller.py
+        fi    
+    fi
+}
 
 app_file(){
     echoG 'Setup App Name file'
@@ -134,6 +143,7 @@ main(){
     upgrade
     install_basic_pkg
     install_cyberpanel
+    joomla_version3
     app_file
     rm_agpl_pkg
     special_fstab
