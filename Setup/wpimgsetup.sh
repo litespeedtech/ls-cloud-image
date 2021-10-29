@@ -343,6 +343,7 @@ centos_config_ols(){
     NEWKEY='  vhRoot                  /var/www/html'
     linechange 'www/html' ${LSWSCONF} "${NEWKEY}"
     sed -i '/errorlog logs\/error.log/a \ \ \ \ \ \ \ \ keepDays             1' ${LSWSCONF}
+    sed -i 's/maxStaleAge         200/maxStaleAge         0/g' ${LSWSCONF}
     cat > ${WPVHCONF} <<END 
 docRoot                   ${DOCLAND}/
 
@@ -389,6 +390,7 @@ ubuntu_config_ols(){
     NEWKEY='  vhRoot                  /var/www/html'
     linechange 'www/html' ${LSWSCONF} "${NEWKEY}"
     sed -i '/errorlog logs\/error.log/a \ \ \ \ \ \ \ \ keepDays             1' ${LSWSCONF}
+    sed -i 's/maxStaleAge         200/maxStaleAge         0/g' ${LSWSCONF}
     cat > ${WPVHCONF} <<END 
 docRoot                   ${DOCLAND}/
 
