@@ -336,7 +336,7 @@ config_wp() {
 
 check_install_wp() { 
     if [ ${WORDPRESS} = 'ON' ]; then
-        check_process 'mysqld'
+        check_process 'mysqld\|mariadb'
         if [ ${?} = 0 ]; then
             if [ ! -f ${DOCHM}/wp-config.php ]; then
                 install_wp
@@ -393,7 +393,7 @@ config_cp() {
 
 check_install_cp() {
     if [ "${CLASSICPRESS}" = 'ON' ]; then
-        check_process 'mysqld'
+        check_process 'mysqld\|mariadb'
         if [ ${?} = 0 ]; then
             if [ ! -f ${DOCHM}/wp-config.php ]; then
                 install_cp
