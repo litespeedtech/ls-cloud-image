@@ -3,7 +3,7 @@
 # LiteSpeed domain setup Script
 # @Author:   LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
 # @Copyright: (c) 2019-2021
-# @Version: 2.0.1
+# @Version: 2.0.2
 # *********************************************************************/
 MY_DOMAIN=''
 MY_DOMAIN2=''
@@ -30,6 +30,7 @@ ISSUECERT='OFF'
 FORCE_HTTPS='OFF'
 WORDPRESS='OFF'
 CLASSICPRESS='OFF'
+DELETE='OFF'
 DB_TEST=0
 EPACE='        '
 
@@ -68,6 +69,8 @@ show_help() {
         echo "${EPACE}${EPACE}Issue and install Let's encrypt certificate and Wordpress with LiteSpeed Cache plugin."
         echow "-C, --classicpress"
         echo "${EPACE}${EPACE}This will install a ClassicPress with LiteSpeed Cache plugin."   
+        echow "--delete [DOMAIN_NAME]"
+        echo "${EPACE}${EPACE}This will remove the domain from listener and virtual host config, the document root will remain."
         echow '-H, --help'
         echo "${EPACE}${EPACE}Display help and exit."
         exit 0
@@ -140,6 +143,18 @@ check_php_version(){
         PHPVER="lsphp${PHP_MA}${PHP_MI}"
     fi
 }
+
+fst_match_line(){
+    FIRST_LINE_NUM=$(grep -n -m 1 "${1}" "${2}" | awk -F ':' '{print $1}')
+}
+fst_match_after(){
+    FIRST_NUM_AFTER=$(tail -n +${1} ${2} | grep -n -m 1 ${3} | awk -F ':' '{print $1}')
+}
+lst_match_line(){
+    fst_match_after ${1} ${2} ${3}
+    LAST_LINE_NUM=$((${FIRST_LINE_NUM}+${FIRST_NUM_AFTER}-1))
+}
+
 install_ed() {
     if [ -f /bin/ed ]; then
         echoG "ed exist"
@@ -537,6 +552,51 @@ main_set_vh(){
         echoG "Vhost created success!"
     fi    
 }
+
+rm_vh_conf(){
+    if [ -f "${VHDIR}/${MY_DOMAIN}/vhconf.conf" ]; then
+        echoG "Remove virtual host config: ${VHDIR}/${MY_DOMAIN}"
+        rm -rf "${VHDIR}/${MY_DOMAIN}"
+    elif [ -f "${VHDIR}/${MY_DOMAIN2}/vhconf.conf" ]; then
+        echoG "Remove virtual host config: ${VHDIR}/${MY_DOMAIN2}"
+        rm -rf "${VHDIR}/${MY_DOMAIN2}"
+    elif [ -f "${VHDIR}/www.${MY_DOMAIN}/vhconf.conf" ]; then
+        echoG "Remove virtual host config: ${VHDIR}/www.${MY_DOMAIN}"
+        rm -rf "${VHDIR}/www.${MY_DOMAIN}"
+    else
+        echoR "${VHDIR}/${MY_DOMAIN}/vhconf.conf does not exist, skip!" 
+    fi
+}
+
+rm_dm_svr_conf(){
+    echoG 'Remove domain from listeners'
+    sed -i "/map.*${1}/d" ${WEBCF}
+    grep "virtualhost ${1}" ${WEBCF} >/dev/null 2>&1
+    if [ ${?} = 0 ]; then
+    fst_match_line "virtualhost ${1}" ${WEBCF}
+        lst_match_line ${FIRST_LINE_NUM} ${WEBCF} '}'
+        echoG 'Remove the virtual host from serevr config'
+        sed -i "${FIRST_LINE_NUM},${LAST_LINE_NUM}d" ${WEBCF}
+    else
+        echoR "virtualhost ${1} does not found, if this is the default virtual host config, please remove it manually!"
+    fi    
+}
+
+rm_main_conf(){
+    grep -w "map.*[[:space:]]${MY_DOMAIN}" ${WEBCF} >/dev/null 2>&1
+    if [ ${?} = 0 ]; then
+        echoG "Domain exist, continue deleting.."
+        rm_vh_conf
+        rm_dm_svr_conf ${MY_DOMAIN2}
+        restart_lsws
+        echoG "Domain remove finished!"
+        exit 0
+    else 
+        echoR "Domain does not exist, exit!"  
+        exit 1       
+    fi  
+}
+
 verify_domain() {
     curl -Is http://${MY_DOMAIN}/ | grep -i LiteSpeed >/dev/null 2>&1
     if [ ${?} = 0 ]; then
@@ -719,6 +779,12 @@ main() {
     end_msg
 }
 
+main_delete(){
+    check_empty ${1}
+    check_www_domain ${1}
+    rm_main_conf
+}
+
 while [ ! -z "${1}" ]; do
     case $1 in
         -[dD] | --domain) shift
@@ -749,7 +815,15 @@ while [ ! -z "${1}" ]; do
         ;;
         -[cC] | --classicpress)
             CLASSICPRESS='ON'
-        ;;        
+        ;;
+        --delete) shift
+            if [ "${1}" = '' ]; then
+                show_help 1
+            else
+                MY_DOMAIN="${1}"
+                main_delete "${MY_DOMAIN}"
+            fi
+        ;;             
         *)
             echoR "unknown argument..."
             show_help 1
