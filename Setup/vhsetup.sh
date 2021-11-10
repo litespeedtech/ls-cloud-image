@@ -30,7 +30,6 @@ ISSUECERT='OFF'
 FORCE_HTTPS='OFF'
 WORDPRESS='OFF'
 CLASSICPRESS='OFF'
-DELETE='OFF'
 DB_TEST=0
 EPACE='        '
 
@@ -582,6 +581,12 @@ rm_dm_svr_conf(){
     fi    
 }
 
+rm_le_cert(){
+    echoG 'Remote Lets Encrypt Certificate'
+    certbot delete --cert-name ${MY_DOMAIN} >/dev/null 2>&1
+    certbot delete --cert-name ${MY_DOMAIN2} >/dev/null 2>&1
+}
+
 rm_main_conf(){
     grep -w "map.*[[:space:]]${MY_DOMAIN}" ${WEBCF} >/dev/null 2>&1
     if [ ${?} = 0 ]; then
@@ -590,7 +595,6 @@ rm_main_conf(){
         rm_dm_svr_conf ${MY_DOMAIN2}
         restart_lsws
         echoG "Domain remove finished!"
-        exit 0
     else 
         echoR "Domain does not exist, exit!"  
         exit 1       
@@ -782,6 +786,7 @@ main() {
 main_delete(){
     check_empty ${1}
     check_www_domain ${1}
+    rm_le_cert
     rm_main_conf
 }
 
@@ -822,6 +827,7 @@ while [ ! -z "${1}" ]; do
             else
                 MY_DOMAIN="${1}"
                 main_delete "${MY_DOMAIN}"
+                exit 0
             fi
         ;;             
         *)
