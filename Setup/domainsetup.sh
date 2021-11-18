@@ -2,8 +2,7 @@
 # /********************************************************************
 # LiteSpeed domain setup Script
 # @Author:   LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
-# @Copyright: (c) 2019-2020
-# @Version: 1.1
+# @Copyright: (c) 2019-2021
 # *********************************************************************/
 DOMAIN=''
 WWW_DOMAIN=''
@@ -40,6 +39,7 @@ check_os(){
     if [ -f /etc/redhat-release ] ; then
         OSNAME=centos
         OSVER=$(cat /etc/redhat-release | awk '{print substr($4,1,1)}')
+        BOTCRON='/etc/crontab'
     elif [ -f /etc/lsb-release ] ; then
         OSNAME=ubuntu    
     elif [ -f /etc/debian_version ] ; then
@@ -199,8 +199,12 @@ emailinput(){
     fi  
 }
 
+rstlswscron(){
+    echo '0 0 * * 3 root systemctl restart lsws' | sudo tee -a ${BOTCRON} > /dev/null
+}
+
 certbothook(){
-    grep 'restart lsws' ${BOTCRON} >/dev/null 2>&1
+    grep 'certbot.*restart lsws' ${BOTCRON} >/dev/null 2>&1
     if [ ${?} = 0 ]; then 
         echoG 'Web Server Restart hook already set!'
     else
@@ -209,14 +213,15 @@ certbothook(){
         elif [ "${OSNAME}" = 'centos' ]; then
             if [ "${OSVER}" = '7' ]; then
                 echo "0 0,12 * * * root python -c 'import random; import time; time.sleep(random.random() * 3600)' && certbot renew -q --deploy-hook 'systemctl restart lsws'" \
-                | sudo tee -a /etc/crontab > /dev/null
+                | sudo tee -a ${BOTCRON} > /dev/null
             elif [ "${OSVER}" = '8' ]; then
                 echo "0 0,12 * * * root python3 -c 'import random; import time; time.sleep(random.random() * 3600)' && /usr/local/bin/certbot renew -q --deploy-hook 'systemctl restart lsws'" \
-                | sudo tee -a /etc/crontab > /dev/null
+                | sudo tee -a ${BOTCRON} > /dev/null
             else
                 echoY 'Please check certbot crontab'
             fi
         fi    
+        rstlswscron
         grep 'restart lsws' ${BOTCRON} > /dev/null 2>&1
         if [ ${?} = 0 ]; then 
             echoG 'Certbot hook update success'

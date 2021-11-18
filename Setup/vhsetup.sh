@@ -652,7 +652,7 @@ apply_lecert() {
 }
 
 certbothook() {
-    grep 'restart lsws' ${BOTCRON} >/dev/null 2>&1
+    grep 'certbot.*restart lsws' ${BOTCRON} >/dev/null 2>&1
     if [ ${?} = 0 ]; then 
         echoG 'Web Server Restart hook already set!'
     else
