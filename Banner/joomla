@@ -1,0 +1,107 @@
+#!/bin/bash
+#
+# Configured as part of the 1-Click Image build process
+function echoY
+{
+    FLAG=$1
+    shift
+    echo -e "\033[38;5;148m$FLAG\033[39m$@"
+}
+function echoB()
+{
+    FLAG=$1
+    shift
+    echo -e "\033[1;4;94m$FLAG\033[0m$@"
+}
+function echoG
+{
+    FLAG=$1
+    shift
+    echo -e "\033[32m$FLAG\033[0m$@"
+}
+
+function echoBOLD
+{
+    FLAG=$1
+    shift
+    echo -e "\033[1m$FLAG\033[0m$@"
+}
+
+function echoCYAN
+{
+    FLAG=$1
+    shift
+    echo -e "\033[1;36m$FLAG\033[0m$@"
+}
+
+RAM=$(free -m | awk 'NR==2{printf "%s/%sMB (%.2f%%)\n", $3,$2,$3*100/$2 }')
+LOAD=$(uptime | awk -F'[a-z]:' '{ print $2}')
+DISK=$(df -h | awk '$NF=="/"{printf "%d/%dGB (%s)\n", $3,$2,$5}')
+CPU=$(grep 'cpu ' /proc/stat | awk '{usage=($2+$4)*100/($2+$4+$5)} END {print usage "%"}')
+if [ -e /sys/devices/virtual/dmi/id/product_uuid ] && [[ "$(sudo cat /sys/devices/virtual/dmi/id/product_uuid | cut -c 1-3)" =~ (EC2|ec2) ]]; then 
+    MYIP=$(curl http://169.254.169.254/latest/meta-data/public-ipv4)
+elif [ "$(sudo dmidecode -s bios-vendor)" = 'Google' ]; then 
+    MYIP=$(curl -s -H "Metadata-Flavor: Google" http://metadata/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip)
+elif [ "$(dmidecode -s system-product-name | cut -c 1-7)" = 'Alibaba' ]; then
+    MYIP=$(curl -s http://100.100.100.200/latest/meta-data/eipv4) 
+elif [ "$(dmidecode -s system-manufacturer)" = 'Microsoft Corporation' ];then    
+    MYIP=$(curl -s http://checkip.amazonaws.com || printf "0.0.0.0")
+else    
+    MYIP=$(curl -s http://checkip.amazonaws.com || printf "0.0.0.0")
+fi    
+
+if [ -e /home/ubuntu ]; then 
+    HMUBUNTU='/home/ubuntu/' 
+elif [ -e /root/ ];then
+    HMUBUNTU='/root/'   
+else
+    HMUBUNTU=''
+fi
+JOOMLA_DB_PASS=$(sed -n 2p ${HMUBUNTU}.db_password | awk -F '"' '{ print $2 }')
+show_install(){
+    if [ ! -f /var/www/html/configuration.php ]; then
+        cat<<EOM
+$(echoG '###############################################################################')
+
+$(echoBOLD "Please complete the first time installation on the browser: http://$MYIP")
+$(echoBOLD "  - DataBase UserName: joomla")
+$(echoBOLD "  - DataBase Password: $(echo $JOOMLA_DB_PASS)")
+
+$(echoG '###############################################################################')
+EOM
+    fi
+}
+
+clear
+cat <<EOF
+********************************************************************************
+
+$(echoCYAN 'Welcome to One-Click OpenLiteSpeed Joomla Server.')
+To keep this server secure, the firewall is enabled.
+All ports are BLOCKED except 22 (SSH), 80 (HTTP) and 443 (HTTPS).
+
+Joomla One-Click Quickstart guide:
+* $(echoB 'https://docs.litespeedtech.com/cloud/images/joomla/')
+$(show_install)
+In a web browser, you can view:
+* The new Joomla site: $(echoY "http://$MYIP")
+* The phpMyAdmin: http://$MYIP/phpmyadmin
+
+On the server:
+* The default web root is located at /var/www/html
+* You can get the MySQL root password and MySQL Joomla user password with command:
+   $(echoY "sudo cat ${HMUBUNTU}.db_password")
+* You can get the Web Admin admin password with the following command:
+   $(echoY "sudo cat ${HMUBUNTU}.litespeed_password")
+* The phpMyAdmin is located at /var/www/phpmyadmin
+* A script will run that will allow you to add a domain to the web server and implement SSL.
+
+System Status:
+  $(echo "Load :")$(echoG "$LOAD")
+  $(echo "CPU  :") $(echoG "$CPU")
+  $(echo "RAM  :") $(echoG "$RAM")
+  $(echo "Disk :") $(echoG "$DISK")
+
+********************************************************************************
+
+EOF

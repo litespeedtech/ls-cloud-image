@@ -126,14 +126,19 @@ update_path()
         else
             APPLICATION='NONE' 
             DOCPATH='/var/www/html.old'
-            grep -i ClassicPress ${DOCPATH}/license.txt >/dev/null
-            if [ ${?} = 0 ]; then
-                WPCT="${PROVIDER}_ols_classicpress"
-                BANNERNAME='classicpress'       
-            else
-                WPCT="${PROVIDER}_ols_wordpress"
-                BANNERNAME='wordpress'
-            fi
+            if [ -d ${DOCPATH}/administrator ]; then 
+                WPCT="${PROVIDER}_ols_joomla"
+                BANNERNAME='joomla'
+            else 
+                grep -i ClassicPress ${DOCPATH}/license.txt >/dev/null
+                if [ ${?} = 0 ]; then
+                    WPCT="${PROVIDER}_ols_classicpress"
+                    BANNERNAME='classicpress'       
+                else
+                    WPCT="${PROVIDER}_ols_wordpress"
+                    BANNERNAME='wordpress'
+                fi
+            fi    
         fi 
     fi
     PHPMYCFPATH="${PHPMYPATH}/config.inc.php"
@@ -427,6 +432,8 @@ replace_litenerip(){
                     NEWDBPWD="  map                     wordpress ${PUBIP}"
                 elif [ "${BANNERNAME}" = 'classicpress' ]; then
                     NEWDBPWD="  map                     classicpress ${PUBIP}"
+                elif [ "${BANNERNAME}" = 'joomla' ]; then
+                    NEWDBPWD="  map                     joomla ${PUBIP}"
                 fi    
             else
                 NEWDBPWD="  map                     Example ${PUBIP}"
@@ -449,6 +456,11 @@ update_sql_pwd(){
             -e "SET PASSWORD FOR 'classicpress'@'localhost' = PASSWORD('${wordpress_mysql_pass}');"
         mysql -uroot -p${root_mysql_pass} \
             -e "GRANT ALL PRIVILEGES ON classicpress.* TO classicpress@localhost"
+    elif [ "${BANNERNAME}" = 'joomla' ]; then
+        mysql -uroot -p${root_mysql_pass} \
+            -e "SET PASSWORD FOR 'joomla'@'localhost' = PASSWORD('${wordpress_mysql_pass}');"
+        mysql -uroot -p${root_mysql_pass} \
+            -e "GRANT ALL PRIVILEGES ON joomla.* TO joomla@localhost"
     fi    
 }
 
@@ -510,6 +522,11 @@ EOM
         cat >> ${DBPASSPATH} <<EOM 
 root_mysql_pass="${root_mysql_pass}"
 classicpress_mysql_pass="${wordpress_mysql_pass}"
+EOM
+    elif [ "${BANNERNAME}" = 'joomla' ]; then 
+        cat >> ${DBPASSPATH} <<EOM 
+root_mysql_pass="${root_mysql_pass}"
+joomla_mysql_pass="${wordpress_mysql_pass}"
 EOM
     fi    
 }
@@ -748,11 +765,17 @@ maincloud(){
     elif [ "${APPLICATION}" = 'NONE' ]; then
         update_sql_pwd
         add_sql_debian
-        renew_wp_pwd
-        update_pwd_file
-        renew_wpsalt
-        update_phpmyadmin
-        renew_blowfish
+        if [ "${BANNERNAME}" = 'joomla' ]; then
+            update_pwd_file
+            update_phpmyadmin
+            renew_blowfish
+        else
+            renew_wp_pwd
+            update_pwd_file
+            renew_wpsalt
+            update_phpmyadmin
+            renew_blowfish
+        fi
         setup_after_ssh
     fi
 }

@@ -12,7 +12,11 @@ WEBCF="${LSDIR}/conf/httpd_config.conf"
 if [ -e "${LSDIR}/conf/vhosts/wordpress/vhconf.conf" ]; then
     VHNAME='wordpress'
 elif [ -e "${LSDIR}/conf/vhosts/classicpress/vhconf.conf" ]; then
-    VHNAME='classicpress'    
+    VHNAME='classicpress'
+elif [ -e "${LSDIR}/conf/vhosts/classicpress/vhconf.conf" ]; then
+    VHNAME='classicpress'
+elif [ -e "${LSDIR}/conf/vhosts/joomla/vhconf.conf" ]; then
+    VHNAME='joomla'   
 else
     VHNAME='Example'
     DOCHM="${LSDIR}/${VHNAME}/html"
@@ -143,13 +147,17 @@ domainadd(){
         if [ ${PROVIDER} = 'do' ] && [ "${VHNAME}" = 'wordpress' ]; then
             sed -i 's|wordpress '${MY_IP}'|wordpress '${MY_IP}', '${DOMAIN}', '${WWW_DOMAIN}' |g' ${WEBCF}
         elif [ ${PROVIDER} = 'do' ] && [ "${VHNAME}" = 'classicpress' ]; then
-            sed -i 's|classicpress '${MY_IP}'|classicpress '${MY_IP}', '${DOMAIN}', '${WWW_DOMAIN}' |g' ${WEBCF}            
+            sed -i 's|classicpress '${MY_IP}'|classicpress '${MY_IP}', '${DOMAIN}', '${WWW_DOMAIN}' |g' ${WEBCF} 
+        elif [ ${PROVIDER} = 'do' ] && [ "${VHNAME}" = 'joomla' ]; then
+            sed -i 's|joomla '${MY_IP}'|joomla '${MY_IP}', '${DOMAIN}', '${WWW_DOMAIN}' |g' ${WEBCF}                       
         elif [ ${PROVIDER} = 'do' ]; then
             sed -i 's|Example '${MY_IP}'|Example '${MY_IP}', '${DOMAIN}', '${WWW_DOMAIN}' |g' ${WEBCF}
         elif [ "${VHNAME}" = 'wordpress' ]; then
             sed -i 's|wordpress \*|wordpress \*, '${DOMAIN}', '${WWW_DOMAIN}' |g' ${WEBCF}
         elif [ "${VHNAME}" = 'classicpress' ]; then
-            sed -i 's|classicpress \*|classicpress \*, '${DOMAIN}', '${WWW_DOMAIN}' |g' ${WEBCF}            
+            sed -i 's|classicpress \*|classicpress \*, '${DOMAIN}', '${WWW_DOMAIN}' |g' ${WEBCF}   
+        elif [ "${VHNAME}" = 'joomla' ]; then
+            sed -i 's|joomla \*|joomla \*, '${DOMAIN}', '${WWW_DOMAIN}' |g' ${WEBCF}                     
         else
             sed -i 's|Example \*|Example \*, '${DOMAIN}', '${WWW_DOMAIN}' |g' ${WEBCF}
         fi
