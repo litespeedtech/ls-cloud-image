@@ -13,8 +13,6 @@ if [ -e "${LSDIR}/conf/vhosts/wordpress/vhconf.conf" ]; then
     VHNAME='wordpress'
 elif [ -e "${LSDIR}/conf/vhosts/classicpress/vhconf.conf" ]; then
     VHNAME='classicpress'
-elif [ -e "${LSDIR}/conf/vhosts/classicpress/vhconf.conf" ]; then
-    VHNAME='classicpress'
 elif [ -e "${LSDIR}/conf/vhosts/joomla/vhconf.conf" ]; then
     VHNAME='joomla'   
 else
@@ -262,7 +260,7 @@ lecertapply(){
 }
 
 force_https() {
-    if [ "${VHNAME}" = 'wordpress' ] || [ "${VHNAME}" = 'classicpress' ]; then 
+    if [ "${VHNAME}" = 'wordpress' ] || [ "${VHNAME}" = 'classicpress' ] || [ "${VHNAME}" = 'joomla' ]; then 
         duplicateck "RewriteCond %{HTTPS} on" "${DOCHM}/.htaccess"
         if [ ${?} = 1 ]; then 
             echo "$(echo '

@@ -12,7 +12,6 @@ LSWSCONF="${LSWSFD}/conf/httpd_config.conf"
 WPVHCONF="${LSWSFD}/conf/vhosts/wordpress/vhconf.conf"
 EXAMPLECONF="${LSWSFD}/conf/vhosts/wordpress/vhconf.conf"
 PHPINICONF="${LSWSFD}/lsphp80/etc/php/8.0/litespeed/php.ini"
-WPCONSTCONF="${DOCHM}/wp-content/plugins/litespeed-cache/data/const.default.ini"
 MARIADBSERVICE='/lib/systemd/system/mariadb.service'
 MARIADBCNF='/etc/mysql/mariadb.conf.d/60-server.cnf'
 PACKAGEJOOMA='https://downloads.joomla.org/cms/joomla4/4-0-4/Joomla_4-0-4-Stable-Full_Package.tar.gz'
@@ -42,20 +41,6 @@ linechange(){
         sed -i "${LINENUM}d" ${2}
         sed -i "${LINENUM}i${3}" ${2}
     fi  
-}
-
-cked()
-{
-    if [ -f /bin/ed ]; then
-        echoG "ed exist"
-    else
-        echoG "no ed, ready to install"
-        if [ "${OSNAME}" = 'ubuntu' ] || [ "${OSNAME}" = 'debian' ]; then  
-            apt-get install ed -y > /dev/null 2>&1
-        elif [ "${OSNAME}" = 'centos' ]; then    
-            yum install ed -y > /dev/null 2>&1
-        fi    
-    fi    
 }
 
 get_sql_ver(){
@@ -330,11 +315,10 @@ rewrite  {
   autoLoadHtaccess        1
 }
 END
-    sed -i "s/virtualhost wordpress/virtualhost joomla/g" ${LSWSCONF}
     if [ -d ${LSWSVCONF}/wordpress ] && [ ! -d ${LSWSVCONF}/joomla ]; then 
-        mv ${LSWSVCONF}/wordpress ${LSWSVCONF}/joomla
-        sed -i "s/wordpress\/vhconf.conf/joomla\/vhconf.conf/g" ${LSWSCONF}
+        mv ${LSWSVCONF}/wordpress ${LSWSVCONF}/joomla  
     fi
+    sed -i "s/wordpress/joomla/g" ${LSWSCONF}
     echoG 'Finish Web Server config'
 }
 
@@ -382,18 +366,17 @@ rewrite  {
   autoLoadHtaccess        1
 }
 END
-    sed -i "s/virtualhost wordpress/virtualhost joomla/g" ${LSWSCONF}
     if [ -d ${LSWSVCONF}/wordpress ] && [ ! -d ${LSWSVCONF}/joomla ]; then 
-        mv ${LSWSVCONF}/wordpress ${LSWSVCONF}/joomla
-        sed -i "s/wordpress\/vhconf.conf/joomla\/vhconf.conf/g" ${LSWSCONF}
+        mv ${LSWSVCONF}/wordpress ${LSWSVCONF}/joomla  
     fi
+    sed -i "s/wordpress/joomla/g" ${LSWSCONF}
     echoG 'Finish Web Server config'
 }
 
 
 landing_pg(){
     echoG 'Setting Landing Page'
-    curl -s https://raw.githubusercontent.com/litespeedtech/ls-cloud-image/master/Static/wp-landing.html \
+    curl -s https://raw.githubusercontent.com/litespeedtech/ls-cloud-image/master/Static/joomla-landing.html \
     -o ${DOCLAND}/index.html
     if [ -e ${DOCLAND}/index.html ]; then 
         echoG 'Landing Page finished'
@@ -637,6 +620,7 @@ ubuntu_main_install(){
     ubuntu_install_basic
     ubuntu_install_ols
     ubuntu_install_php
+    ubuntu_install_certbot
     ubuntu_install_postfix
     install_phpmyadmin
     landing_pg
