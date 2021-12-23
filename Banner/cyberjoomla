@@ -67,7 +67,7 @@ cat <<EOF
 $(echoCYAN 'Welcome to LiteSpeed One-Click Joomla Server.')
 To keep this server secure, the firewalld is enabled.
 Joomla One-Click Quickstart guide:
-* $(echoB 'https://docs.litespeedtech.com/cloud/images/joomla/')
+* $(echoB 'https://docs.litespeedtech.com/cloud/images/cyberjoomla/')
 
 Quick Setup:
 * Create website:
