@@ -18,6 +18,7 @@ VHDOCROOT='/usr/local/lsws/Example/html'
 DEMOPROJECT="${VHDOCROOT}/${PROJNAME}"
 DEMOSETTINGS="${DEMOPROJECT}/${PROJNAME}/settings.py"
 ALLERRORS=0
+DJ_VER='>=3.2,<4.0'
 PY_V=''
 V_ENV='ON'
 NOWPATH=$(pwd)
@@ -434,7 +435,7 @@ centos_set_env(){
         echoG 'Source'
         source ${VHDOCROOT}/bin/activate
     fi
-    pip3 install django > /dev/null 2>&1
+    pip3 install "django${DJ_VER}" > /dev/null 2>&1
 }
 
 ubuntu_set_env(){
@@ -447,7 +448,7 @@ ubuntu_set_env(){
         echoG 'Source'
         source ${VHDOCROOT}/bin/activate
     fi
-    pip3 install -I django > /dev/null 2>&1
+    pip3 install -I "django${DJ_VER}" > /dev/null 2>&1
 }
 
 app_setup(){
