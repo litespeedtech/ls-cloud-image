@@ -1380,21 +1380,21 @@ oci_iptables(){
 
 ubuntu_firewall_add(){
     echoG 'Setting Firewall'
-    ufw status verbose | grep inactive > /dev/null 2>&1
+    #ufw status verbose | grep inactive > /dev/null 2>&1
+    #if [ ${?} = 0 ]; then 
+    for PORT in ${FIREWALLLIST}; do
+        ufw allow ${PORT} > /dev/null 2>&1
+    done    
+    echo "y" | ufw enable > /dev/null 2>&1 
+    ufw status | grep '80.*ALLOW' > /dev/null 2>&1
     if [ ${?} = 0 ]; then 
-        for PORT in ${FIREWALLLIST}; do
-            ufw allow ${PORT} > /dev/null 2>&1
-        done    
-        echo "y" | ufw enable > /dev/null 2>&1 
-        ufw status | grep '80.*ALLOW' > /dev/null 2>&1
-        if [ ${?} = 0 ]; then 
-            echoG 'firewalld rules setup success'
-        else 
-            echoR 'Please check ufw rules'    
-        fi    
-    else
-        echoG "ufw already enabled"    
-    fi
+        echoG 'firewalld rules setup success'
+    else 
+        echoR 'Please check ufw rules'    
+    fi    
+    #else
+    #    echoG "ufw already enabled"    
+    #fi
     if [ ${PROVIDER} = 'oracle' ]; then 
         oci_iptables
     fi

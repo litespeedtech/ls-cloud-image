@@ -513,22 +513,22 @@ centos_config_firewall(){
 
 ubuntu_config_firewall(){
     echoG '[Start] Setting Firewall'
-    ufw status verbose | grep inactive > /dev/null 2>&1
-    if [ ${?} = 0 ]; then 
-        for PORT in ${FIREWALLLIST}; do
-            ufw allow ${PORT} > /dev/null 2>&1
-        done    
-        echo "y" | ufw enable > /dev/null 2>&1
+    #ufw status verbose | grep inactive > /dev/null 2>&1
+    #if [ ${?} = 0 ]; then 
+    for PORT in ${FIREWALLLIST}; do
+        ufw allow ${PORT} > /dev/null 2>&1
+    done    
+    echo "y" | ufw enable > /dev/null 2>&1
 
-        ufw status | grep '80.*ALLOW' > /dev/null 2>&1
-        if [ ${?} = 0 ]; then 
-            echoG '[End] Setting Firewall'
-        else 
-            echoR '[X] Please check ufw rules'    
-        fi 
-    else
-        echoG "ufw already enabled"    
-    fi
+    ufw status | grep '80.*ALLOW' > /dev/null 2>&1
+    if [ ${?} = 0 ]; then 
+        echoG '[End] Setting Firewall'
+    else 
+        echoR '[X] Please check ufw rules'    
+    fi 
+    #else
+    #    echoG "ufw already enabled"    
+    #fi
     if [ ${PROVIDER} = 'oracle' ]; then 
         oci_iptables
     fi    
