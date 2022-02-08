@@ -2,8 +2,8 @@
 # /********************************************************************
 # LiteSpeed Rails setup Script
 # @Author:   LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
-# @Copyright: (c) 2020-2021
-# @Version: 1.2
+# @Copyright: (c) 2020-2022
+# @Version: 1.3
 # *********************************************************************/
 LSWSFD='/usr/local/lsws'
 PHPVER=74
@@ -18,7 +18,7 @@ DEMOPROJECT="${VHDOCROOT}/${PROJNAME}"
 CLONE_PATH='/opt'
 ALLERRORS=0
 RUBYV='3.0.2'
-NODEJSV='14'
+NODEJSV='16'
 NOWPATH=$(pwd)
 RUBY_PATH='/usr/bin/ruby'
 RBENV_PATH='/usr/bin/rbenv'
@@ -454,10 +454,11 @@ app_setup(){
     fi
     echoG 'Generate Welcome'
     cd ${PROJNAME}; rails generate controller Welcome index >/dev/null 2>&1
+    sleep 3
     grep welcome config/routes.rb >/dev/null 2>&1
     if [ ${?} = 0 ]; then
         NEWKEY='  get "/", to: "rails/welcome#index"'
-        linechange 'index' config/routes.rb "${NEWKEY}"
+        linechange '/index' config/routes.rb "${NEWKEY}"
     else 
         echoR 'Welcome not exist! Skip setting'
     fi        
