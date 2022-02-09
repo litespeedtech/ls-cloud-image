@@ -50,7 +50,9 @@ LOCAL_VERSION=$(cat /usr/local/CyberCP/version.txt | sed -z 's/\n/./g')
 LAST_VERSION=$(curl -s https://raw.githubusercontent.com/usmannasir/cyberpanel/stable/version.txt | grep -Eo '[0-9]'|sed -z 's/\n/./g')
 MYIP=$(cat /etc/cyberpanel/machineIP)
 
-if [ "$(dmidecode -s system-manufacturer)" = 'Microsoft Corporation' ];then
+if [ "$(dmidecode -s bios-vendor)" = 'Vultr' ];then
+    HMUBUNTU=''
+elif [ "$(dmidecode -s system-manufacturer)" = 'Microsoft Corporation' ];then
     HMUBUNTU='/root/'
 elif [ -e /root/StackScript ]; then
     HMUBUNTU='/root/'

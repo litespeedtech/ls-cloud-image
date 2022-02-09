@@ -50,13 +50,16 @@ else
     MYIP=$(curl -s http://checkip.amazonaws.com || printf "0.0.0.0")
 fi    
 
-if [ -e /home/ubuntu ]; then 
+if [ "$(dmidecode -s bios-vendor)" = 'Vultr' ];then
+    HMUBUNTU=''
+elif [ -e /home/ubuntu ]; then 
     HMUBUNTU='/home/ubuntu/' 
-elif [ -e /root/ ];then
-    HMUBUNTU='/root/'   
+elif [ "$(dmidecode -s system-manufacturer)" = 'Microsoft Corporation' ];then
+    HMUBUNTU='/root/'      
 else
     HMUBUNTU=''
 fi
+
 JOOMLA_DB_PASS=$(sed -n 2p ${HMUBUNTU}.db_password | awk -F '"' '{ print $2 }')
 show_install(){
     if [ ! -f /var/www/html/configuration.php ]; then
