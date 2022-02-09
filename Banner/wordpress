@@ -48,16 +48,18 @@ elif [ "$(dmidecode -s system-manufacturer)" = 'Microsoft Corporation' ];then
     MYIP=$(curl -s http://checkip.amazonaws.com || printf "0.0.0.0")
 else    
     MYIP=$(curl -s http://checkip.amazonaws.com || printf "0.0.0.0")
-fi    
-#MYIP=$(curl -s ifconfig.me)
+fi 
 
-if [ -e /home/ubuntu ]; then 
+if [ "$(dmidecode -s bios-vendor)" = 'Vultr' ];then
+    HMUBUNTU=''
+elif [ -e /home/ubuntu ]; then 
     HMUBUNTU='/home/ubuntu/' 
 elif [ "$(dmidecode -s system-manufacturer)" = 'Microsoft Corporation' ];then
-    HMUBUNTU='/root/'   
+    HMUBUNTU='/root/'      
 else
     HMUBUNTU=''
 fi
+
 clear
 cat <<EOF
 ********************************************************************************
