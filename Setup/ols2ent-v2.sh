@@ -2,7 +2,7 @@
 # /********************************************************************
 # OpenLiteSpeed to Enterprise setup Script
 # @Author:   LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
-# @Version: 2.0
+# @Version: 2.1
 # *********************************************************************/
 TOTAL_RAM=$(free -m | awk '/Mem:/ { print $2 }')
 LICENSE_KEY=""
@@ -58,8 +58,8 @@ webadmin_reset() {
     fi
     if [ -e /root/.litespeed_password ]; then
         WEBADMIN_PASS=$(awk -F '=' '{print $2}' /root/.litespeed_password)
-    elif [ -e /ubuntu/.litespeed_password ]; then
-        WEBADMIN_PASS=$(awk -F '=' '{print $2}' /home/.litespeed_password)
+    elif [ -e /home/ubuntu/.litespeed_password ]; then
+        WEBADMIN_PASS=$(awk -F '=' '{print $2}' /home/ubuntu/.litespeed_password)
     else    
         WEBADMIN_PASS=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 16 ; echo '')
     fi    
@@ -101,6 +101,11 @@ check_pkg_manage(){
 }
 
 check_php(){
+    if [ -e ${LS_DIR}/lsphp73/bin/php ]; then
+        PHP="${LS_DIR}/lsphp73/bin/php"
+    elif [ -e ${LS_DIR}/lsphp74/bin/php ]; then
+        PHP="${LS_DIR}/lsphp74/bin/php"
+    fi  
     which ${PHP} >/dev/null
     if [ ${?} = 0 ]; then
         echoG 'PHP path exist'
@@ -144,6 +149,13 @@ gen_ent_config(){
         exit 1
     fi
     ${PHP} ${LS_DIR}/admin/misc/converter.php 2>${CONVERT_LOG}
+    if [ ${?} != 0 ]; then 
+        echo "Convert config file failed, error code: ${?}"
+        echoR "#############################################"
+        cat ${CONVERT_LOG}
+        echoR "#############################################"
+        exit 1
+    fi
     CONVERTFOLD=($(awk '/converted/ {print $2}' ${CONVERT_LOG} | awk -F '/' 'NF-=1' OFS="/"))
     CONVERTPATH=($(awk '/converted/ {print $2}' ${CONVERT_LOG}))
     CONVERTFILE=($(awk '/converted/ {print $2}' ${CONVERT_LOG} | awk -F '/' '{print $NF}'))
