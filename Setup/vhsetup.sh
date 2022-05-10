@@ -2,8 +2,8 @@
 # /********************************************************************
 # LiteSpeed domain setup Script
 # @Author:   LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
-# @Copyright: (c) 2019-2021
-# @Version: 2.0.2
+# @Copyright: (c) 2019-2022
+# @Version: 2.1
 # *********************************************************************/
 MY_DOMAIN=''
 MY_DOMAIN2=''
@@ -13,12 +13,14 @@ WEBCF="${LSDIR}/conf/httpd_config.conf"
 VHDIR="${LSDIR}/conf/vhosts"
 EMAIL='localhost'
 WWW='FALSE'
+BACKUP='OFF'
 BOTCRON='/etc/cron.d/certbot'
 PLUGINLIST="litespeed-cache.zip"
 CKREG="^[a-z0-9!#\$%&'*+/=?^_\`{|}~-]+(\.[a-z0-9!#$%&'*+/=?^_\`{|}~-]+)*\
 @([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+[a-z0-9]([a-z0-9-]*[a-z0-9])?\$"
 THEME='twentytwenty'
 PHPVER=lsphp74
+WEBSERVER='OLS'
 USER='www-data'
 GROUP='www-data'
 DOMAIN_PASS='ON'
@@ -68,6 +70,8 @@ show_help() {
         echo "${EPACE}${EPACE}Issue and install Let's encrypt certificate and Wordpress with LiteSpeed Cache plugin."
         echow "-C, --classicpress"
         echo "${EPACE}${EPACE}This will install a ClassicPress with LiteSpeed Cache plugin."   
+        echow "-BK, --backup"
+        echo "${EPACE}${EPACE}This will backup the lsws server config before changing anything, vhost config is not included."
         echow "--delete [DOMAIN_NAME]"
         echo "${EPACE}${EPACE}This will remove the domain from listener and virtual host config, the document root will remain."
         echow '-H, --help'
@@ -143,8 +147,36 @@ check_php_version(){
     fi
 }
 
+check_webserver(){
+    if [ -e ${LSDIR}/bin/openlitespeed ]; then
+        if [ -e "${WEBCF}" ]; then
+            WEBSERVER='OLS'
+            VH_CONF_FILE="${VHDIR}/${MY_DOMAIN}/vhconf.conf"
+        else
+            echoR "${WEBCF} does not exist, exit!"
+            exit 1  
+        fi
+    else 
+        if [ -e "${LSDIR}/conf/httpd_config.xml" ]; then
+            WEBSERVER='LSWS'
+            WEBCF="${LSDIR}/conf/httpd_config.xml"
+            VH_CONF_FILE="${VHDIR}/${MY_DOMAIN}/vhconf.xml"
+        else 
+            echoR 'No web serevr detect, exit!'
+            exit 2
+        fi
+    fi    
+}
+
 fst_match_line(){
     FIRST_LINE_NUM=$(grep -n -m 1 "${1}" "${2}" | awk -F ':' '{print $1}')
+}
+fst_match_before(){
+    FIRST_NUM_BEFORE=$(grep -B 5 ${1} ${2} | grep -n -m 1 ${3} | awk -F ':' '{print $1}')
+}
+fst_match_before_line(){
+    fst_match_before ${1} ${2} ${3}
+    FIRST_BEFORE_LINE_NUM=$((${FIRST_LINE_NUM}+${FIRST_NUM_BEFORE}-1))
 }
 fst_match_after(){
     FIRST_NUM_AFTER=$(tail -n +${1} ${2} | grep -n -m 1 ${3} | awk -F ':' '{print $1}')
@@ -430,7 +462,7 @@ restart_lsws(){
     systemctl start lsws >/dev/null 2>&1   
 }
 
-set_vh_conf() {
+set_ols_vh_conf() {
     create_folder "${DOCHM}"
     create_folder "${VHDIR}/${MY_DOMAIN}"
     if [ ! -f "${DOCHM}/index.php" ]; then
@@ -440,8 +472,8 @@ phpinfo();
 EOF
         change_owner
     fi
-    if [ ! -f "${VHDIR}/${MY_DOMAIN}/vhconf.conf" ]; then
-        cat > ${VHDIR}/${MY_DOMAIN}/vhconf.conf << EOF
+    if [ ! -f "${VH_CONF_FILE}" ]; then
+        cat > ${VH_CONF_FILE} << EOF
 docRoot                   \$VH_ROOT
 vhDomain                  \$VH_DOMAIN
 vhAliases                 www.$VH_DOMAIN
@@ -510,7 +542,47 @@ EOF
         echoR "Targeted file already exist, skip!"
     fi
 }
-set_server_conf() {
+
+set_lsws_vh_conf() {
+    create_folder "${DOCHM}"
+    create_folder "${VHDIR}/${MY_DOMAIN}"
+    if [ ! -f "${DOCHM}/index.php" ]; then
+        cat <<'EOF' >${DOCHM}/index.php
+<?php
+phpinfo();
+EOF
+        change_owner
+    fi
+    if [ ! -f "${VH_CONF_FILE}" ]; then
+        cat > ${VH_CONF_FILE} << EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<virtualHostConfig>
+  <docRoot>\$VH_ROOT</docRoot>
+  <vhDomain>$VH_DOMAIN</vhDomain>
+  <adminEmails>localhost</adminEmails>
+  <index>
+    <useServer>0</useServer>
+    <indexFiles>index.php, index.html</indexFiles>
+  </index>
+  <rewrite>
+    <enable>1</enable>
+    <autoLoadHtaccess>1</autoLoadHtaccess>
+  </rewrite>
+  <vhssl>
+    <keyFile>${LSDIR}/conf/example.key</keyFile>
+    <certFile>${LSDIR}/conf/example.crt</certFile>
+    <certChain>1</certChain>
+  </vhssl>
+</virtualHostConfig>
+EOF
+        chown -R lsadm:lsadm ${VHDIR}/*
+    else
+        echoR "Targeted file already exist, skip!"
+    fi
+}
+
+
+set_ols_server_conf() {
     if [ ${WWW} = 'TRUE' ]; then
         NEWKEY="map                     ${MY_DOMAIN2} ${MY_DOMAIN}, ${MY_DOMAIN2}"
         local TEMP_DOMAIN=${MY_DOMAIN2}
@@ -529,31 +601,77 @@ set_server_conf() {
     echo "
 virtualhost ${TEMP_DOMAIN} {
 vhRoot                  ${WWW_PATH}/${MY_DOMAIN}
-configFile              ${VHDIR}/${MY_DOMAIN}/vhconf.conf
+configFile              ${VH_CONF_FILE}
 allowSymbolLink         1
 enableScript            1
 restrained              1
 }" >>${WEBCF}
 }
-update_vh_conf(){
-    sed -i 's|localhost|'${EMAIL}'|g' ${VHDIR}/${MY_DOMAIN}/vhconf.conf
-    sed -i 's|'${LSDIR}'/conf/example.key|/etc/letsencrypt/live/'${MY_DOMAIN}'/privkey.pem|g' ${VHDIR}/${MY_DOMAIN}/vhconf.conf
-    sed -i 's|'${LSDIR}'/conf/example.crt|/etc/letsencrypt/live/'${MY_DOMAIN}'/fullchain.pem|g' ${VHDIR}/${MY_DOMAIN}/vhconf.conf
+
+update_ssl_vh_conf(){
+    sed -i 's|localhost|'${EMAIL}'|g' ${VH_CONF_FILE}
+    sed -i 's|'${LSDIR}'/conf/example.key|/etc/letsencrypt/live/'${MY_DOMAIN}'/privkey.pem|g' ${VH_CONF_FILE}
+    sed -i 's|'${LSDIR}'/conf/example.crt|/etc/letsencrypt/live/'${MY_DOMAIN}'/fullchain.pem|g' ${VH_CONF_FILE}
     echoG "\ncertificate has been successfully installed..."  
 }
+
+set_lsws_server_conf(){
+    if [ ${WWW} = 'TRUE' ]; then
+        NEWKEY="\\
+      <vhostMap>\n\
+          <vhost>${MY_DOMAIN2}</vhost>\n\
+          <domain>${MY_DOMAIN2}, ${MY_DOMAIN}</domain>\n\
+      </vhostMap>"
+        local TEMP_DOMAIN=${MY_DOMAIN2}
+    else
+        NEWKEY="\\
+      <vhostMap>\n\
+          <vhost>${MY_DOMAIN}</vhost>\n\
+          <domain>${MY_DOMAIN}</domain>\n\
+      </vhostMap>"
+        local TEMP_DOMAIN=${MY_DOMAIN}
+    fi
+    PORT_ARR=$(grep "address.*:[0-9]"  ${WEBCF} | grep -oP '(?<=:)[0-9]+')
+    if [  ${#PORT_ARR[@]} != 0 ]; then
+        for PORT in ${PORT_ARR[@]}; do 
+            line_insert ":${PORT}<"  ${WEBCF} "${NEWKEY}" 3
+        done
+    else
+        echoR 'No listener port detected, listener setup skip!'    
+    fi
+
+   NEWKEY=" \\
+    <virtualHost>\n\
+      <name>${MY_DOMAIN}</name>\n\
+      <vhRoot>${WWW_PATH}/${MY_DOMAIN}</vhRoot>\n\
+      <configFile>${VH_CONF_FILE}</configFile>\n\
+      <allowSymbolLink>1</allowSymbolLink>\n\
+      <enableScript>1</enableScript>\n\
+      <restrained>0</restrained>\n\
+    </virtualHost>"
+
+    line_insert '<virtualHostList>'  ${WEBCF} "${NEWKEY}" 1
+}
+
+
 main_set_vh(){
     create_folder ${WWW_PATH}
     DOCHM="${WWW_PATH}/${1}"
     if [ ${DOMAIN_SKIP} = 'OFF' ]; then
-        set_vh_conf
-        set_server_conf
+        if [ "${WEBSERVER}" = 'OLS' ]; then
+            set_ols_vh_conf
+            set_ols_server_conf
+        elif [ "${WEBSERVER}" = 'LSWS' ]; then
+            set_lsws_vh_conf
+            set_lsws_server_conf
+        fi            
         restart_lsws
         echoG "Vhost created success!"
     fi    
 }
 
-rm_vh_conf(){
-    if [ -f "${VHDIR}/${MY_DOMAIN}/vhconf.conf" ]; then
+rm_ols_vh_conf(){
+    if [ -f "${VH_CONF_FILE}" ]; then
         echoG "Remove virtual host config: ${VHDIR}/${MY_DOMAIN}"
         rm -rf "${VHDIR}/${MY_DOMAIN}"
     elif [ -f "${VHDIR}/${MY_DOMAIN2}/vhconf.conf" ]; then
@@ -563,19 +681,68 @@ rm_vh_conf(){
         echoG "Remove virtual host config: ${VHDIR}/www.${MY_DOMAIN}"
         rm -rf "${VHDIR}/www.${MY_DOMAIN}"
     else
-        echoR "${VHDIR}/${MY_DOMAIN}/vhconf.conf does not exist, skip!" 
+        echoR "${VH_CONF_FILE} does not exist, skip!" 
     fi
 }
 
-rm_dm_svr_conf(){
+rm_dm_ols_svr_conf(){
     echoG 'Remove domain from listeners'
     sed -i "/map.*${1}/d" ${WEBCF}
     grep "virtualhost ${1}" ${WEBCF} >/dev/null 2>&1
     if [ ${?} = 0 ]; then
-    fst_match_line "virtualhost ${1}" ${WEBCF}
+        fst_match_line "virtualhost ${1}" ${WEBCF}
         lst_match_line ${FIRST_LINE_NUM} ${WEBCF} '}'
         echoG 'Remove the virtual host from serevr config'
         sed -i "${FIRST_LINE_NUM},${LAST_LINE_NUM}d" ${WEBCF}
+    else
+        echoR "virtualhost ${1} does not found, if this is the default virtual host config, please remove it manually!"
+    fi    
+}
+
+rm_lsws_vh_conf(){
+    if [ -f "${VH_CONF_FILE}" ]; then
+        echoG "Remove virtual host config: ${VHDIR}/${MY_DOMAIN}"
+        rm -rf "${VHDIR}/${MY_DOMAIN}"
+    elif [ -f "${VHDIR}/${MY_DOMAIN2}/vhconf.xml" ]; then
+        echoG "Remove virtual host config: ${VHDIR}/${MY_DOMAIN2}"
+        rm -rf "${VHDIR}/${MY_DOMAIN2}"
+    elif [ -f "${VHDIR}/www.${MY_DOMAIN}/vhconf.xml" ]; then
+        echoG "Remove virtual host config: ${VHDIR}/www.${MY_DOMAIN}"
+        rm -rf "${VHDIR}/www.${MY_DOMAIN}"
+    else
+        echoR "${VH_CONF_FILE} does not exist, skip!" 
+    fi
+}
+
+rm_dm_lsws_svr_conf(){
+    echoG 'Remove domain from listeners'
+    grep "<vhost>${1}" ${WEBCF} >/dev/null 2>&1
+    if [ ${?} = 0 ]; then
+        PORT_ARR=$(grep "address.*:[0-9]"  ${WEBCF} | grep -oP '(?<=:)[0-9]+')
+        if [  ${#PORT_ARR[@]} != 0 ]; then
+            for PORT in ${PORT_ARR[@]}; do 
+                fst_match_line "<vhost>${1}" ${WEBCF}
+                if [ ${?} = 0 ]; then
+                    fst_match_before_line ${FIRST_LINE_NUM} ${WEBCF} '<vhostMap>'
+                    lst_match_line ${FIRST_LINE_NUM} ${WEBCF} '</vhostMap>'
+                    echoG "Remove the vhost domain from serevr config port ${PORT}."
+                    sed -i "${FIRST_BEFORE_LINE_NUM},${LAST_LINE_NUM}d" ${WEBCF}
+                else
+                    echoR "<vhost>${1} is not found, skip domain delte from port ${PORT} listener!"
+                fi
+            done
+        else
+            echoR 'No listener port detected, listener setup skip!'    
+        fi    
+    else
+        echoR "${1} does not found under listener, if this is the default virtual host config, please remove it manually!"    
+    fi
+    if [ ${?} = 0 ]; then
+        fst_match_line "<name>${1}" ${WEBCF}
+        fst_match_before_line ${FIRST_LINE_NUM} ${WEBCF} '<virtualHost>'
+        lst_match_line ${FIRST_LINE_NUM} ${WEBCF} '</virtualHost>'
+        echoG 'Remove the virtualHost from serevr config'
+        sed -i "${FIRST_BEFORE_LINE_NUM},${LAST_LINE_NUM}d" ${WEBCF}
     else
         echoR "virtualhost ${1} does not found, if this is the default virtual host config, please remove it manually!"
     fi    
@@ -588,17 +755,34 @@ rm_le_cert(){
 }
 
 rm_main_conf(){
-    grep -w "map.*[[:space:]]${MY_DOMAIN}" ${WEBCF} >/dev/null 2>&1
-    if [ ${?} = 0 ]; then
-        echoG "Domain exist, continue deleting.."
-        rm_vh_conf
-        rm_dm_svr_conf ${MY_DOMAIN2}
-        restart_lsws
-        echoG "Domain remove finished!"
-    else 
-        echoR "Domain does not exist, exit!"  
-        exit 1       
-    fi  
+
+    if [ "${WEBSERVER}" = 'OLS' ]; then
+        grep -w "map.*[[:space:]]${MY_DOMAIN}" ${WEBCF} >/dev/null 2>&1
+        if [ ${?} = 0 ]; then
+            echoG "Domain exist, continue deleting.."        
+            rm_ols_vh_conf
+            rm_dm_ols_svr_conf ${MY_DOMAIN2}
+            restart_lsws
+            echoG "Domain remove finished!"
+        else 
+            echoR "Domain does not exist, exit!"  
+            exit 1       
+        fi     
+    elif [ "${WEBSERVER}" = 'LSWS' ]; then
+        grep -w "<vhost>${MY_DOMAIN}" ${WEBCF} >/dev/null 2>&1
+        if [ ${?} = 0 ]; then
+            echoG "Domain exist, continue deleting.." 
+            rm_lsws_vh_conf
+            rm_dm_lsws_svr_conf ${MY_DOMAIN2}
+            restart_lsws
+            echoG "Domain remove finished!"
+        else 
+            echoR "Domain does not exist, exit!"  
+            exit 1       
+        fi
+    fi
+
+
 }
 
 verify_domain() {
@@ -644,7 +828,7 @@ apply_lecert() {
         certbot certonly --non-interactive --agree-tos -m ${EMAIL} --webroot -w ${DOCHM} -d ${MY_DOMAIN}
     fi
     if [ ${?} -eq 0 ]; then
-        update_vh_conf
+        update_ssl_vh_conf    
     else
         echoR "Oops, something went wrong..."
         exit 1
@@ -719,6 +903,17 @@ check_www_domain(){
         MY_DOMAIN2="${1}"
     fi
 }
+
+server_conf_bk(){
+    if [ "${BACKUP}" = 'ON' ]; then
+        local TIME_VER=$(date +%s)
+        echoG "Back up server config to ${WEBCF}.${TIME_VER}"
+        if [ ! -f ${WEBCF}.${TIME_VER} ]; then
+            cp "${WEBCF}" "${WEBCF}.${TIME_VER}"
+        fi
+    fi
+}
+
 domain_input(){
     if [ ${SILENT} = 'OFF' ]; then
         while true; do
@@ -774,6 +969,8 @@ main() {
     check_os
     check_php_version
     domain_input
+    check_webserver
+    server_conf_bk    
     main_set_vh ${MY_DOMAIN}
     issue_cert
 	check_which_cms
@@ -784,8 +981,10 @@ main() {
 }
 
 main_delete(){
+    check_webserver
     check_empty ${1}
     check_www_domain ${1}
+    server_conf_bk
     rm_le_cert
     rm_main_conf
 }
@@ -812,6 +1011,9 @@ while [ ! -z "${1}" ]; do
         -[fF] | --force-https)
             FORCE_HTTPS='ON'
         ;;
+        -BK | --backup)
+            BACKUP='ON'
+        ;;    
         -[hH] | --help)
             show_help 1
         ;;
