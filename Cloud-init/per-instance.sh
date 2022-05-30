@@ -590,7 +590,7 @@ drush -y site-install standard --db-url=mysql://drupal:${app_mysql_pass}@127.0.0
 drush -y config-set system.performance css.preprocess 0 -q
 drush -y config-set system.performance js.preprocess 0 -q
 drush cache-rebuild -q
-sed -i 's|docRoot.*html/|docRoot                   '${DRUPAL_DOC}'|g' "\${DRUPAL_VH}" >/dev/null
+sed -i 's|docRoot.*html/|docRoot                   '${DRUPAL_DOC}'|g' "${DRUPAL_VH}" >/dev/null
 drush pm:enable lite_speed_cache
 chmod 777 ${DRUPAL_DOC}sites/default/files
 sudo systemctl stop lsws >/dev/null 2>&1
