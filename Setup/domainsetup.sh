@@ -2,7 +2,7 @@
 # /********************************************************************
 # LiteSpeed domain setup Script
 # @Author:   LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
-# @Copyright: (c) 2019-2021
+# @Copyright: (c) 2019-2022
 # *********************************************************************/
 DOMAIN=''
 WWW_DOMAIN=''
@@ -15,6 +15,9 @@ elif [ -e "${LSDIR}/conf/vhosts/classicpress/vhconf.conf" ]; then
     VHNAME='classicpress'
 elif [ -e "${LSDIR}/conf/vhosts/joomla/vhconf.conf" ]; then
     VHNAME='joomla'   
+elif [ -e "${LSDIR}/conf/vhosts/drupal/vhconf.conf" ]; then
+    VHNAME='drupal'  
+    DOCHM='/var/www/html/web'
 else
     VHNAME='Example'
     DOCHM="${LSDIR}/${VHNAME}/html"
@@ -142,22 +145,10 @@ www_domain(){
 domainadd(){
     duplicateck ${DOMAIN} ${WEBCF}
     if [ ${?} = 1 ]; then 
-        if [ ${PROVIDER} = 'do' ] && [ "${VHNAME}" = 'wordpress' ]; then
-            sed -i 's|wordpress '${MY_IP}'|wordpress '${MY_IP}', '${DOMAIN}', '${WWW_DOMAIN}' |g' ${WEBCF}
-        elif [ ${PROVIDER} = 'do' ] && [ "${VHNAME}" = 'classicpress' ]; then
-            sed -i 's|classicpress '${MY_IP}'|classicpress '${MY_IP}', '${DOMAIN}', '${WWW_DOMAIN}' |g' ${WEBCF} 
-        elif [ ${PROVIDER} = 'do' ] && [ "${VHNAME}" = 'joomla' ]; then
-            sed -i 's|joomla '${MY_IP}'|joomla '${MY_IP}', '${DOMAIN}', '${WWW_DOMAIN}' |g' ${WEBCF}                       
-        elif [ ${PROVIDER} = 'do' ]; then
-            sed -i 's|Example '${MY_IP}'|Example '${MY_IP}', '${DOMAIN}', '${WWW_DOMAIN}' |g' ${WEBCF}
-        elif [ "${VHNAME}" = 'wordpress' ]; then
-            sed -i 's|wordpress \*|wordpress \*, '${DOMAIN}', '${WWW_DOMAIN}' |g' ${WEBCF}
-        elif [ "${VHNAME}" = 'classicpress' ]; then
-            sed -i 's|classicpress \*|classicpress \*, '${DOMAIN}', '${WWW_DOMAIN}' |g' ${WEBCF}   
-        elif [ "${VHNAME}" = 'joomla' ]; then
-            sed -i 's|joomla \*|joomla \*, '${DOMAIN}', '${WWW_DOMAIN}' |g' ${WEBCF}                     
+        if [ ${PROVIDER} = 'do' ]; then
+            sed -i 's|'${VHNAME}' '${MY_IP}'|'${VHNAME}' '${MY_IP}', '${DOMAIN}', '${WWW_DOMAIN}' |g' ${WEBCF}                    
         else
-            sed -i 's|Example \*|Example \*, '${DOMAIN}', '${WWW_DOMAIN}' |g' ${WEBCF}
+            sed -i 's|'${VHNAME}' \*|'${VHNAME}' \*, '${DOMAIN}', '${WWW_DOMAIN}' |g' ${WEBCF}
         fi
     fi
     restart_lsws
@@ -260,7 +251,7 @@ lecertapply(){
 }
 
 force_https() {
-    if [ "${VHNAME}" = 'wordpress' ] || [ "${VHNAME}" = 'classicpress' ] || [ "${VHNAME}" = 'joomla' ]; then 
+    if [ "${VHNAME}" != 'Example' ]; then 
         duplicateck "RewriteCond %{HTTPS} on" "${DOCHM}/.htaccess"
         if [ ${?} = 1 ]; then 
             echo "$(echo '
