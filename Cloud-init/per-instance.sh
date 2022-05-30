@@ -578,9 +578,6 @@ EOM
 setup_after_ssh_drupal(){
     sudo cat << EOM > /etc/profile.d/afterssh.sh
 #!/bin/bash
-LSDIR='/usr/local/lsws'
-DRUPAL_VH="${LSDIR}/conf/vhosts/drupal/vhconf.conf" 
-DRUPAL_DOC='/var/www/html/web/'
 sudo mv /var/www/html/ /var/www/html.land/
 sudo mv /var/www/html.old/ /var/www/html/
 export COMPOSER_ALLOW_SUPERUSER=1
@@ -590,11 +587,11 @@ drush -y site-install standard --db-url=mysql://drupal:${app_mysql_pass}@127.0.0
 drush -y config-set system.performance css.preprocess 0 -q
 drush -y config-set system.performance js.preprocess 0 -q
 drush cache-rebuild -q
-sed -i 's|docRoot.*html/|docRoot                   '${DRUPAL_DOC}'|g' "${DRUPAL_VH}" >/dev/null
+sed -i 's|docRoot.*html/|docRoot                   '/var/www/html/web/'|g' /usr/local/lsws/conf/vhosts/drupal/vhconf.conf >/dev/null
 drush pm:enable lite_speed_cache
-chmod 777 ${DRUPAL_DOC}sites/default/files
+chmod 777 /var/www/html/web/sites/default/files
 sudo systemctl stop lsws >/dev/null 2>&1
-sudo ${LSDIR}/bin/lswsctrl stop >/dev/null 2>&1
+sudo /usr/local/lsws/bin/lswsctrl stop >/dev/null 2>&1
 sleep 1
 if [[ \$(sudo ps -ef | grep -i 'openlitespeed' | grep -v 'grep') != '' ]]; then
   sudo kill -9 \$(sudo ps -ef | grep -v 'grep' | grep -i 'openlitespeed' | grep -i 'main' | awk '{print \$2}')
