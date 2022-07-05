@@ -68,17 +68,17 @@ $(echoCYAN 'Welcome to One-Click OpenLiteSpeed Drupal Server.')
 To keep this server secure, the firewall is enabled.
 All ports are BLOCKED except 22 (SSH), 80 (HTTP) and 443 (HTTPS).
 
-Joomla One-Click Quickstart guide:
+Drupal One-Click Quickstart guide:
 * $(echoB 'https://docs.litespeedtech.com/cloud/images/drupal/')
 $(show_install)
 In a web browser, you can view:
-* The new Joomla site: $(echoY "http://$MYIP")
-* The new Joomla admin: $(echoY "http://$MYIP/user/login")
+* The new Drupal site: $(echoY "http://$MYIP")
+* The new Drupal admin: $(echoY "http://$MYIP/user/login")
 * The phpMyAdmin: http://$MYIP/phpmyadmin
 
 On the server:
 * The default web root is located at /var/www/html/web/
-* You can get the MySQL root password and MySQL Joomla user password with command:
+* You can get the MySQL root password and MySQL Drupal user password with command:
    $(echoY "sudo cat ${HMUBUNTU}.db_password")
 * You can get the Drupal admin and Web Admin admin password with the following command:
    $(echoY "sudo cat ${HMUBUNTU}.litespeed_password")
