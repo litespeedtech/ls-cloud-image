@@ -344,6 +344,14 @@ context /phpmyadmin/ {
   }
 }
 
+context exp:^/sites/default/files/styles/(.*)/public/(.*) {
+  location                /var/www/html/web/sites/default/files/\$2
+  allowBrowse             1
+
+  addDefaultCharset       off
+
+}
+
 context /web/ {
   location                /var/www/html/web/
   allowBrowse             1
@@ -399,6 +407,15 @@ context /phpmyadmin/ {
   addDefaultCharset       off
 
 }
+
+context exp:^/sites/default/files/styles/(.*)/public/(.*) {
+  location                /var/www/html/web/sites/default/files/\$2
+  allowBrowse             1
+
+  addDefaultCharset       off
+
+}
+
 
 context /web/ {
   location                /var/www/html/web/
