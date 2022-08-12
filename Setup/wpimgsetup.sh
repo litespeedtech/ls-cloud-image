@@ -293,8 +293,8 @@ ubuntu_install_postfix(){
 
 ubuntu_install_certbot(){       
     echoG "Install CertBot" 
-    add-apt-repository universe > /dev/null 2>&1
     if [ "${OSNAMEVER}" = 'UBUNTU18' ]; then
+        add-apt-repository universe > /dev/null 2>&1
         echo -ne '\n' | add-apt-repository ppa:certbot/certbot > /dev/null 2>&1
     fi    
     apt-get update > /dev/null 2>&1

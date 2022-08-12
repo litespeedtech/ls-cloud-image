@@ -329,19 +329,22 @@ centos_install_certbot(){
     fi    
 }
 
-ubuntu_install_certbot(){
-    echoG "[Start] Install CertBot"
-    add-apt-repository universe > /dev/null 2>&1
+ubuntu_install_certbot(){       
+    echoG "Install CertBot" 
     if [ "${OSNAMEVER}" = 'UBUNTU18' ]; then
+        add-apt-repository universe > /dev/null 2>&1
         echo -ne '\n' | add-apt-repository ppa:certbot/certbot > /dev/null 2>&1
-    fi   
+    fi    
     apt-get update > /dev/null 2>&1
     apt-get -y install certbot > /dev/null 2>&1
-    if [ -e /usr/bin/certbot ]; then 
-        echoG '[End] Install CertBot'
+    if [ -e /usr/bin/certbot ] || [ -e /usr/local/bin/certbot ]; then 
+        if [ ! -e /usr/bin/certbot ]; then
+            ln -s /usr/local/bin/certbot /usr/bin/certbot
+        fi    
+        echoG 'Install CertBot finished'    
     else 
         echoR 'Please check CertBot'    
-    fi
+    fi    
 }
 
 restart_lsws(){
