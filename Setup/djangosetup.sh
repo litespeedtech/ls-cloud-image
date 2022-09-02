@@ -3,7 +3,7 @@
 # LiteSpeed Django setup Script
 # @Author:   LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
 # @Copyright: (c) 2019-2022
-# @Version: 1.2
+# @Version: 1.3
 # *********************************************************************/
 LSWSFD='/usr/local/lsws'
 USER='nobody'
@@ -11,14 +11,14 @@ GROUP='nogroup'
 FIREWALLLIST="22 80 443"
 LSWSCONF="${LSWSFD}/conf/httpd_config.conf"
 LSWSVHCONF="${LSWSFD}/conf/vhosts/Example/vhconf.conf"
-WSGINAME='wsgi-lsapi-2.0'
+WSGINAME='wsgi-lsapi-2.1'
 PROJNAME='demo'
 PROJAPPNAME='app'
 VHDOCROOT='/usr/local/lsws/Example/html'
 DEMOPROJECT="${VHDOCROOT}/${PROJNAME}"
 DEMOSETTINGS="${DEMOPROJECT}/${PROJNAME}/settings.py"
 ALLERRORS=0
-DJ_VER='>=3.2,<4.0'
+DJ_VER='>=3.2'
 PY_V=''
 V_ENV='ON'
 NOWPATH=$(pwd)
@@ -227,7 +227,6 @@ install_wsgi(){
     cd /opt/${WSGINAME}/
     python3 ./configure.py | grep -i Done > /dev/null 2>&1
     if [ ${?} = 0 ]; then  
-        sed -i '/#include <node.h>/d' wsgi.c > /dev/null #python v3.10
         make > /dev/null 2>&1
         if [ -e 'lswsgi' ]; then 
             cp lswsgi ${LSWSFD}/fcgi-bin/    
