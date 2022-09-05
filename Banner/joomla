@@ -68,6 +68,7 @@ show_install(){
 $(echoG '###############################################################################')
 
 $(echoBOLD "Please complete the first time installation on the browser: http://$MYIP")
+$(echoBOLD "  - DataBase Name: joomla")
 $(echoBOLD "  - DataBase UserName: joomla")
 $(echoBOLD "  - DataBase Password: $(echo $JOOMLA_DB_PASS)")
 
