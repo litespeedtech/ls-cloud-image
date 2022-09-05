@@ -27,7 +27,7 @@ Look [here](https://docs.litespeedtech.com/cloud/images/) if you are interested 
 ## Custom Build Your One-Click On Any Cloud
 You don't need to stick with our prebuilt cloud images. You can create your own one-click for any cloud platform that you like! Use our easy-to-follow documentation to build an image yourself.
 
-1. Launch a base image, e.g. Ubuntu 20.04
+1. Launch a base image, e.g. Ubuntu 22.04
 2. Install a setup script
 3. Install a launch script
 4. Build Image

@@ -60,8 +60,9 @@ else
     HMUBUNTU=''
 fi
 
-JOOMLA_DB_PASS=$(sed -n 2p ${HMUBUNTU}.db_password | awk -F '"' '{ print $2 }')
 show_install(){
+    cd ~
+    JOOMLA_DB_PASS=$(sed -n 2p ${HMUBUNTU}.db_password | awk -F '"' '{ print $2 }')
     if [ ! -f /var/www/html/configuration.php ]; then
         cat<<EOM
 $(echoG '###############################################################################')

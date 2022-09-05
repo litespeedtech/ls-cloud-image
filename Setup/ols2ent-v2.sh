@@ -105,6 +105,8 @@ check_php(){
         PHP="${LS_DIR}/lsphp73/bin/php"
     elif [ -e ${LS_DIR}/lsphp74/bin/php ]; then
         PHP="${LS_DIR}/lsphp74/bin/php"
+    elif [ -e ${LS_DIR}/lsphp81/bin/php ]; then
+        PHP="${LS_DIR}/lsphp81/bin/php"        
     fi  
     which ${PHP} >/dev/null
     if [ ${?} = 0 ]; then
