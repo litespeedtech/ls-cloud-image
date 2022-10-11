@@ -147,6 +147,9 @@ cleanup (){
             sed -i 's/1/0/g' /etc/apt/apt.conf.d/10periodic
         fi 
     fi
+    if [ "${PROVIDER}" = 'do' ]; then 
+        apt-get purge droplet-agent -y > /dev/null 2>&1
+    fi    
     # Legal
     if [ -f /etc/legal ]; then
         mv /etc/legal /etc/legal.bk
