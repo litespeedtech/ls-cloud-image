@@ -2,7 +2,7 @@
 # /********************************************************************
 # LiteSpeed WordPress setup Script
 # @Author:   LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
-# @Copyright: (c) 2019-2021
+# @Copyright: (c) 2019-2022
 # *********************************************************************/
 LSWSFD='/usr/local/lsws'
 DOCHM='/var/www/html.old'
@@ -647,10 +647,10 @@ server_ip = ''
 guest = false
 
 ; O_GUEST_OPTM
-guest_optm = true
+guest_optm = false
 
 ; O_NEWS
-news = false
+news = true
 
 ; O_GUEST_UAS
 guest_uas = 'Lighthouse
@@ -928,11 +928,15 @@ optm-css_comb_ext_inl = true
 ; O_OPTM_UCSS
 optm-ucss = false
 
-; O_OPTM_UCSS_WHITELIST
+; O_OPTM_UCSS_INLINE	
+optm-ucss_inline = false	
+; O_OPTM_UCSS_FILE_EXC_INLINE	
+optm-ucss_file_exc_inline = ''	
+; O_OPTM_UCSS_SELECTOR_WHITELIST
 optm-ucss_whitelist = ''
 
-; O_OPTM_CSS_HTTP2
-optm-css_http2 = false
+; O_OPTM_UCSS_EXC	
+optm-ucss_exc = ''
 
 optm-css_exc = ''
 
@@ -944,9 +948,6 @@ optm-js_comb = false
 
 ; O_OPTM_JS_COMB_EXT_INL
 optm-js_comb_ext_inl = true
-
-; O_OPTM_JS_HTTP2
-optm-js_http2 = false
 
 optm-js_exc = 'jquery.js
 jquery.min.js'
@@ -964,7 +965,7 @@ optm-ggfonts_rm = false
 optm-css_async = false
 
 ; O_OPTM_CCSS_PER_URL
-optm-ccss_per_url = true
+optm-ccss_per_url = false
 
 ; O_OPTM_CSS_ASYNC_INLINE
 optm-css_async_inline = true
@@ -1042,16 +1043,20 @@ object-pswd = ''
 
 object-global_groups = 'users
 userlogins
-usermeta
-user_meta
-site-transient
-site-options
-site-lookup
-blog-lookup
-blog-details
-rss
-global-posts
-blog-id-cache'
+useremail	
+userslugs	
+usermeta	
+user_meta	
+site-transient	
+site-options	
+site-lookup	
+site-details	
+blog-lookup	
+blog-details	
+blog-id-cache	
+rss	
+global-posts	
+global-cache-test'
 
 object-non_persistent_groups = 'comment
 counts
@@ -1073,7 +1078,12 @@ discuss-avatar_cron = false
 ; O_DISCUSS_AVATAR_CACHE_TTL
 discuss-avatar_cache_ttl = 604800
 
-
+; O_OPTM_LOCALIZE	
+optm-localize = false	
+; O_OPTM_LOCALIZE_DOMAINS	
+optm-localize_domains = '### Popular scripts ###	
+https://platform.twitter.com/widgets.js	
+https://connect.facebook.net/en_US/fbevents.js'
 
 
 ;; -------------------------------------------------- ;;
@@ -1116,9 +1126,6 @@ media-iframe_lazy = false
 ; O_MEDIA_ADD_MISSING_SIZES
 media-add_missing_sizes = false
 
-; O_MEDIA_LAZYJS_INLINE
-media-lazyjs_inline = false
-
 ; O_MEDIA_LAZY_EXC
 media-lazy_exc = ''
 
@@ -1140,7 +1147,10 @@ media-lazy_uri_exc = ''
 ; O_MEDIA_LQIP_EXC
 media-lqip_exc = ''
 
-
+; O_MEDIA_VPI	
+media-vpi = false	
+; O_MEDIA_VPI_CRON	
+media-vpi_cron = false
 
 
 
@@ -1160,20 +1170,19 @@ img_optm-webp = true
 
 img_optm-lossless = false
 
-img_optm-exif = false
+img_optm-exif = true
 
-img_optm-webp_replace = false
 
-img_optm-webp_attr = 'img.src
-div.data-thumb
-img.data-src
-div.data-large_image
-img.retina_logo_url
-div.data-parallax-image
-video.poster'
-
-img_optm-webp_replace_srcset = false
-
+img_optm-webp_attr = 'img.src	
+div.data-thumb	
+img.data-src	
+img.data-lazyload	
+div.data-large_image	
+img.retina_logo_url	
+div.data-parallax-image	
+div.data-vc-parallax-image	
+video.poster'	
+img_optm-webp_replace_srcset = false	
 img_optm-jpg_quality = 82
 
 
@@ -1218,12 +1227,6 @@ crawler-cookies = ''
 ;; -------------------------------------------------- ;;
 ;; --------------                Misc           ----------------- ;;
 ;; -------------------------------------------------- ;;
-
-; O_MISC_HTACCESS_FRONT
-misc-htaccess_front = ''
-
-; O_MISC_HTACCESS_BACK
-misc-htaccess_back = ''
 
 ; O_MISC_HEARTBEAT_FRONT
 misc-heartbeat_front = false
@@ -1326,7 +1329,9 @@ filetype[0] = '.aac
 .png
 .svg
 .ttf
-.woff'
+.webp
+.woff	
+.woff2'
 
 ;;url[1] = 'https://2nd_CDN_url.com/'
 
@@ -1335,10 +1340,21 @@ filetype[0] = '.aac
 ; <------------ CDN Mapping Example END ------------------>
 EOM
 
-    if [ ! -f ${DOCHM}/wp-content/themes/${THEME}/functions.php.bk ]; then 
-        cp ${DOCHM}/wp-content/themes/${THEME}/functions.php ${DOCHM}/wp-content/themes/${THEME}/functions.php.bk
+    THEME_PATH="${DOCHM}/wp-content/themes/${THEME}"
+    if [ ! -f ${THEME_PATH}/functions.php ]; then
+        cat >> "${THEME_PATH}/functions.php" <<END
+<?php
+require_once( WP_CONTENT_DIR.'/../wp-admin/includes/plugin.php' );
+\$path = 'litespeed-cache/litespeed-cache.php' ;
+if (!is_plugin_active( \$path )) {
+    activate_plugin( \$path ) ;
+    rename( __FILE__ . '.bk', __FILE__ );
+}
+END
+    elif [ ! -f ${THEME_PATH}/functions.php.bk ]; then 
+        cp ${THEME_PATH}/functions.php ${THEME_PATH}/functions.php.bk
         cked
-        ed ${DOCHM}/wp-content/themes/${THEME}/functions.php << END >>/dev/null 2>&1
+        ed ${THEME_PATH}/functions.php << END >>/dev/null 2>&1
 2i
 require_once( WP_CONTENT_DIR.'/../wp-admin/includes/plugin.php' );
 \$path = 'litespeed-cache/litespeed-cache.php' ;
