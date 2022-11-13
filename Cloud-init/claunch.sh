@@ -162,7 +162,7 @@ cleanup (){
     #cloud-init here
     rm -f /var/log/cloud-init.log
     rm -f /var/log/cloud-init-output.log
-    rm -rf /var/lib/cloud/data
+    #rm -rf /var/lib/cloud/data
     #rm -rf /var/lib/cloud/instance
     #rm -rf /var/lib/cloud/instances/*
     #system log
