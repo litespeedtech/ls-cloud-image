@@ -303,16 +303,27 @@ install_wp_plugin(){
 }
 
 set_lscache(){
-    if [ ! -f ${DOCHM}/wp-content/themes/${THEME}/functions.php.bk ]; then
-        cp ${DOCHM}/wp-content/themes/${THEME}/functions.php ${DOCHM}/wp-content/themes/${THEME}/functions.php.bk
-        install_ed
-        ed ${DOCHM}/wp-content/themes/${THEME}/functions.php <<END >>/dev/null 2>&1
+    THEME_PATH="${DOCHM}/wp-content/themes/${THEME}"
+    if [ ! -f ${THEME_PATH}/functions.php ]; then
+        cat >> "${THEME_PATH}/functions.php" <<END
+<?php
+require_once( WP_CONTENT_DIR.'/../wp-admin/includes/plugin.php' );
+\$path = 'litespeed-cache/litespeed-cache.php' ;
+if (!is_plugin_active( \$path )) {
+    activate_plugin( \$path ) ;
+    rename( __FILE__ . '.bk', __FILE__ );
+}
+END
+    elif [ ! -f ${THEME_PATH}/functions.php.bk ]; then 
+        cp ${THEME_PATH}/functions.php ${THEME_PATH}/functions.php.bk
+        cked
+        ed ${THEME_PATH}/functions.php << END >>/dev/null 2>&1
 2i
 require_once( WP_CONTENT_DIR.'/../wp-admin/includes/plugin.php' );
 \$path = 'litespeed-cache/litespeed-cache.php' ;
 if (!is_plugin_active( \$path )) {
-  activate_plugin( \$path ) ;
-  rename( __FILE__ . '.bk', __FILE__ );
+    activate_plugin( \$path ) ;
+    rename( __FILE__ . '.bk', __FILE__ );
 }
 .
 w
