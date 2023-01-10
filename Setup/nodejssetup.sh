@@ -46,15 +46,7 @@ check_os(){
         OSVER=$(cat /etc/redhat-release | awk '{print substr($4,1,1)}')
     elif [ -f /etc/lsb-release ] ; then
         OSNAME=ubuntu  
-        OSNAMEVER=''
-        cat /etc/lsb-release | grep "DISTRIB_RELEASE=18." >/dev/null
-        if [ ${?} = 0 ] ; then
-            OSNAMEVER=UBUNTU18
-        fi
-        cat /etc/lsb-release | grep "DISTRIB_RELEASE=20." >/dev/null
-        if [ $? = 0 ] ; then
-            OSNAMEVER=UBUNTU20
-        fi              
+        OSNAMEVER="UBUNTU$(lsb_release -sr | awk -F '.' '{print $1}')"
     elif [ -f /etc/debian_version ] ; then
         OSNAME=debian
     fi         
