@@ -247,6 +247,7 @@ cleanup (){
         for i in ${ALL_HMFD[@]}; do
             if [ "${i}" != 'ubuntu' ] && [ "${i}" != 'cyberpanel' ] && [ "${i}" != 'vmail' ] && [ "${i}" != 'docker' ]; then
                 rm -rf "/home/${i}"
+                deluser "$i"
             fi
         done  
     fi
