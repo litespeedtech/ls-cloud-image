@@ -1343,6 +1343,11 @@ if (!is_plugin_active( \$path )) {
     rename( __FILE__ . '.bk', __FILE__ );
 }
 END
+        if [ ! -f ${THEME_PATH}/functions.php.bk ]; then
+            cat >> "${THEME_PATH}/functions.php.bk" <<END
+<?php 
+END
+        fi
     elif [ ! -f ${THEME_PATH}/functions.php.bk ]; then 
         cp ${THEME_PATH}/functions.php ${THEME_PATH}/functions.php.bk
         cked
