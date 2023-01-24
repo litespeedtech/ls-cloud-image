@@ -22,6 +22,7 @@ DJ_VER='>=3.2'
 PY_V=''
 V_ENV='ON'
 NOWPATH=$(pwd)
+ARG1=${1:-''}
 
 echoY() {
     echo -e "\033[38;5;148m${1}\033[39m"
@@ -646,7 +647,7 @@ main(){
     end_message
 }
 
-case ${1} in
+case "${ARG1}" in
     -NOVENV|--no-venv)
         V_ENV='OFF'
         ;;

@@ -132,10 +132,10 @@ ubuntu_install_basic(){
     apt-get -y install wget > /dev/null 2>&1
     apt-get -y install autoconf bison build-essential libssl-dev libyaml-dev libreadline6-dev \
       zlib1g-dev libncurses5-dev libffi-dev libgdbm-dev libsqlite3-dev > /dev/null 2>&1
-    if [ "${OSNAMEVER}" = 'UBUNTU20' ]; then 
-        apt-get -y install libgdbm6 > /dev/null 2>&1
-    else
+    if [ "${OSNAMEVER}" = 'UBUNTU18' ]; then 
         apt-get -y install libgdbm5 > /dev/null 2>&1
+    else
+        apt-get -y install libgdbm6 > /dev/null 2>&1
     fi    
 }
 
