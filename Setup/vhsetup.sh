@@ -2,12 +2,13 @@
 # /********************************************************************
 # LiteSpeed domain setup Script
 # @Author:   LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
-# @Copyright: (c) 2019-2022
-# @Version: 2.1
+# @Copyright: (c) 2019-2023
+# @Version: 2.2
 # *********************************************************************/
 MY_DOMAIN=''
 MY_DOMAIN2=''
 WWW_PATH='/var/www'
+CUSTOM_PATH=''
 LSDIR='/usr/local/lsws'
 WEBCF="${LSDIR}/conf/httpd_config.conf"
 VHDIR="${LSDIR}/conf/vhosts"
@@ -70,6 +71,9 @@ show_help() {
         echo "${EPACE}${EPACE}Issue and install Let's encrypt certificate and Wordpress with LiteSpeed Cache plugin."
         echow "-C, --classicpress"
         echo "${EPACE}${EPACE}This will install a ClassicPress with LiteSpeed Cache plugin."   
+        echow "--path, --document-path [CUSTOM_PATH]"
+        echo "${EPACE}${EPACE}This is to specify a location for the document root."  
+        echo "${EPACE}${EPACE}Example: ./vhsetup.sh --path /var/www/html"        
         echow "-BK, --backup"
         echo "${EPACE}${EPACE}This will backup the lsws server config before changing anything, vhost config is not included."
         echow "--delete [DOMAIN_NAME]"
@@ -314,6 +318,11 @@ if (!is_plugin_active( \$path )) {
     rename( __FILE__ . '.bk', __FILE__ );
 }
 END
+        if [ ! -f ${THEME_PATH}/functions.php.bk ]; then
+            cat >> "${THEME_PATH}/functions.php.bk" <<END
+<?php 
+END
+        fi
     elif [ ! -f ${THEME_PATH}/functions.php.bk ]; then 
         cp ${THEME_PATH}/functions.php ${THEME_PATH}/functions.php.bk
         cked
@@ -609,9 +618,12 @@ set_ols_server_conf() {
     else
         echoR 'No listener port detected, listener setup skip!'    
     fi
+    if [ "${CUSTOM_PATH}" = '' ]; then
+        CUSTOM_PATH="${WWW_PATH}/${MY_DOMAIN}"
+    fi    
     echo "
 virtualhost ${TEMP_DOMAIN} {
-vhRoot                  ${WWW_PATH}/${MY_DOMAIN}
+vhRoot                  "${CUSTOM_PATH}"
 configFile              ${VH_CONF_FILE}
 allowSymbolLink         1
 enableScript            1
@@ -651,10 +663,14 @@ set_lsws_server_conf(){
         echoR 'No listener port detected, listener setup skip!'    
     fi
 
+    if [ "${CUSTOM_PATH}" = '' ]; then
+        CUSTOM_PATH="${WWW_PATH}/${MY_DOMAIN}"
+    fi
+
    NEWKEY=" \\
     <virtualHost>\n\
       <name>${MY_DOMAIN}</name>\n\
-      <vhRoot>${WWW_PATH}/${MY_DOMAIN}</vhRoot>\n\
+      <vhRoot>"${CUSTOM_PATH}"</vhRoot>\n\
       <configFile>${VH_CONF_FILE}</configFile>\n\
       <allowSymbolLink>1</allowSymbolLink>\n\
       <enableScript>1</enableScript>\n\
@@ -667,7 +683,12 @@ set_lsws_server_conf(){
 
 main_set_vh(){
     create_folder ${WWW_PATH}
-    DOCHM="${WWW_PATH}/${1}"
+    if [ "${CUSTOM_PATH}" = '' ]; then
+        DOCHM="${WWW_PATH}/${1}"
+    else
+        DOCHM="${CUSTOM_PATH}"
+        create_folder ${CUSTOM_PATH}
+    fi    
     if [ ${DOMAIN_SKIP} = 'OFF' ]; then
         if [ "${WEBSERVER}" = 'OLS' ]; then
             set_ols_vh_conf
@@ -1033,6 +1054,14 @@ while [ ! -z "${1}" ]; do
         ;;
         -[cC] | --classicpress)
             CLASSICPRESS='ON'
+        ;;
+        --path | --document-path) shift
+            if [ "${1}" = '' ]; then
+                show_help 1
+            else
+                CUSTOM_PATH="${1}"
+                SILENT='ON'
+            fi
         ;;
         --delete) shift
             if [ "${1}" = '' ]; then
