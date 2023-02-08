@@ -418,12 +418,12 @@ config_mysql(){
                 -e "update mysql.user set authentication_string=password('${root_mysql_pass}') where user='root';" 
         fi        
     fi
-    if [ -e ${MARIADBSERVICE} ]; then
-        grep -i LogLevelMax ${MARIADBSERVICE} >/dev/null 2>&1
-        if [ ${?} = 1 ]; then
-            echo 'LogLevelMax=1' >> ${MARIADBSERVICE}
-        fi
-    fi
+    #if [ -e ${MARIADBSERVICE} ]; then
+    #    grep -i LogLevelMax ${MARIADBSERVICE} >/dev/null 2>&1
+    #    if [ ${?} = 1 ]; then
+    #        echo 'LogLevelMax=1' >> ${MARIADBSERVICE}
+    #    fi
+    #fi
     if [ ! -e ${MARIADBCNF} ]; then 
     touch ${MARIADBCNF}
     cat > ${MARIADBCNF} <<END 
