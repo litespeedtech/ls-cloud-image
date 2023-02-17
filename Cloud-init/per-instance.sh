@@ -624,6 +624,14 @@ add_hosts(){
     fi
 }
 
+lsws_license(){
+    if [ ${EDITION} = 'litespeed' ]; then 
+        cd ${LSDIR}/conf
+        wget -q --no-check-certificate http://license.litespeedtech.com/reseller/trial.key
+        systemctl start lsws
+    fi    
+}
+
 install_rainloop(){
     RAINLOOP_PATH="${PANELPATH}/public/rainloop"
     RAINDATA_PATH="${LSCPPATH}/cyberpanel/rainloop/data"
@@ -797,6 +805,7 @@ maincloud(){
     replace_litenerip
     db_passwordfile
     update_conntrack_max
+    lsws_license
     gen_sql_pwd
     gen_salt_pwd
     gen_secretkey

@@ -65,11 +65,11 @@ cat <<EOF
 ********************************************************************************
 
 $(echoCYAN 'Welcome to One-Click LiteSpeed Server.')
-To keep this Droplet secure, the firewalld is enabled.
+To keep this server secure, the firewalld is enabled.
 All ports are BLOCKED except 22 (SSH), 80 (HTTP) and 443 (HTTPS).
 
 The LiteSpeed wiki:
-* $(echoB 'https://www.litespeedtech.com/support/wiki/doku.php/litespeed_wiki:litespeed-web-server-enterprise')
+* $(echoB 'https://docs.litespeedtech.com/lsws/')
 
 In a web browser, you can view:
 * The empty page: $(echoY "http://$MYIP/")
