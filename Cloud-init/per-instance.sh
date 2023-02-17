@@ -129,7 +129,10 @@ update_path()
     elif [ "${PANEL}" = '' ]; then
         PHPMYPATH='/var/www/phpmyadmin' 
         DOCPATH='/var/www/html'
-        if [ -f '/usr/bin/node' ] && [ "$(grep -n 'appType.*node' ${LSVHCFPATH})" != '' ]; then
+        if [ ${EDITION} = 'litespeed' ]; then
+            WPCT="${PROVIDER}_lsws"
+            BANNERNAME='litespeed'         
+        elif [ -f '/usr/bin/node' ] && [ "$(grep -n 'appType.*node' ${LSVHCFPATH})" != '' ]; then
             APPLICATION='NODE'
             WPCT="${PROVIDER}_ols_node"
             BANNERNAME='nodejs'
@@ -141,7 +144,7 @@ update_path()
             APPLICATION='PYTHON'
             CONTEXTPATH="${LSDIR}/Example/html/demo/demo/settings.py"
             WPCT="${PROVIDER}_ols_python"
-            BANNERNAME='django'
+            BANNERNAME='django'      
         else
             APPLICATION='CMS' 
             DOCPATH='/var/www/html.old'
@@ -430,25 +433,27 @@ renew_wp_pwd(){
 }
 
 replace_litenerip(){
-    if [ "${PROVIDER}" = 'do' ] && [ "${PANEL}" = '' ]; then 
-        for LINENUM in $(grep -n 'map' ${LSHTTPDCFPATH} | cut -d: -f 1)
-        do
-            if [ -e /var/www/html ] || [ -e /var/www/html.old ]; then 
-                if [ "${BANNERNAME}" = 'wordpress' ]; then
-                    NEWDBPWD="  map                     wordpress ${PUBIP}"
-                elif [ "${BANNERNAME}" = 'classicpress' ]; then
-                    NEWDBPWD="  map                     classicpress ${PUBIP}"
-                elif [ "${BANNERNAME}" = 'joomla' ]; then
-                    NEWDBPWD="  map                     joomla ${PUBIP}"
-                elif [ "${BANNERNAME}" = 'drupal' ]; then
-                    NEWDBPWD="  map                     drupal ${PUBIP}"                    
+    if [ "${EDITION}" != 'litespeed' ]; then 
+        if [ "${PROVIDER}" = 'do' ] && [ "${PANEL}" = '' ]; then 
+            for LINENUM in $(grep -n 'map' ${LSHTTPDCFPATH} | cut -d: -f 1)
+            do
+                if [ -e /var/www/html ] || [ -e /var/www/html.old ]; then 
+                    if [ "${BANNERNAME}" = 'wordpress' ]; then
+                        NEWDBPWD="  map                     wordpress ${PUBIP}"
+                    elif [ "${BANNERNAME}" = 'classicpress' ]; then
+                        NEWDBPWD="  map                     classicpress ${PUBIP}"
+                    elif [ "${BANNERNAME}" = 'joomla' ]; then
+                        NEWDBPWD="  map                     joomla ${PUBIP}"
+                    elif [ "${BANNERNAME}" = 'drupal' ]; then
+                        NEWDBPWD="  map                     drupal ${PUBIP}"                    
+                    fi    
+                else
+                    NEWDBPWD="  map                     Example ${PUBIP}"
                 fi    
-            else
-                NEWDBPWD="  map                     Example ${PUBIP}"
-            fi    
-            sed -i "${LINENUM}s/.*/${NEWDBPWD}/" ${LSHTTPDCFPATH}
-        done 
-    fi    
+                sed -i "${LINENUM}s/.*/${NEWDBPWD}/" ${LSHTTPDCFPATH}
+            done 
+        fi    
+    fi
 }
 
 update_sql_pwd(){
