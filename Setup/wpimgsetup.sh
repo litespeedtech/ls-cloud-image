@@ -212,11 +212,6 @@ centos_install_ols(){
     install_ols_wp
 }
 
-centos_install_php(){
-    echoG 'Install lsphp extensions'
-    yum -y install lsphp${PHPVER}-memcached lsphp${PHPVER}-redis lsphp${PHPVER}-opcache lsphp${PHPVER}-imagick > /dev/null 2>&1
-}
-
 centos_install_memcached(){
     echoG 'Install Memcached'
     yum -y install memcached > /dev/null 2>&1
@@ -257,11 +252,6 @@ ubuntu_install_basic(){
 
 ubuntu_install_ols(){
     install_ols_wp
-}
-
-ubuntu_install_php(){
-    echoG 'Install lsphp extensions'
-    apt-get -y install lsphp${PHPVER}-memcached lsphp${PHPVER}-redis lsphp${PHPVER}-opcache lsphp${PHPVER}-imagick > /dev/null 2>&1
 }
 
 ubuntu_install_memcached(){
@@ -1488,7 +1478,6 @@ init_setup(){
 centos_main_install(){
     centos_install_basic
     centos_install_ols
-    centos_install_php
     centos_install_memcached
     centos_install_redis
     centos_install_certbot
@@ -1508,7 +1497,6 @@ centos_main_config(){
 ubuntu_main_install(){
     ubuntu_install_basic
     ubuntu_install_ols
-    ubuntu_install_php
     ubuntu_install_memcached
     ubuntu_install_redis
     ubuntu_install_certbot

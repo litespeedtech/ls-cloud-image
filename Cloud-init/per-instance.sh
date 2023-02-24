@@ -228,7 +228,7 @@ ct_version()
 }
 
 setup_domain(){
-    if [ ! -e /opt/domainsetup.sh ]; then  
+    if [ ! -e /opt/domainsetup.sh ] && [ ${EDITION} != 'litespeed' ]; then
         STATUS="$(curl -s https://raw.githubusercontent.com/litespeedtech/ls-cloud-image/master/Setup/domainsetup.sh \
         -o /opt/domainsetup.sh -w "%{http_code}")"
         if [ ${?} != 0 ] || [ "${STATUS}" != '200' ]; then
@@ -619,7 +619,9 @@ update_conntrack_max(){
 }
 
 add_profile(){
-    echo "sudo /opt/domainsetup.sh" >> /etc/profile
+    if [ ${EDITION} != 'litespeed' ]; then
+        echo "sudo /opt/domainsetup.sh" >> /etc/profile
+    fi    
 }
 
 add_hosts(){

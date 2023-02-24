@@ -209,7 +209,7 @@ create_file(){
 }
 create_folder(){
     if [ ! -d "${1}" ]; then
-        mkdir ${1}
+        mkdir -p ${1}
     fi
 }
 change_owner() {
@@ -477,9 +477,10 @@ check_duplicate() {
 }
 
 restart_lsws(){
-    ${LSDIR}/bin/lswsctrl stop >/dev/null 2>&1
-    systemctl stop lsws >/dev/null 2>&1
-    systemctl start lsws >/dev/null 2>&1   
+    #${LSDIR}/bin/lswsctrl stop >/dev/null 2>&1
+    #systemctl stop lsws >/dev/null 2>&1
+    #systemctl start lsws >/dev/null 2>&1
+    systemctl restart lsws >/dev/null 2>&1
 }
 
 set_ols_vh_conf() {
@@ -497,7 +498,7 @@ EOF
 docRoot                   \$VH_ROOT
 vhDomain                  \$VH_DOMAIN
 vhAliases                 www.$VH_DOMAIN
-adminEmails               localhost
+adminEmails               localhost@example
 enableGzip                1
 
 errorlog \$SERVER_ROOT/logs/\$VH_NAME.error_log {
@@ -654,10 +655,11 @@ set_lsws_server_conf(){
       </vhostMap>"
         local TEMP_DOMAIN=${MY_DOMAIN}
     fi
-    PORT_ARR=$(grep "address.*:[0-9]"  ${WEBCF} | grep -oP '(?<=:)[0-9]+')
-    if [  ${#PORT_ARR[@]} != 0 ]; then
-        for PORT in ${PORT_ARR[@]}; do 
-            line_insert ":${PORT}<"  ${WEBCF} "${NEWKEY}" 3
+    MATCH_ARR=$(grep -n '<vhostMapList>' ${WEBCF} | cut -f1 -d: | sort -nr)
+    if [ ${#MATCH_ARR[@]} != 0 ]; then
+        for LINENUM in ${MATCH_ARR[@]}; do
+            LINENUM=$((${LINENUM}+1))
+            sed -i "${LINENUM}i${NEWKEY}" ${WEBCF}
         done
     else
         echoR 'No listener port detected, listener setup skip!'    
@@ -669,7 +671,7 @@ set_lsws_server_conf(){
 
    NEWKEY=" \\
     <virtualHost>\n\
-      <name>${MY_DOMAIN}</name>\n\
+      <name>${TEMP_DOMAIN}</name>\n\
       <vhRoot>"${CUSTOM_PATH}"</vhRoot>\n\
       <configFile>${VH_CONF_FILE}</configFile>\n\
       <allowSymbolLink>1</allowSymbolLink>\n\
@@ -747,37 +749,7 @@ rm_lsws_vh_conf(){
 }
 
 rm_dm_lsws_svr_conf(){
-    echoG 'Remove domain from listeners'
-    grep "<vhost>${1}" ${WEBCF} >/dev/null 2>&1
-    if [ ${?} = 0 ]; then
-        PORT_ARR=$(grep "address.*:[0-9]"  ${WEBCF} | grep -oP '(?<=:)[0-9]+')
-        if [  ${#PORT_ARR[@]} != 0 ]; then
-            for PORT in ${PORT_ARR[@]}; do 
-                fst_match_line "<vhost>${1}" ${WEBCF}
-                if [ ${?} = 0 ]; then
-                    fst_match_before_line ${FIRST_LINE_NUM} ${WEBCF} '<vhostMap>'
-                    lst_match_line ${FIRST_LINE_NUM} ${WEBCF} '</vhostMap>'
-                    echoG "Remove the vhost domain from serevr config port ${PORT}."
-                    sed -i "${FIRST_BEFORE_LINE_NUM},${LAST_LINE_NUM}d" ${WEBCF}
-                else
-                    echoR "<vhost>${1} is not found, skip domain delte from port ${PORT} listener!"
-                fi
-            done
-        else
-            echoR 'No listener port detected, listener setup skip!'    
-        fi    
-    else
-        echoR "${1} does not found under listener, if this is the default virtual host config, please remove it manually!"    
-    fi
-    if [ ${?} = 0 ]; then
-        fst_match_line "<name>${1}" ${WEBCF}
-        fst_match_before_line ${FIRST_LINE_NUM} ${WEBCF} '<virtualHost>'
-        lst_match_line ${FIRST_LINE_NUM} ${WEBCF} '</virtualHost>'
-        echoG 'Remove the virtualHost from serevr config'
-        sed -i "${FIRST_BEFORE_LINE_NUM},${LAST_LINE_NUM}d" ${WEBCF}
-    else
-        echoR "virtualhost ${1} does not found, if this is the default virtual host config, please remove it manually!"
-    fi    
+    echoY 'Remove LSWS VirtualHost does not support yet!' 
 }
 
 rm_le_cert(){
