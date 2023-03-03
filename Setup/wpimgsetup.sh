@@ -71,7 +71,7 @@ get_sql_ver(){
 check_sql_ver(){    
     if (( ${SQL_MAINV} >=11 && ${SQL_MAINV}<=99 )); then
         echoG '[OK] Mariadb version -ge 11'
-    elif (( ${SQL_MAINV} >=10 )) && (( ${SQL_SECV} >=3 && ${SQL_SECV}<=9 )); then
+    elif (( ${SQL_MAINV} >=10 )) && (( ${SQL_SECV} >=3 )); then
         echoG '[OK] Mariadb version -ge 10.3'
     else
         echoR "Mariadb version ${SQLDBVER} is lower than 10.3, please check!"    
@@ -527,7 +527,7 @@ config_mysql(){
         EXISTSQLPASS=$(grep root_mysql_passs ${HMPATH}/.db_password | awk -F '"' '{print $2}'); 
     fi    
     if [ "${EXISTSQLPASS}" = '' ]; then
-        if (( ${SQL_MAINV} >=10 )) && (( ${SQL_SECV} >=4 && ${SQL_SECV}<=9 )); then
+        if (( ${SQL_MAINV} >=10 )) && (( ${SQL_SECV} >=4 )); then
             mysql -u root -p${root_mysql_pass} \
                 -e "ALTER USER root@localhost IDENTIFIED VIA mysql_native_password USING PASSWORD('${root_mysql_pass}');"
         else
@@ -535,7 +535,7 @@ config_mysql(){
                 -e "update mysql.user set authentication_string=password('${root_mysql_pass}') where user='root';"
         fi    
     else
-        if (( ${SQL_MAINV} >=10 )) && (( ${SQL_SECV} >=4 && ${SQL_SECV}<=9 )); then
+        if (( ${SQL_MAINV} >=10 )) && (( ${SQL_SECV} >=4)); then
             mysql -u root -p${EXISTSQLPASS} \
                 -e "ALTER USER root@localhost IDENTIFIED VIA mysql_native_password USING PASSWORD('${root_mysql_pass}');"
         else        
