@@ -3,7 +3,7 @@
 # LiteSpeed domain setup Script
 # @Author:   LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
 # @Copyright: (c) 2019-2023
-# @Version: 2.2
+# @Version: 2.3
 # *********************************************************************/
 MY_DOMAIN=''
 MY_DOMAIN2=''
@@ -238,8 +238,65 @@ install_wp_cli() {
         fi        
     fi      
 }
+ubuntu_install_certbot(){       
+    apt-get update > /dev/null 2>&1
+    apt-get -y install certbot > /dev/null 2>&1
+    if [ -e /usr/bin/certbot ] || [ -e /usr/local/bin/certbot ]; then 
+        if [ ! -e /usr/bin/certbot ]; then
+            ln -s /usr/local/bin/certbot /usr/bin/certbot
+        fi    
+        echoG 'Install CertBot finished'    
+    else 
+        echoR 'Please check CertBot'    
+    fi    
+}
+
+centos_install_certbot(){
+    if [ ${OSVER} = 8 ]; then
+        wget -q https://dl.eff.org/certbot-auto
+        mv certbot-auto /usr/local/bin/certbot
+        chown root /usr/local/bin/certbot
+        chmod 0755 /usr/local/bin/certbot
+        echo "y" | /usr/local/bin/certbot > /dev/null 2>&1
+    else
+        yum -y install certbot  > /dev/null 2>&1
+    fi
+    if [ -e /usr/bin/certbot ] || [ -e /usr/local/bin/certbot ]; then 
+        if [ ! -e /usr/bin/certbot ]; then
+            ln -s /usr/local/bin/certbot /usr/bin/certbot
+        fi
+        echoG 'Install CertBot finished'
+    else 
+        echoR 'Please check CertBot'    
+    fi    
+} 
+
+install_certbot(){
+    if [ ! -e /usr/bin/certbot ] && [ ! -e /usr/local/bin/certbot ]; then
+        echoG "Install CertBot" 
+        if [ ${OSNAME} = 'centos' ]; then
+            centos_install_certbot
+        else
+            ubuntu_install_certbot 
+        fi
+    fi
+}
+
+install_unzip(){
+    if [ ! -e /usr/bin/unzip ]; then
+        echoG "Install unzip" 
+        if [ ${OSNAME} = 'centos' ]; then
+            yum install unzip -y > /dev/null 2>&1
+        else
+            apt install unzip -y > /dev/null 2>&1
+        fi
+    fi    
+}
+
 gen_password(){
-    ROOT_PASS=$(cat ${HM_PATH}/.db_password | head -n 1 | awk -F '"' '{print $2}')
+    if [ -e ${HM_PATH}/.db_password ]; then
+        ROOT_PASS=$(cat ${HM_PATH}/.db_password | head -n 1 | awk -F '"' '{print $2}')
+    fi    
     WP_DB=$(echo "${MY_DOMAIN}" | sed -e 's/\.//g; s/-//g')
     WP_USER=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 8; echo '')
     WP_PASS=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 48; echo '')
@@ -353,6 +410,26 @@ create_db_user(){
             echoR "something went wrong when create new database, please proceed to manual installtion."
             DB_TEST=1
         fi
+    elif [ -e /usr/local/lsws/password ]; then
+        grep mysql /usr/local/lsws/password | grep root | awk -F'[][]' '{print $2}'  >/dev/null
+        if [ ${?} = 0 ]; then
+            echoG 'Found SQL password in /usr/local/lsws/password file.'
+            ROOT_PASS=$(grep mysql /usr/local/lsws/password | grep root | awk -F'[][]' '{print $2}')
+            gen_password
+            mysql -uroot -p${ROOT_PASS} -e "create database ${WP_DB};"
+            if [ ${?} = 0 ]; then
+                mysql -uroot -p${ROOT_PASS} -e "CREATE USER '${WP_USER}'@'localhost' IDENTIFIED BY '${WP_PASS}';"
+                mysql -uroot -p${ROOT_PASS} -e "GRANT ALL PRIVILEGES ON * . * TO '${WP_USER}'@'localhost';"
+                mysql -uroot -p${ROOT_PASS} -e "FLUSH PRIVILEGES;"
+            else
+                echoR "something went wrong when create new database, please proceed to manual installtion."
+                DB_TEST=1
+            fi            
+        else
+            echoR "No DataBase Password, skip!"  
+            DB_TEST=1
+            show_help 3
+        fi    
     else
         echoR "No DataBase Password, skip!"  
         DB_TEST=1
@@ -477,9 +554,6 @@ check_duplicate() {
 }
 
 restart_lsws(){
-    #${LSDIR}/bin/lswsctrl stop >/dev/null 2>&1
-    #systemctl stop lsws >/dev/null 2>&1
-    #systemctl start lsws >/dev/null 2>&1
     systemctl restart lsws >/dev/null 2>&1
 }
 
@@ -953,6 +1027,7 @@ issue_cert(){
         if [ ${DOMAIN_PASS} = 'ON' ]; then
             input_email
             if [ ${EMAIL_SKIP} = 'OFF' ]; then
+                install_certbot
                 apply_lecert
                 certbothook
             fi    
@@ -977,6 +1052,7 @@ main() {
     server_conf_bk    
     main_set_vh ${MY_DOMAIN}
     issue_cert
+    install_unzip
 	check_which_cms
     check_install_wp
 	check_install_cp
