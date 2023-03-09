@@ -2,7 +2,7 @@
 # /********************************************************************
 # LiteSpeed WordPress setup Script
 # @Author:   LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
-# @Copyright: (c) 2019-2022
+# @Copyright: (c) 2019-2023
 # *********************************************************************/
 LSWSFD='/usr/local/lsws'
 DOCHM='/var/www/html.old'
@@ -11,7 +11,6 @@ PHPCONF='/var/www/phpmyadmin'
 LSWSCONF="${LSWSFD}/conf/httpd_config.conf"
 WPVHCONF="${LSWSFD}/conf/vhosts/wordpress/vhconf.conf"
 EXAMPLECONF="${LSWSFD}/conf/vhosts/wordpress/vhconf.conf"
-PHPINICONF="${LSWSFD}/lsphp81/etc/php/8.1/litespeed/php.ini"
 MEMCACHECONF='/etc/memcached.conf'
 REDISSERVICE='/lib/systemd/system/redis-server.service'
 REDISCONF='/etc/redis/redis.conf'
@@ -85,7 +84,6 @@ check_os()
         OSNAME=centos
         USER='nobody'
         GROUP='nobody'
-        PHPINICONF="${LSWSFD}/lsphp${PHPVER}/etc/php.ini"
         MARIADBCNF='/etc/my.cnf.d/60-server.cnf'
         REDISSERVICE='/lib/systemd/system/redis.service'
         REDISCONF='/etc/redis.conf'
@@ -267,12 +265,6 @@ ubuntu_install_redis(){
     systemctl start redis > /dev/null 2>&1
 }
 
-ubuntu_install_postfix(){
-    echoG 'Install Postfix'
-    DEBIAN_FRONTEND='noninteractive' apt-get -y -o Dpkg::Options::='--force-confdef' \
-    -o Dpkg::Options::='--force-confold' install postfix > /dev/null 2>&1
-}
-
 ubuntu_install_certbot(){       
     echoG "Install CertBot" 
     if [ "${OSNAMEVER}" = 'UBUNTU18' ]; then
@@ -420,17 +412,6 @@ landing_pg(){
     else
         echoR "Please check Landing Page here ${DOCLAND}/index.html"
     fi    
-}
-
-config_php(){
-    echoG 'Updating PHP Paremeter'
-    NEWKEY='max_execution_time = 360'
-    linechange 'max_execution_time' ${PHPINICONF} "${NEWKEY}"
-    NEWKEY='post_max_size = 64M'
-    linechange 'post_max_size' ${PHPINICONF} "${NEWKEY}"
-    NEWKEY='upload_max_filesize = 64M'
-    linechange 'upload_max_filesize' ${PHPINICONF} "${NEWKEY}"
-    echoG 'Finish PHP Paremeter'
 }
 
 update_final_permission(){
@@ -1488,7 +1469,6 @@ centos_main_install(){
 
 centos_main_config(){
     centos_config_ols
-    config_php
     centos_config_memcached
     centos_config_redis
     wp_main_config
@@ -1500,7 +1480,6 @@ ubuntu_main_install(){
     ubuntu_install_memcached
     ubuntu_install_redis
     ubuntu_install_certbot
-    ubuntu_install_postfix
     install_phpmyadmin
     install_wp_cli
     landing_pg
@@ -1508,7 +1487,6 @@ ubuntu_main_install(){
 
 ubuntu_main_config(){
     ubuntu_config_ols
-    config_php
     ubuntu_config_memcached
     ubuntu_config_redis   
     wp_main_config 

@@ -24,6 +24,8 @@ Look [here](https://docs.litespeedtech.com/cloud/images/) if you are interested 
 ||[Drupal Instructions](https://docs.litespeedtech.com/cloud/images/drupal/)|[Joomla Instructions](https://docs.litespeedtech.com/cloud/images/joomla/)|
 | [**DigitalOcean**](https://marketplace.digitalocean.com/category/blogs-and-forums)  | [Launch](https://cloud.digitalocean.com/droplets/new?appId=109378626&image=litespeedtechnol-openlitespeeddru-20-04&utm_source=openlitespeed&utm_campaign=openlitespeed-drupal)  | [Launch](https://cloud.digitalocean.com/droplets/new?appId=98347764&image=litespeedtechnol-openlitespeedjoo-20-04&utm_source=openlitespeed&utm_campaign=openlitespeed-joomla) |
 | [**Vultr**](https://www.vultr.com/marketplace/)  | [Launch](https://www.vultr.com/marketplace/apps/openlitespeed-drupal)  | [Launch](https://www.vultr.com/marketplace/apps/openlitespeed-joomla) |
+| [**AWS**](https://aws.amazon.com/marketplace/search/results?x=0&y=0&searchTerms=litespeed)| [Launch](https://aws.amazon.com/marketplace/pp/prodview-yuklhlwm4a2so)  | [Launch](https://aws.amazon.com/marketplace/pp/prodview-cwhfbezlq2j4g) |
+
 
 ## Custom Build Your One-Click On Any Cloud
 You don't need to stick with our prebuilt cloud images. You can create your own one-click for any cloud platform that you like! Use our easy-to-follow documentation to build an image yourself.
