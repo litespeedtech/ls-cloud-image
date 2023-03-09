@@ -864,7 +864,7 @@ rm_main_conf(){
 }
 
 verify_domain() {
-    curl -Is http://${MY_DOMAIN}/ | grep -i LiteSpeed >/dev/null 2>&1
+    curl -Is http://${MY_DOMAIN}/ | grep -i 'LiteSpeed\|cloudflare' >/dev/null 2>&1
     if [ ${?} = 0 ]; then
         echoG "${MY_DOMAIN} check PASS"
     else
@@ -872,7 +872,7 @@ verify_domain() {
         DOMAIN_PASS='OFF'
     fi
     if [ ${WWW} = 'TRUE' ]; then
-        curl -Is http://${MY_DOMAIN}/ | grep -i LiteSpeed >/dev/null 2>&1
+        curl -Is http://${MY_DOMAIN}/ | grep -i 'LiteSpeed\|cloudflare' >/dev/null 2>&1
         if [ ${?} = 0 ]; then
             echoG "${MY_DOMAIN2} check PASS"
         else
