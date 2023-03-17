@@ -245,7 +245,7 @@ cleanup (){
         sudo sed -i 's/root::/root:*:/g' /etc/shadow >/dev/null 2>&1
         ALL_HMFD=$(ls /home/)
         for i in ${ALL_HMFD[@]}; do
-            if [ "${i}" != 'ubuntu' ] && [ "${i}" != 'cyberpanel' ] && [ "${i}" != 'vmail' ] && [ "${i}" != 'docker' ]; then
+            if [ "${i}" != 'ubuntu' ] && [ "${i}" != 'cyberpanel' ] && [ "${i}" != 'vmail' ] && [ "${i}" != 'docker' ] && [ "${i}" != 'lscache' ]; then
                 rm -rf "/home/${i}"
                 deluser "$i"
             fi

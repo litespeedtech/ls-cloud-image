@@ -1030,6 +1030,7 @@ issue_cert(){
                 install_certbot
                 apply_lecert
                 certbothook
+                restart_lsws
             fi    
         else
             show_help 2   
