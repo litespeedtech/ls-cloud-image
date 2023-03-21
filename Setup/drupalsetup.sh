@@ -466,7 +466,7 @@ config_mysql(){
         EXISTSQLPASS=$(grep root_mysql_passs ${HMPATH}/.db_password | awk -F '"' '{print $2}'); 
     fi    
     if [ "${EXISTSQLPASS}" = '' ]; then
-        if (( ${SQL_MAINV} >=10 )) && (( ${SQL_SECV} >=4 && ${SQL_SECV}<=9 )); then
+        if (( ${SQL_MAINV} >=10 )) && (( ${SQL_SECV} >=4 )); then
             mysql -u root -p${root_mysql_pass} \
                 -e "ALTER USER root@localhost IDENTIFIED VIA mysql_native_password USING PASSWORD('${root_mysql_pass}');"
         else
@@ -474,7 +474,7 @@ config_mysql(){
                 -e "update mysql.user set authentication_string=password('${root_mysql_pass}') where user='root';"
         fi    
     else
-        if (( ${SQL_MAINV} >=10 )) && (( ${SQL_SECV} >=4 && ${SQL_SECV}<=9 )); then
+        if (( ${SQL_MAINV} >=10 )) && (( ${SQL_SECV} >=4)); then
             mysql -u root -p${EXISTSQLPASS} \
                 -e "ALTER USER root@localhost IDENTIFIED VIA mysql_native_password USING PASSWORD('${root_mysql_pass}');"
         else        
