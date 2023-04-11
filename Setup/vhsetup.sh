@@ -93,17 +93,123 @@ show_help() {
     ;;  
     esac
 }
-check_os() {
-    if [ -f /etc/redhat-release ]; then
+
+function check_os
+{
+    if [ -f /etc/centos-release ] ; then
         OSNAME=centos
         USER='nobody'
         GROUP='nobody'
-    elif [ -f /etc/lsb-release ]; then
+        case $(cat /etc/centos-release | tr -dc '0-9.'|cut -d \. -f1) in 
+        6)
+            OSNAMEVER=CENTOS6
+            OSVER=6
+            ;;
+        7)
+            OSNAMEVER=CENTOS7
+            OSVER=7
+            ;;
+        8)
+            OSNAMEVER=CENTOS8
+            OSVER=8
+            ;;
+        9)
+            OSNAMEVER=CENTOS9
+            OSVER=9
+            ;;            
+        esac
+    elif [ -f /etc/redhat-release ] ; then
+        OSNAME=centos
+        USER='nobody'
+        GROUP='nobody'
+        case $(cat /etc/redhat-release | tr -dc '0-9.'|cut -d \. -f1) in 
+        6)
+            OSNAMEVER=CENTOS6
+            OSVER=6
+            ;;
+        7)
+            OSNAMEVER=CENTOS7
+            OSVER=7
+            ;;
+        8)
+            OSNAMEVER=CENTOS8
+            OSVER=8
+            ;;
+        9)
+            OSNAMEVER=CENTOS9
+            OSVER=9
+            ;;            
+        esac             
+    elif [ -f /etc/lsb-release ] ; then
         OSNAME=ubuntu
-    elif [ -f /etc/debian_version ]; then
+        case $(cat /etc/os-release | grep UBUNTU_CODENAME | cut -d = -f 2) in
+        trusty)
+            OSNAMEVER=UBUNTU14
+            OSVER=trusty
+            MARIADBCPUARCH="arch=amd64,i386,ppc64el"
+            ;;        
+        xenial)
+            OSNAMEVER=UBUNTU16
+            OSVER=xenial
+            MARIADBCPUARCH="arch=amd64,i386,ppc64el"
+            ;;
+        bionic)
+            OSNAMEVER=UBUNTU18
+            OSVER=bionic
+            MARIADBCPUARCH="arch=amd64"
+            ;;
+        focal)            
+            OSNAMEVER=UBUNTU20
+            OSVER=focal
+            MARIADBCPUARCH="arch=amd64"
+            ;;
+        jammy)            
+            OSNAMEVER=UBUNTU22
+            OSVER=jammy
+            MARIADBCPUARCH="arch=amd64"
+            ;;            
+        esac
+    elif [ -f /etc/debian_version ] ; then
         OSNAME=debian
+        case $(cat /etc/os-release | grep VERSION_CODENAME | cut -d = -f 2) in
+        jessie)
+            OSNAMEVER=DEBIAN8
+            OSVER=jessie
+            MARIADBCPUARCH="arch=amd64,i386"
+            ;;
+        stretch) 
+            OSNAMEVER=DEBIAN9
+            OSVER=stretch
+            MARIADBCPUARCH="arch=amd64,i386"
+            ;;
+        buster)
+            OSNAMEVER=DEBIAN10
+            OSVER=buster
+            MARIADBCPUARCH="arch=amd64,i386"
+            ;;
+        bullseye)
+            OSNAMEVER=DEBIAN11
+            OSVER=bullseye
+            MARIADBCPUARCH="arch=amd64,i386"
+            ;;
+        esac    
     fi
-}
+
+    if [ "$OSNAMEVER" = '' ] ; then
+        echoR "Sorry, currently one click installation only supports Centos(6-8), Debian(8-11) and Ubuntu(14,16,18,20,22)."
+        echoR "You can download the source code and build from it."
+        echoR "The url of the source code is https://github.com/litespeedtech/openlitespeed/releases."
+        exit 1
+    else
+        if [ "$OSNAME" = "centos" ] ; then
+            echoG "Current platform is "  "$OSNAME $OSVER."
+        else
+            export DEBIAN_FRONTEND=noninteractive
+            echoG "Current platform is "  "$OSNAMEVER $OSNAME $OSVER."
+        fi
+    fi
+}    
+
 check_provider()
 {
     if [[ "$(sudo cat /sys/devices/virtual/dmi/id/product_uuid | cut -c 1-3)" =~ (EC2|ec2) ]]; then 
