@@ -93,31 +93,16 @@ install_cloudinit(){
     fi    
     which cloud-init >/dev/null 2>&1
     if [ ${?} = 1 ]; then
-        if [ ${OSNAME} = 'ubuntu' ]; then
-            if [ "${PROVIDER}" = 'vultr' ]; then 
-                cd /tmp
-                wget https://ewr1.vultrobjects.com/cloud_init_beta/cloud-init_universal_latest.deb > /dev/null 2>&1
-                #wget https://ewr1.vultrobjects.com/cloud_init_beta/universal_latest_MD5 > /dev/null 2>&1
-                apt-get update -y > /dev/null 2>&1
-                apt-get install -y /tmp/cloud-init_universal_latest.deb > /dev/null 2>&1
-            fi    
+        if [ "${PROVIDER}" = 'ali' ]; then
+            yum -y install python-pip > /dev/null 2>&1
+            test -d /etc/cloud && mv /etc/cloud /etc/cloud-old; cd /tmp/
+            wget -q http://ecs-image-utils.oss-cn-hangzhou.aliyuncs.com/cloudinit/ali-cloud-init-latest.tgz
+            tar -zxvf ali-cloud-init-latest.tgz > /dev/null 2>&1
+            OS_VER=$(cat /etc/redhat-release | awk '{printf $4}'| awk -F'.' '{printf $1}')
+            bash /tmp/cloud-init-*/tools/deploy.sh centos ${OS_VER}
+            rm -rf ali-cloud-init-latest.tgz cloud-init-*
         else
-            if [ "${PROVIDER}" = 'ali' ]; then
-                yum -y install python-pip > /dev/null 2>&1
-                test -d /etc/cloud && mv /etc/cloud /etc/cloud-old; cd /tmp/
-                wget -q http://ecs-image-utils.oss-cn-hangzhou.aliyuncs.com/cloudinit/ali-cloud-init-latest.tgz
-                tar -zxvf ali-cloud-init-latest.tgz > /dev/null 2>&1
-                OS_VER=$(cat /etc/redhat-release | awk '{printf $4}'| awk -F'.' '{printf $1}')
-                bash /tmp/cloud-init-*/tools/deploy.sh centos ${OS_VER}
-                rm -rf ali-cloud-init-latest.tgz cloud-init-*
-            elif [ "${PROVIDER}" = 'vultr' ]; then
-                cd /tmp
-                wget https://ewr1.vultrobjects.com/cloud_init_beta/cloud-init_rhel_latest.rpm > /dev/null 2>&1
-                #wget https://ewr1.vultrobjects.com/cloud_init_beta/rhel_latest_MD5 > /dev/null 2>&1
-                yum install -y cloud-init_rhel_latest.rpm > /dev/null 2>&1
-            else
-                yum install cloud-init -y >/dev/null 2>&1
-            fi    
+            yum install cloud-init -y >/dev/null 2>&1
         fi
         systemctl start cloud-init >/dev/null 2>&1
         systemctl enable cloud-init >/dev/null 2>&1
