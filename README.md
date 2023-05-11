@@ -26,6 +26,7 @@ Look [here](https://docs.litespeedtech.com/cloud/images/) if you are interested 
 | [**Vultr**](https://www.vultr.com/marketplace/)  | [Launch](https://www.vultr.com/marketplace/apps/openlitespeed-drupal)  | [Launch](https://www.vultr.com/marketplace/apps/openlitespeed-joomla) |
 | [**GCP**](https://console.cloud.google.com/marketplace/browse?q=litespeed)| [Launch](https://console.cloud.google.com/marketplace/product/gc-image-pub/openlitespeed-drupal)  | [Launch](https://console.cloud.google.com/marketplace/product/click-to-deploy-images/joomla) |
 | [**AWS**](https://aws.amazon.com/marketplace/search/results?x=0&y=0&searchTerms=litespeed)| [Launch](https://aws.amazon.com/marketplace/pp/prodview-yuklhlwm4a2so)  | [Launch](https://aws.amazon.com/marketplace/pp/prodview-cwhfbezlq2j4g) |
+|[**Linode**](https://cloud.linode.com/stackscripts/)|[Launch](https://cloud.linode.com/stackscripts/1147654)|[Launch](https://cloud.linode.com/stackscripts/1147653)|
 
 
 ## Custom Build Your One-Click On Any Cloud
