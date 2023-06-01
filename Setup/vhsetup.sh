@@ -933,7 +933,7 @@ rm_dm_lsws_svr_conf(){
 }
 
 rm_le_cert(){
-    echoG 'Remote Lets Encrypt Certificate'
+    echoG 'Remove Lets Encrypt Certificate'
     certbot delete --cert-name ${MY_DOMAIN} >/dev/null 2>&1
     certbot delete --cert-name ${MY_DOMAIN2} >/dev/null 2>&1
 }
