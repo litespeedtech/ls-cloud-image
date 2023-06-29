@@ -18,7 +18,7 @@ PHP_SV=$(cut -d "." -f2 <<< ${PHPVER})
 PHPINICONF="${LSWSFD}/lsphp${PHPVER}/etc/php/${PHPVERD}/litespeed/php.ini"
 MARIADBSERVICE='/lib/systemd/system/mariadb.service'
 MARIADBCNF='/etc/mysql/mariadb.conf.d/60-server.cnf'
-DRUSHVER=11
+DRUSHVER=12
 FIREWALLLIST="22 80 443"
 USER='www-data'
 GROUP='www-data'
@@ -55,7 +55,7 @@ get_sql_ver(){
 check_sql_ver(){    
     if (( ${SQL_MAINV} >=11 && ${SQL_MAINV}<=99 )); then
         echoG '[OK] Mariadb version -ge 11'
-    elif (( ${SQL_MAINV} >=10 )) && (( ${SQL_SECV} >=3 && ${SQL_SECV}<=9 )); then
+    elif (( ${SQL_MAINV} >=10 )) && (( ${SQL_SECV} >=3 )); then
         echoG '[OK] Mariadb version -ge 10.3'
     else
         echoR "Mariadb version ${SQLDBVER} is lower than 10.3, please check!"    
@@ -282,8 +282,7 @@ install_drush(){
     fi
     if [ ! -e /usr/bin/drush ]; then 
         ln -s /usr/local/bin/drush /usr/bin/drush
-    fi     
-    #drush --version
+    fi
 }    
 
 install_phpmyadmin(){
@@ -482,12 +481,6 @@ config_mysql(){
                 -e "update mysql.user set authentication_string=password('${root_mysql_pass}') where user='root';" 
         fi        
     fi
-    #if [ -e ${MARIADBSERVICE} ]; then
-    #    grep -i LogLevelMax ${MARIADBSERVICE} >/dev/null 2>&1
-    #    if [ ${?} = 1 ]; then
-    #        echo 'LogLevelMax=1' >> ${MARIADBSERVICE}
-    #    fi
-    #fi
     if [ ! -e ${MARIADBCNF} ]; then 
     touch ${MARIADBCNF}
     cat > ${MARIADBCNF} <<END 

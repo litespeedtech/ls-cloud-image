@@ -2,7 +2,6 @@
 # /********************************************************************
 # LiteSpeed Cloud Script
 # @Author:   LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
-# @Copyright: (c) 2018-2022
 # *********************************************************************/
 PANEL=''
 PANELPATH=''
@@ -588,12 +587,12 @@ sudo mv /var/www/html.old/ /var/www/html/
 export COMPOSER_ALLOW_SUPERUSER=1
 cd /var/www/html
 echo '############# Auto-Installation (one time only) ###############'
-sudo drush -y site-install standard --db-url=mysql://drupal:${app_mysql_pass}@127.0.0.1/drupal --account-name=admin --account-pass=${ADMIN_PASS}
-sudo drush -y config-set system.performance css.preprocess 0 -q
-sudo drush -y config-set system.performance js.preprocess 0 -q
-sudo drush cache-rebuild -q
+sudo vendor/bin/drush -y site-install standard --db-url=mysql://drupal:${app_mysql_pass}@127.0.0.1/drupal --account-name=admin --account-pass=${ADMIN_PASS}
+sudo vendor/bin/drush -y config-set system.performance css.preprocess 0 -q
+sudo vendor/bin/drush -y config-set system.performance js.preprocess 0 -q
+sudo vendor/bin/drush cache-rebuild -q
 sudo sed -i 's|docRoot.*html/|docRoot                   '/var/www/html/web/'|g' /usr/local/lsws/conf/vhosts/drupal/vhconf.conf >/dev/null
-sudo drush pm:enable lite_speed_cache
+sudo vendor/bin/drush pm:enable lite_speed_cache
 sudo chmod 777 /var/www/html/web/sites/default/files
 sudo systemctl stop lsws >/dev/null 2>&1
 sudo /usr/local/lsws/bin/lswsctrl stop >/dev/null 2>&1
