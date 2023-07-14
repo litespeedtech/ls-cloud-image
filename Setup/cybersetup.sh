@@ -2,8 +2,8 @@
 # /********************************************************************
 # LiteSpeed CyberPanel setup Script
 # @Author:   LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
-# @Copyright: (c) 2019-2021
-# @Version: 1.0.2
+# @Copyright: (c) 2019-2023
+# @Version: 1.0.3
 # *********************************************************************/
 
 NOWPATH=$(pwd)
@@ -37,6 +37,24 @@ providerck()
         PROVIDER='oracle'        
     else
         PROVIDER='undefined'  
+    fi
+}
+
+check_root()
+{
+    echoG "Checking root privileges..."
+    if echo "$Sudo_Test" | grep SUDO >/dev/null; then
+        echoR "You are using SUDO , please run as root user..."
+        echo -e "\nIf you don't have direct access to root user, please run \e[31msudo su -\e[39m command (do NOT miss the \e[31m-\e[39m at end or it will fail) and then run installation command again."
+        exit 1
+    fi
+
+    if [[ $(id -u) != 0 ]] >/dev/null; then
+        echoR "You must run on root user to install CyberPanel or run following command: (do NOT miss the quotes)"
+        echo -e "\e[31msudo su -c \"sh <(curl https://cyberpanel.sh || wget -O - https://cyberpanel.sh)\"\e[39m"
+        exit 1
+    else
+        echoG "Runing script with root user"
     fi
 }
 
@@ -118,6 +136,7 @@ rmdummy(){
 
 main(){
     START_TIME="$(date -u +%s)"
+    check_root
     check_os
     providerck
     upgrade
