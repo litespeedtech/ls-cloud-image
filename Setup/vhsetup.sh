@@ -3,7 +3,7 @@
 # LiteSpeed domain setup Script
 # @Author:   LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
 # @Copyright: (c) 2019-2023
-# @Version: 2.3
+# @Version: 2.4
 # *********************************************************************/
 MY_DOMAIN=''
 MY_DOMAIN2=''
@@ -24,9 +24,13 @@ PHPVER=lsphp74
 WEBSERVER='OLS'
 USER='www-data'
 GROUP='www-data'
+DATABASENAME=''
+USERNAME=''
+USERPASSWORD=''
 DOMAIN_PASS='ON'
 DOMAIN_SKIP='OFF'
 EMAIL_SKIP='OFF'
+DB_ONLY='OFF'
 SILENT='OFF'
 TMP_YN='OFF'
 ISSUECERT='OFF'
@@ -70,7 +74,15 @@ show_help() {
         echo "${EPACE}${EPACE}Above example will create a virtual host with www.example.com and example.com domain"
         echo "${EPACE}${EPACE}Issue and install Let's encrypt certificate and Wordpress with LiteSpeed Cache plugin."
         echow "-C, --classicpress"
-        echo "${EPACE}${EPACE}This will install a ClassicPress with LiteSpeed Cache plugin."   
+        echo "${EPACE}${EPACE}This will install a ClassicPress with LiteSpeed Cache plugin." 
+        echow "--create-db-only" 
+        echo "${EPACE}${EPACE}To install OpenLiteSpeed and MySQL"          
+        echow "--dbname [DATABASENAME]" 
+        echo "${EPACE}${EPACE}To set the database name to be used by WordPress."
+        echow "--dbuser [DBUSERNAME]" 
+        echo "${EPACE}${EPACE}To set the WordPress username in the database."
+        echow "--dbpassword [PASSWORD]" 
+        echo "${EPACE}${EPACE}To set the WordPress table password in MySQL instead of using a random one."        
         echow "--path, --document-path [CUSTOM_PATH]"
         echo "${EPACE}${EPACE}This is to specify a location for the document root."  
         echo "${EPACE}${EPACE}Example: ./vhsetup.sh --path /var/www/html"        
@@ -402,10 +414,16 @@ install_unzip(){
 gen_password(){
     if [ -e ${HM_PATH}/.db_password ]; then
         ROOT_PASS=$(cat ${HM_PATH}/.db_password | head -n 1 | awk -F '"' '{print $2}')
+    fi
+    if [ "${DATABASENAME}" = '' ]; then 
+        DATABASENAME=$(echo "${MY_DOMAIN}" | sed -e 's/\.//g; s/-//g')
+    fi
+    if [ "${USERNAME}" = '' ]; then  
+        USERNAME=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 8; echo '')
+    fi
+    if [ "${USERPASSWORD}" = '' ]; then 
+        USERPASSWORD=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 48; echo '')
     fi    
-    WP_DB=$(echo "${MY_DOMAIN}" | sed -e 's/\.//g; s/-//g')
-    WP_USER=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 8; echo '')
-    WP_PASS=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 48; echo '')
 }
 
 check_which_cms(){
@@ -507,10 +525,10 @@ END
 create_db_user(){
     if [ -e ${HM_PATH}/.db_password ]; then
         gen_password
-        mysql -uroot -p${ROOT_PASS} -e "create database ${WP_DB};"
+        mysql -uroot -p${ROOT_PASS} -e "create database ${DATABASENAME};"
         if [ ${?} = 0 ]; then
-            mysql -uroot -p${ROOT_PASS} -e "CREATE USER '${WP_USER}'@'localhost' IDENTIFIED BY '${WP_PASS}';"
-            mysql -uroot -p${ROOT_PASS} -e "GRANT ALL PRIVILEGES ON * . * TO '${WP_USER}'@'localhost';"
+            mysql -uroot -p${ROOT_PASS} -e "CREATE USER '${USERNAME}'@'localhost' IDENTIFIED BY '${USERPASSWORD}';"
+            mysql -uroot -p${ROOT_PASS} -e "GRANT ALL PRIVILEGES ON * . * TO '${USERNAME}'@'localhost';"
             mysql -uroot -p${ROOT_PASS} -e "FLUSH PRIVILEGES;"
         else
             echoR "something went wrong when create new database, please proceed to manual installtion."
@@ -522,10 +540,10 @@ create_db_user(){
             echoG 'Found SQL password in /usr/local/lsws/password file.'
             ROOT_PASS=$(grep mysql /usr/local/lsws/password | grep root | awk -F'[][]' '{print $2}')
             gen_password
-            mysql -uroot -p${ROOT_PASS} -e "create database ${WP_DB};"
+            mysql -uroot -p${ROOT_PASS} -e "create database ${DATABASENAME};"
             if [ ${?} = 0 ]; then
-                mysql -uroot -p${ROOT_PASS} -e "CREATE USER '${WP_USER}'@'localhost' IDENTIFIED BY '${WP_PASS}';"
-                mysql -uroot -p${ROOT_PASS} -e "GRANT ALL PRIVILEGES ON * . * TO '${WP_USER}'@'localhost';"
+                mysql -uroot -p${ROOT_PASS} -e "CREATE USER '${USERNAME}'@'localhost' IDENTIFIED BY '${USERPASSWORD}';"
+                mysql -uroot -p${ROOT_PASS} -e "GRANT ALL PRIVILEGES ON * . * TO '${USERNAME}'@'localhost';"
                 mysql -uroot -p${ROOT_PASS} -e "FLUSH PRIVILEGES;"
             else
                 echoR "something went wrong when create new database, please proceed to manual installtion."
@@ -550,13 +568,30 @@ install_wp() {
         rm -f ${DOCHM}/index.php
         export WP_CLI_CACHE_DIR=${WWW_PATH}/.wp-cli/
         wp core download --path=${DOCHM} --allow-root --quiet
-        wp core config --dbname=${WP_DB} --dbuser=${WP_USER} --dbpass=${WP_PASS} \
+        wp core config --dbname=${DATABASENAME} --dbuser=${USERNAME} --dbpass=${USERPASSWORD} \
             --dbhost=localhost --dbprefix=wp_ --path=${DOCHM} --allow-root --quiet
         get_theme_name
         config_wp
         change_owner
         echoG "WP downloaded, please access your domain to complete the setup."    
     fi
+}
+
+save_db_user_pwd(){
+    echo "DataBase name is [$DATABASENAME], username is [$USERNAME], password is [$USERPASSWORD], save it to ${DOCHM}/password"
+    echo "DataBase name is [$DATABASENAME], username is [$USERNAME], password is [$USERPASSWORD]." >> ${DOCHM}/password
+    chmod 600 ${DOCHM}/password
+}
+
+check_create_db(){
+    if [ ${DB_ONLY} = 'ON' ]; then
+        echoG 'Create DB only.'
+        check_process 'mysqld\|mariadb'
+        if [ ${?} = 0 ]; then
+            create_db_user
+            save_db_user_pwd
+        fi    
+    fi    
 }
 
 set_wp_htaccess(){
@@ -584,17 +619,19 @@ config_wp() {
 }
 
 check_install_wp() { 
-    if [ ${WORDPRESS} = 'ON' ]; then
-        check_process 'mysqld\|mariadb'
-        if [ ${?} = 0 ]; then
-            if [ ! -f ${DOCHM}/wp-config.php ]; then
-                install_wp
+    if [ "${DB_ONLY}" = 'OFF' ]; then
+        if [ ${WORDPRESS} = 'ON' ]; then
+            check_process 'mysqld\|mariadb'
+            if [ ${?} = 0 ]; then
+                if [ ! -f ${DOCHM}/wp-config.php ]; then
+                    install_wp
+                else
+                    echoR 'WordPress existed, skip!'    
+                fi    
             else
-                echoR 'WordPress existed, skip!'    
-            fi    
-        else
-            echoR 'No MySQL environment, skip!'
-        fi                
+                echoR 'No MySQL environment, skip!'
+            fi                
+        fi
     fi
 }
 
@@ -607,7 +644,7 @@ install_cp() {
         wget -q --no-check-certificate https://www.classicpress.net/latest.tar.gz -O classicpress.tar.gz
         tar -xzvf classicpress.tar.gz --strip-components=1 -C ${DOCHM}  >/dev/null 2>&1
         rm -rf classicpress.tar.gz
-        wp core config --dbname=${WP_DB} --dbuser=${WP_USER} --dbpass=${WP_PASS} \
+        wp core config --dbname=${DATABASENAME} --dbuser=${USERNAME} --dbpass=${USERPASSWORD} \
             --dbhost=localhost --dbprefix=cp_ --path=${DOCHM} --allow-root --quiet
         get_theme_name
         config_cp
@@ -641,17 +678,19 @@ config_cp() {
 }
 
 check_install_cp() {
-    if [ "${CLASSICPRESS}" = 'ON' ]; then
-        check_process 'mysqld\|mariadb'
-        if [ ${?} = 0 ]; then
-            if [ ! -f ${DOCHM}/wp-config.php ]; then
-                install_cp
+    if [ "${DB_ONLY}" = 'OFF' ]; then
+        if [ "${CLASSICPRESS}" = 'ON' ]; then
+            check_process 'mysqld\|mariadb'
+            if [ ${?} = 0 ]; then
+                if [ ! -f ${DOCHM}/wp-config.php ]; then
+                    install_cp
+                else
+                    echoR "ClassicPress already exists at ${DOCHM}. Skip!"   
+                fi    
             else
-                echoR "ClassicPress already exists at ${DOCHM}. Skip!"   
-            fi    
-        else
-            echoR 'No MySQL environment, skip!'
-        fi                
+                echoR 'No MySQL environment, skip!'
+            fi                
+        fi
     fi
 }
 
@@ -1144,6 +1183,28 @@ issue_cert(){
     fi
 }
 
+check_value_follow(){
+    FOLLOWPARAM=$1
+    local PARAM=$1
+    local KEYWORD=$2
+
+    if [ "$1" = "-n" ] || [ "$1" = "-e" ] || [ "$1" = "-E" ] ; then
+        FOLLOWPARAM=
+    else
+        local PARAMCHAR=$(echo $1 | awk '{print substr($0,1,1)}')
+        if [ "$PARAMCHAR" = "-" ] ; then
+            FOLLOWPARAM=
+        fi
+    fi
+
+    if [ -z "$FOLLOWPARAM" ] ; then
+        if [ ! -z "$KEYWORD" ] ; then
+            echoR "Error: '$PARAM' is not a valid '$KEYWORD', please check and try again."
+            usage
+        fi
+    fi
+}
+
 end_msg(){
     echoG 'Setup finished!'
 }    
@@ -1163,6 +1224,7 @@ main() {
 	check_which_cms
     check_install_wp
 	check_install_cp
+    check_create_db
     force_https
     end_msg
 }
@@ -1185,7 +1247,7 @@ while [ ! -z "${1}" ]; do
                 MY_DOMAIN="${1}"
                 SILENT='ON'
             fi
-        ;;
+                ;;
         -le | -LE | --letsencrypt) shift
             if [ "${1}" = '' ] || [[ ! ${1} =~ ${CKREG} ]]; then
                 echoR "\nPlease enter a valid E-mail, exit!\n"   
@@ -1194,22 +1256,40 @@ while [ ! -z "${1}" ]; do
                 ISSUECERT='ON'
                 EMAIL="${1}"
             fi
-        ;;
+                ;;
         -[fF] | --force-https)
             FORCE_HTTPS='ON'
-        ;;
+                ;;
         -BK | --backup)
             BACKUP='ON'
-        ;;    
+                ;;    
         -[hH] | --help)
             show_help 1
-        ;;
+                ;;
         -[wW] | --wordpress)
             WORDPRESS='ON'
-        ;;
+                ;;
         -[cC] | --classicpress)
             CLASSICPRESS='ON'
-        ;;
+                ;;
+        --create-db-only)
+            DB_ONLY='ON'
+                ;;
+        --dbname )         
+                check_value_follow "$2" "database name"
+                shift
+                DATABASENAME=$FOLLOWPARAM
+                ;;
+        --dbuser )         
+                check_value_follow "$2" "database username"
+                shift
+                USERNAME=$FOLLOWPARAM
+                ;;
+        --dbpassword )     
+                check_value_follow "$2" ""
+                if [ ! -z "$FOLLOWPARAM" ] ; then shift; fi
+                USERPASSWORD=$FOLLOWPARAM
+                ;;                    
         --path | --document-path) shift
             if [ "${1}" = '' ]; then
                 show_help 1
@@ -1217,7 +1297,7 @@ while [ ! -z "${1}" ]; do
                 CUSTOM_PATH="${1}"
                 SILENT='ON'
             fi
-        ;;
+                ;;
         --delete) shift
             if [ "${1}" = '' ]; then
                 show_help 1
@@ -1226,11 +1306,11 @@ while [ ! -z "${1}" ]; do
                 main_delete "${MY_DOMAIN}"
                 exit 0
             fi
-        ;;             
+                ;;             
         *)
             echoR "unknown argument..."
             show_help 1
-        ;;
+                ;;
     esac
     shift
 done
