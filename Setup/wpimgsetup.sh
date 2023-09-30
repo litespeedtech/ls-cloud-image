@@ -100,6 +100,9 @@ check_os()
 
 providerck()
 {
+    if  [ ${OSNAME} = 'centos' ] && [ ! -e /usr/sbin/dmidecode ]; then
+        yum install -y dmidecode > /dev/null 2>&1
+    fi
     if [ -e /sys/devices/virtual/dmi/id/product_uuid ] && [[ "$(sudo cat /sys/devices/virtual/dmi/id/product_uuid | cut -c 1-3)" =~ (EC2|ec2) ]]; then 
         PROVIDER='aws'
     elif [ "$(dmidecode -s bios-vendor)" = 'Google' ];then
