@@ -52,7 +52,7 @@ get_sql_ver(){
 check_sql_ver(){    
     if (( ${SQL_MAINV} >=11 && ${SQL_MAINV}<=99 )); then
         echoG '[OK] Mariadb version -ge 11'
-    elif (( ${SQL_MAINV} >=10 )) && (( ${SQL_SECV} >=3 && ${SQL_SECV}<=9 )); then
+    elif (( ${SQL_MAINV} >=10 )) && (( ${SQL_SECV} >=3 )); then
         echoG '[OK] Mariadb version -ge 10.3'
     else
         echoR "Mariadb version ${SQLDBVER} is lower than 10.3, please check!"    
