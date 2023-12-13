@@ -308,7 +308,7 @@ lst_match_line(){
     LAST_LINE_NUM=$((${FIRST_LINE_NUM}+${FIRST_NUM_AFTER}-1))
 }
 
-install_ed() {
+cked() {
     if [ -f /bin/ed ]; then
         echoG "ed exist"
     else
