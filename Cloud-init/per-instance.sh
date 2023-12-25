@@ -593,18 +593,26 @@ sudo vendor/bin/drush -y config-set system.performance js.preprocess 0 -q
 sudo vendor/bin/drush cache-rebuild -q
 sudo sed -i 's|docRoot.*html/|docRoot                   '/var/www/html/web/'|g' /usr/local/lsws/conf/vhosts/drupal/vhconf.conf >/dev/null
 sudo vendor/bin/drush pm:enable lite_speed_cache
-sudo chmod 777 /var/www/html/web/sites/default/files
+#sudo chmod 777 /var/www/html/web/sites/default/files
 sudo systemctl stop lsws >/dev/null 2>&1
 sudo /usr/local/lsws/bin/lswsctrl stop >/dev/null 2>&1
 sleep 1
 if [[ \$(sudo ps -ef | grep -i 'openlitespeed' | grep -v 'grep') != '' ]]; then
   sudo kill -9 \$(sudo ps -ef | grep -v 'grep' | grep -i 'openlitespeed' | grep -i 'main' | awk '{print \$2}')
 fi
+sudo chmod 755 /etc/profile.d/afterssh.sh
+if [ -f /etc/redhat-release ]; then
+    USER='nobody'
+    GROUP='nobody'
+else    
+    USER='www-data'
+    GROUP='www-data'     
+fi 
+chown -R \${USER}:\${GROUP} /var/www/html/web/    
 sudo systemctl start lsws
 echo '#############################################################'
 sudo rm -f '/etc/profile.d/afterssh.sh'
 EOM
-    sudo chmod 755 /etc/profile.d/afterssh.sh
 }
 
 update_conntrack_max(){
