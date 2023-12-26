@@ -164,7 +164,7 @@ rm_dummy(){
 }
 
 clean_ht_cron(){
-    echo '0/3 * * * * root [ -e /var/www/html/web/sites/default/files/.htaccess ] && rm -f /var/www/html/web/sites/default/files/.htaccess && systemctl restart lsws' >> ${BOTCRON}
+    echo '*/3 * * * * root [ -e /var/www/html/web/sites/default/files/.htaccess ] && rm -f /var/www/html/web/sites/default/files/.htaccess && systemctl restart lsws' >> ${BOTCRON}
 }
 
 install_ols_wp(){
@@ -339,22 +339,6 @@ context /phpmyadmin/ {
   phpIniOverride  {
 
   }
-}
-
-context exp:^/sites/default/files/styles/(.*)/public/(.*) {
-  location                /var/www/html/web/sites/default/files/\$2
-  allowBrowse             1
-
-  addDefaultCharset       off
-
-}
-
-context /web/ {
-  location                /var/www/html/web/
-  allowBrowse             1
-
-  addDefaultCharset       off
-
 }
 
 rewrite  {
