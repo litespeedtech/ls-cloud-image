@@ -608,7 +608,8 @@ else
     USER='www-data'
     GROUP='www-data'     
 fi 
-chown -R \${USER}:\${GROUP} /var/www/html/web/    
+chown -R \${USER}:\${GROUP} /var/www/html/web/ 
+mv /var/www/html/web/sites/default/files/.htaccess /var/www/html/web/sites/default/files/.htaccess.bk
 sudo systemctl start lsws
 echo '#############################################################'
 sudo rm -f '/etc/profile.d/afterssh.sh'
