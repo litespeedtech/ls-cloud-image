@@ -26,6 +26,7 @@ root_mysql_pass=$(openssl rand -hex 24)
 ALLERRORS=0
 EXISTSQLPASS=''
 NOWPATH=$(pwd)
+BOTCRON='/etc/cron.d/certbot'
 
 echoY() {
     echo -e "\033[38;5;148m${1}\033[39m"
@@ -72,6 +73,7 @@ check_os()
         PHPINICONF="${LSWSFD}/lsphp${PHPVER}/etc/php.ini"
         MARIADBCNF='/etc/my.cnf.d/60-server.cnf'
         OSVER=$(cat /etc/redhat-release | awk '{print substr($4,1,1)}')
+        BOTCRON='/etc/crontab'
     elif [ -f /etc/lsb-release ] ; then
         OSNAME=ubuntu
         OSNAMEVER="UBUNTU$(lsb_release -sr | awk -F '.' '{print $1}')"    
@@ -159,6 +161,10 @@ wp_conf_path(){
 rm_dummy(){
     echoG 'Remove dummy file'
     rm -f "/tmp/example.csr" "/tmp/privkey.pem"
+}
+
+clean_ht_cron(){
+    echo '0/3 * * * * root [ -e /var/www/html/web/sites/default/files/.htaccess ] && rm -f /var/www/html/web/sites/default/files/.htaccess && systemctl restart lsws' >> ${BOTCRON}
 }
 
 install_ols_wp(){
@@ -660,6 +666,7 @@ app_main_config(){
     app_drupal_dl
     cache_plugin_dl
     db_password_file
+    clean_ht_cron
     update_final_permission
     restart_lsws
 }

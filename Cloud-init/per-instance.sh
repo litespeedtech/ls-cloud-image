@@ -593,7 +593,6 @@ sudo vendor/bin/drush -y config-set system.performance js.preprocess 0 -q
 sudo vendor/bin/drush cache-rebuild -q
 sudo sed -i 's|docRoot.*html/|docRoot                   '/var/www/html/web/'|g' /usr/local/lsws/conf/vhosts/drupal/vhconf.conf >/dev/null
 sudo vendor/bin/drush pm:enable lite_speed_cache
-#sudo chmod 777 /var/www/html/web/sites/default/files
 sudo systemctl stop lsws >/dev/null 2>&1
 sudo /usr/local/lsws/bin/lswsctrl stop >/dev/null 2>&1
 sleep 1
@@ -609,7 +608,6 @@ else
     GROUP='www-data'     
 fi 
 chown -R \${USER}:\${GROUP} /var/www/html/web/ 
-mv /var/www/html/web/sites/default/files/.htaccess /var/www/html/web/sites/default/files/.htaccess.bk
 sudo systemctl start lsws
 echo '#############################################################'
 sudo rm -f '/etc/profile.d/afterssh.sh'
