@@ -163,10 +163,6 @@ rm_dummy(){
     rm -f "/tmp/example.csr" "/tmp/privkey.pem"
 }
 
-clean_ht_cron(){
-    echo '*/3 * * * * root [ -e /var/www/html/web/sites/default/files/.htaccess ] && rm -f /var/www/html/web/sites/default/files/.htaccess && systemctl restart lsws' >> ${BOTCRON}
-}
-
 install_ols_wp(){
     cd /tmp/; wget -q https://raw.githubusercontent.com/litespeedtech/ols1clk/master/ols1clk.sh
     chmod +x ols1clk.sh
@@ -650,7 +646,6 @@ app_main_config(){
     app_drupal_dl
     cache_plugin_dl
     db_password_file
-    clean_ht_cron
     update_final_permission
     restart_lsws
 }
