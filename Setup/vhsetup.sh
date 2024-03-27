@@ -2,7 +2,7 @@
 # /********************************************************************
 # LiteSpeed domain setup Script
 # @Author:   LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
-# @Copyright: (c) 2019-2023
+# @Copyright: (c) 2019-2024
 # @Version: 2.4
 # *********************************************************************/
 MY_DOMAIN=''

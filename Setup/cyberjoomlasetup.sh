@@ -2,7 +2,6 @@
 # /********************************************************************
 # LiteSpeed CyberPanel Joomla setup Script
 # @Author:   LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
-# @Copyright: (c) 2020-2021
 # @Version: 1.0.1
 # *********************************************************************/
 

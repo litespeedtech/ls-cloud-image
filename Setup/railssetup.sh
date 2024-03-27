@@ -2,7 +2,6 @@
 # /********************************************************************
 # LiteSpeed Rails setup Script
 # @Author:   LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
-# @Copyright: (c) 2020-2022
 # @Version: 1.3
 # *********************************************************************/
 LSWSFD='/usr/local/lsws'

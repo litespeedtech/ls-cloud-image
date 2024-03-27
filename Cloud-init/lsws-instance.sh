@@ -2,7 +2,7 @@
 # /********************************************************************
 # LiteSpeed Cloud Script
 # @Author:   LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
-# @Copyright: (c) 2020-2021
+# @Copyright: (c) 2020-2024
 # *********************************************************************/
 LSDIR='/usr/local/lsws'
 BANNERNAME='litespeed'

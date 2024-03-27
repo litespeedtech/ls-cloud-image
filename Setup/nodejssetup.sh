@@ -2,7 +2,7 @@
 # /********************************************************************
 # LiteSpeed NodeJS setup Script
 # @Author:   LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
-# @Copyright: (c) 2019-2022
+# @Copyright: (c) 2019-2024
 # @Version: 1.2
 # *********************************************************************/
 LSWSFD='/usr/local/lsws'

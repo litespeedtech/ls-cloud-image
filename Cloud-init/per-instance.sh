@@ -222,7 +222,7 @@ rm_dummy(){
 
 ct_version()
 {
-    curl "https://api.quic.cloud/data/1click_ver?t=image&src=${WPCT}" > /dev/null 2>&1
+    curl "https://wpapi.quic.cloud/wpdata/1click_ver?t=image&src=${WPCT}" > /dev/null 2>&1
     echo "cloud-${PROVIDER}" > ${LSDIR}/PLAT
 }
 
