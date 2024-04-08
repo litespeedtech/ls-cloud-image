@@ -17,7 +17,7 @@ VHDOCROOT='/usr/local/lsws/Example/html'
 DEMOPROJECT="${VHDOCROOT}/${PROJNAME}"
 DEMOSETTINGS="${DEMOPROJECT}/${PROJNAME}/settings.py"
 ALLERRORS=0
-DJ_VER='>=3.2'
+DJ_VER='>=4.2'
 PY_V=''
 V_ENV='ON'
 NOWPATH=$(pwd)
