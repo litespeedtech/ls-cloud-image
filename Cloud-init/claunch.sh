@@ -254,10 +254,10 @@ main_claunch(){
     check_root
     remove_user
     set_ssh_alive
-    valid_do
     install_cloudinit
     setup_cloud
     cleanup
+    valid_do
 }
 main_claunch
 exit 0
