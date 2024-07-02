@@ -1071,7 +1071,7 @@ certbothook() {
                 | sudo tee -a /etc/crontab > /dev/null
             #elif [ "${OSVER}" = '8' ]; then
             else
-                echo "0 0,12 * * * root python3 -c 'import random; import time; time.sleep(random.random() * 3600)' && /usr/local/bin/certbot renew -q --deploy-hook 'systemctl restart lsws'" \
+                echo "0 0,12 * * * root python3 -c 'import random; import time; time.sleep(random.random() * 3600)' && /usr/bin/certbot renew -q --deploy-hook 'systemctl restart lsws'" \
                 | sudo tee -a /etc/crontab > /dev/null
             #else
             #    echoY 'Please check certbot crontab'
