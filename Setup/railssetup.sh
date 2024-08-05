@@ -451,7 +451,7 @@ app_setup(){
     sleep 3
     grep welcome config/routes.rb >/dev/null 2>&1
     if [ ${?} = 0 ]; then
-        NEWKEY='  get "/", to: "rails/welcome#index"'
+        NEWKEY='  get "/", to: "welcome#index"'
         linechange '/index' config/routes.rb "${NEWKEY}"
     else 
         echoR 'Welcome not exist! Skip setting'
