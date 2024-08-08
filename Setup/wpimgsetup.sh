@@ -246,7 +246,7 @@ centos_install_certbot(){
 } 
 
 ubuntu_install_basic(){
-    apt-get -y install wget unzip > /dev/null 2>&1
+    apt-get -y install wget unzip ufw > /dev/null 2>&1
 }
 
 ubuntu_install_ols(){
