@@ -445,7 +445,7 @@ unixsocket /var/run/redis/redis-server.sock
 unixsocketperm 775
 END
     BIND_LINE=$(grep -n -m 1 '^bind 127' ${REDISCONF} | awk -F ':' '{print $1}')
-    sed -i "${BIND_LINE}s/::1//" ${REDISCONF}
+    sed -i -e "${BIND_LINE}s/-::1// ; ${BIND_LINE}s/::1//" ${REDISCONF}
     systemctl daemon-reload > /dev/null 2>&1
     service redis-server start > /dev/null 2>&1
     echoG 'Finish Object Cache'
