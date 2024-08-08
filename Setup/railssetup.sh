@@ -128,7 +128,7 @@ centos_install_basic(){
 }
 
 ubuntu_install_basic(){
-    apt-get -y install wget > /dev/null 2>&1
+    apt-get -y install wget ufw> /dev/null 2>&1
     apt-get -y install autoconf bison build-essential libssl-dev libyaml-dev libreadline6-dev \
       zlib1g-dev libncurses5-dev libffi-dev libgdbm-dev libsqlite3-dev > /dev/null 2>&1
     if [ "${OSNAMEVER}" = 'UBUNTU18' ]; then 

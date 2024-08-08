@@ -99,7 +99,7 @@ centos_install_basic(){
 }
 
 ubuntu_install_basic(){
-    apt-get -y install wget > /dev/null 2>&1
+    apt-get -y install wget ufw > /dev/null 2>&1
 }
 
 install_ols(){
