@@ -11,11 +11,14 @@ LSWSVCONF="${LSWSFD}/conf/vhosts"
 LSWSCONF="${LSWSFD}/conf/httpd_config.conf"
 WPVHCONF="${LSWSFD}/conf/vhosts/wordpress/vhconf.conf"
 EXAMPLECONF="${LSWSFD}/conf/vhosts/wordpress/vhconf.conf"
-PHPINICONF="${LSWSFD}/lsphp80/etc/php/8.0/litespeed/php.ini"
+PHPVERD=8.3
+PHPVER=$(echo ${PHPVERD//./})
+PHP_MV=$(cut -d "." -f1 <<< ${PHPVER})
+PHP_SV=$(cut -d "." -f2 <<< ${PHPVER})
+PHPINICONF="${LSWSFD}/lsphp${PHPVER}/etc/php/${PHPVERD}/litespeed/php.ini"
 MARIADBSERVICE='/lib/systemd/system/mariadb.service'
 MARIADBCNF='/etc/mysql/mariadb.conf.d/60-server.cnf'
-PACKAGEJOOMA='https://downloads.joomla.org/cms/joomla4/4-2-2/Joomla_4-2-2-Stable-Full_Package.tar.gz'
-PHPVER=80
+PACKAGEJOOMA='https://downloads.joomla.org/cms/joomla5/5-1-2/Joomla_5-1-2-Stable-Full_Package.zip'
 FIREWALLLIST="22 80 443"
 USER='www-data'
 GROUP='www-data'
@@ -473,7 +476,7 @@ app_joomla_dl(){
         if [ ! -d "${DOCHM}/administrator" ]; then
                 cd ${DOCHM}
                 wget -q ${PACKAGEJOOMA}
-                tar -xf Joomla_*.tar.gz
+                unzip -q Joomla_*.zip
         else
             echo 'Joomla already exist, abort!'
                 exit 1
