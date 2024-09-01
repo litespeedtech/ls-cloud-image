@@ -2,7 +2,7 @@
 # /********************************************************************
 # LiteSpeed Rails setup Script
 # @Author:   LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
-# @Version: 1.3
+# @Version: 1.3.1
 # *********************************************************************/
 LSWSFD='/usr/local/lsws'
 PHPVER=74
@@ -16,7 +16,7 @@ VHDOCROOT='/usr/local/lsws/Example/html'
 DEMOPROJECT="${VHDOCROOT}/${PROJNAME}"
 CLONE_PATH='/opt'
 ALLERRORS=0
-RUBYV='3.3.4'
+RUBYV='3.0.7'
 NODEJSV='16'
 NOWPATH=$(pwd)
 RUBY_PATH='/usr/bin/ruby'
@@ -201,6 +201,7 @@ install_ruby(){
 install_gem(){
     echoG 'Install gem'
     symlink "${CLONE_PATH}/.rbenv/versions/${RUBYV}/bin/gem" '/usr/bin/gem'
+    gem update --system > /dev/null 2>&1
     GEM_V="$(gem -v)"
     output_msg "${?}" 'gem'
 }
