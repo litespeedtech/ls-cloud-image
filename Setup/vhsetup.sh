@@ -723,7 +723,7 @@ EOF
         cat > ${VH_CONF_FILE} << EOF
 docRoot                   \$VH_ROOT
 vhDomain                  \$VH_DOMAIN
-vhAliases                 www.$VH_DOMAIN
+vhAliases                 
 adminEmails               localhost@example
 enableGzip                1
 
@@ -755,6 +755,7 @@ type                    lsapi
 address                 uds://tmp/lshttpd/${MY_DOMAIN}.sock
 maxConns                35
 env                     PHP_LSAPI_CHILDREN=35
+env                     LSAPI_AVOID_FORK=200M
 initTimeout             60
 retryTimeout            0
 persistConn             1
@@ -767,10 +768,10 @@ extUser                 ${USER}
 extGroup                ${GROUP}
 runOnStartUp            1
 priority                0
-memSoftLimit            2047M
-memHardLimit            2047M
-procSoftLimit           400
-procHardLimit           500
+memSoftLimit            
+memHardLimit            
+procSoftLimit           
+procHardLimit           
 }
 
 rewrite  {
