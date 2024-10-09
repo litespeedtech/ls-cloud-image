@@ -262,10 +262,17 @@ check_process(){
     ps aux | grep ${1} | grep -v grep >/dev/null 2>&1
 }
 check_php_version(){
-    PHP_MA="$(php -r 'echo PHP_MAJOR_VERSION;')"
-    PHP_MI="$(php -r 'echo PHP_MINOR_VERSION;')"
+    if [ -e ${LSDIR}/fcgi-bin/lsphpnew ]; then
+        PHP_MA="$(${LSDIR}/fcgi-bin/lsphpnew -v 2>/dev/null | head -n 1 | awk '{print $2}'| awk -F '.' '{print $1}')"
+        PHP_MI="$(${LSDIR}/fcgi-bin/lsphpnew -v 2>/dev/null | head -n 1 | awk '{print $2}'| awk -F '.' '{print $2}')"
+    else
+        PHP_MA="$(php -r 'echo PHP_MAJOR_VERSION;')"
+        PHP_MI="$(php -r 'echo PHP_MINOR_VERSION;')"
+    fi
     if [ -e ${LSDIR}/lsphp${PHP_MA}${PHP_MI}/bin/php ]; then
         PHPVER="lsphp${PHP_MA}${PHP_MI}"
+    else
+        echoR "${LSDIR}/lsphp${PHP_MA}${PHP_MI}/bin/php does not exist!"   
     fi
 }
 
