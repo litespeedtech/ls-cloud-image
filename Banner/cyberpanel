@@ -47,7 +47,7 @@ DISK=$(df -h | awk '$NF=="/"{printf "%d/%dGB (%s)\n", $3,$2,$5}')
 CPU=$(grep 'cpu ' /proc/stat | awk '{usage=($2+$4)*100/($2+$4+$5)} END {print usage "%"}')
 
 LOCAL_VERSION=$(cat /usr/local/CyberCP/version.txt | sed -z 's/\n/./g')
-LAST_VERSION=$(curl -s https://raw.githubusercontent.com/usmannasir/cyberpanel/stable/version.txt | grep -Eo '[0-9]'|sed -z 's/\n/./g')
+LAST_VERSION=$(curl -s https://cyberpanel.net/version.txt | grep -Eo '[0-9]'|sed -z 's/\n/./g')
 MYIP=$(cat /etc/cyberpanel/machineIP)
 
 if [ "$(dmidecode -s bios-vendor)" = 'Vultr' ];then
