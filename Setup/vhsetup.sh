@@ -3,7 +3,7 @@
 # LiteSpeed domain setup Script
 # @Author:   LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
 # @Copyright: (c) 2019-2024
-# @Version: 2.4
+# @Version: 2.5
 # *********************************************************************/
 MY_DOMAIN=''
 MY_DOMAIN2=''
@@ -179,7 +179,12 @@ function check_os
             OSNAMEVER=UBUNTU22
             OSVER=jammy
             MARIADBCPUARCH="arch=amd64"
-            ;;            
+            ;;         
+        noble)            
+            OSNAMEVER=UBUNTU24
+            OSVER=noble
+            MARIADBCPUARCH="arch=amd64"
+            ;;                 
         esac
     elif [ -f /etc/debian_version ] ; then
         OSNAME=debian
@@ -204,11 +209,16 @@ function check_os
             OSVER=bullseye
             MARIADBCPUARCH="arch=amd64,i386"
             ;;
+        bookworm)
+            OSNAMEVER=DEBIAN12
+            OSVER=bookworm
+            MARIADBCPUARCH="arch=amd64,i386"
+            ;;            
         esac    
     fi
 
     if [ "$OSNAMEVER" = '' ] ; then
-        echoR "Sorry, currently one click installation only supports Centos(6-8), Debian(8-11) and Ubuntu(14,16,18,20,22)."
+        echoR "Sorry, currently one click installation only supports Centos(6-9), Debian(8-12) and Ubuntu(14~24)."
         echoR "You can download the source code and build from it."
         echoR "The url of the source code is https://github.com/litespeedtech/openlitespeed/releases."
         exit 1
