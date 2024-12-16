@@ -778,7 +778,7 @@ main_cyber()
     install_rainloop
     filepermission_update
     renew_blowfish
-    install_firewalld      
+    #install_firewalld      
 }
 
 main_cms()
