@@ -20,7 +20,7 @@ PLUGINLIST="litespeed-cache.zip"
 CKREG="^[a-z0-9!#\$%&'*+/=?^_\`{|}~-]+(\.[a-z0-9!#$%&'*+/=?^_\`{|}~-]+)*\
 @([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+[a-z0-9]([a-z0-9-]*[a-z0-9])?\$"
 THEME='twentytwenty'
-PHPVER=lsphp74
+PHPVER=lsphp83
 WEBSERVER='OLS'
 USER='www-data'
 GROUP='www-data'
