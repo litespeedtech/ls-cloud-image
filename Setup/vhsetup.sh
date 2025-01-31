@@ -2,8 +2,8 @@
 # /********************************************************************
 # LiteSpeed domain setup Script
 # @Author:   LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
-# @Copyright: (c) 2019-2024
-# @Version: 2.5
+# @Copyright: (c) 2019-2025
+# @Version: 2.6
 # *********************************************************************/
 MY_DOMAIN=''
 MY_DOMAIN2=''
@@ -286,6 +286,17 @@ check_php_version(){
     fi
 }
 
+detect_web_user(){
+    TMP_USER=$(grep 'user' "${WEBCF}" | awk -F '>' '{print $2}' | awk -F '<' '{print $1}')
+    if [ "$TMP_USER" != '' ]; then
+        USER="$TMP_USER"
+    fi
+    TMP_GROUP=$(grep 'group' "${WEBCF}" | awk -F '>' '{print $2}' | awk -F '<' '{print $1}')
+    if [ "$TMP_GROUP" != '' ]; then
+        GROUP="$TMP_GROUP"
+    fi
+}
+
 check_webserver(){
     if [ -e ${LSDIR}/bin/openlitespeed ]; then
         if [ -e "${WEBCF}" ]; then
@@ -300,6 +311,7 @@ check_webserver(){
             WEBSERVER='LSWS'
             WEBCF="${LSDIR}/conf/httpd_config.xml"
             VH_CONF_FILE="${VHDIR}/${MY_DOMAIN}/vhconf.xml"
+            detect_web_user
         else 
             echoR 'No web serevr detect, exit!'
             exit 2
