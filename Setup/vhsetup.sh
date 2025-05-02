@@ -337,6 +337,17 @@ lst_match_line(){
     LAST_LINE_NUM=$((${FIRST_LINE_NUM}+${FIRST_NUM_AFTER}-1))
 }
 
+compatible_mariadb_cmd()
+{
+    if [ -e /usr/bin/mariadb ]; then
+        mysqladmin='mariadb-admin'
+        mysql='mariadb'
+    else
+        mysqladmin='mysql-admin'
+        mysql='mysql'    
+    fi    
+}
+
 cked() {
     if [ -f /bin/ed ]; then
         echoG "ed exist"
@@ -554,11 +565,11 @@ END
 create_db_user(){
     if [ -e ${HM_PATH}/.db_password ]; then
         gen_password
-        mysql -uroot -p${ROOT_PASS} -e "create database ${DATABASENAME};"
+        "${mysql}" -uroot -p${ROOT_PASS} -e "create database ${DATABASENAME};"
         if [ ${?} = 0 ]; then
-            mysql -uroot -p${ROOT_PASS} -e "CREATE USER '${USERNAME}'@'localhost' IDENTIFIED BY '${USERPASSWORD}';"
-            mysql -uroot -p${ROOT_PASS} -e "GRANT ALL PRIVILEGES ON * . * TO '${USERNAME}'@'localhost';"
-            mysql -uroot -p${ROOT_PASS} -e "FLUSH PRIVILEGES;"
+            "${mysql}" -uroot -p${ROOT_PASS} -e "CREATE USER '${USERNAME}'@'localhost' IDENTIFIED BY '${USERPASSWORD}';"
+            "${mysql}" -uroot -p${ROOT_PASS} -e "GRANT ALL PRIVILEGES ON * . * TO '${USERNAME}'@'localhost';"
+            "${mysql}" -uroot -p${ROOT_PASS} -e "FLUSH PRIVILEGES;"
         else
             echoR "something went wrong when create new database, please proceed to manual installtion."
             DB_TEST=1
@@ -569,11 +580,11 @@ create_db_user(){
             echoG 'Found SQL password in /usr/local/lsws/password file.'
             ROOT_PASS=$(grep mysql /usr/local/lsws/password | grep root | awk -F'[][]' '{print $2}')
             gen_password
-            mysql -uroot -p${ROOT_PASS} -e "create database ${DATABASENAME};"
+            "${mysql}" -uroot -p${ROOT_PASS} -e "create database ${DATABASENAME};"
             if [ ${?} = 0 ]; then
-                mysql -uroot -p${ROOT_PASS} -e "CREATE USER '${USERNAME}'@'localhost' IDENTIFIED BY '${USERPASSWORD}';"
-                mysql -uroot -p${ROOT_PASS} -e "GRANT ALL PRIVILEGES ON * . * TO '${USERNAME}'@'localhost';"
-                mysql -uroot -p${ROOT_PASS} -e "FLUSH PRIVILEGES;"
+                "${mysql}" -uroot -p${ROOT_PASS} -e "CREATE USER '${USERNAME}'@'localhost' IDENTIFIED BY '${USERPASSWORD}';"
+                "${mysql}" -uroot -p${ROOT_PASS} -e "GRANT ALL PRIVILEGES ON * . * TO '${USERNAME}'@'localhost';"
+                "${mysql}" -uroot -p${ROOT_PASS} -e "FLUSH PRIVILEGES;"
             else
                 echoR "something went wrong when create new database, please proceed to manual installtion."
                 DB_TEST=1
@@ -1246,6 +1257,7 @@ main() {
     check_home_path
     check_os
     check_php_version
+    compatible_mariadb_cmd
     domain_input
     check_webserver
     server_conf_bk    

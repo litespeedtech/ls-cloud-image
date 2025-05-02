@@ -128,6 +128,17 @@ prepare(){
     change_owner /var/www
 }
 
+compatible_mariadb_cmd()
+{
+    if [ -e /usr/bin/mariadb ]; then
+        mysqladmin='mariadb-admin'
+        mysql='mariadb'
+    else
+        mysqladmin='mysql-admin'
+        mysql='mysql'    
+    fi    
+}
+
 system_upgrade() {
     echoG 'Updating system'
     if [ "${OSNAME}" = 'ubuntu' ] || [ "${OSNAME}" = 'debian' ]; then 
@@ -435,18 +446,18 @@ config_mysql(){
     fi    
     if [ "${EXISTSQLPASS}" = '' ]; then
         if (( ${SQL_MAINV} >=10 )) && (( ${SQL_SECV} >=4 )); then
-            mysql -u root -p${root_mysql_pass} \
+            "${mysql}" -u root -p${root_mysql_pass} \
                 -e "ALTER USER root@localhost IDENTIFIED VIA mysql_native_password USING PASSWORD('${root_mysql_pass}');"
         else
-            mysql -u root -p${root_mysql_pass} \
+            "${mysql}" -u root -p${root_mysql_pass} \
                 -e "update mysql.user set authentication_string=password('${root_mysql_pass}') where user='root';"
         fi    
     else
         if (( ${SQL_MAINV} >=10 )) && (( ${SQL_SECV} >=4)); then
-            mysql -u root -p${EXISTSQLPASS} \
+            "${mysql}" -u root -p${EXISTSQLPASS} \
                 -e "ALTER USER root@localhost IDENTIFIED VIA mysql_native_password USING PASSWORD('${root_mysql_pass}');"
         else        
-            mysql -u root -p${EXISTSQLPASS} \     
+            "${mysql}" -u root -p${EXISTSQLPASS} \     
                 -e "update mysql.user set authentication_string=password('${root_mysql_pass}') where user='root';" 
         fi        
     fi
@@ -641,6 +652,7 @@ ubuntu_main_config(){
 }
 
 app_main_config(){
+    compatible_mariadb_cmd
     config_mysql
     rm_wordpress
     app_drupal_dl

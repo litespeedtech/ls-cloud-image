@@ -194,12 +194,24 @@ os_home_path()
     fi   
 }
 
+compatible_mariadb_cmd()
+{
+    if [ -e /usr/bin/mariadb ]; then
+        mysqladmin='mariadb-admin'
+        mysql='mariadb'
+    else
+        mysqladmin='mysql-admin'
+        mysql='mysql'    
+    fi    
+}
+
 main_env_check(){
     check_os
     check_edition
     check_provider
     update_path
     os_home_path
+    compatible_mariadb_cmd
 }
 main_env_check
 
@@ -385,7 +397,7 @@ update_secretkey(){
 
 update_CPsqlpwd(){
     PREPWD=$(cat ${CPSQLPATH})
-    mysql -uroot -p${PREPWD} \
+    "${mysql}" -uroot -p${PREPWD} \
         -e "SET PASSWORD FOR 'root'@'localhost' = PASSWORD('${root_mysql_pass}');"
 
     for LINENUM in $(grep -n "'PASSWORD':" ${CPCFPATH} | cut -d: -f 1);
@@ -395,7 +407,7 @@ update_CPsqlpwd(){
     done
     sed -i "1s/.*/${root_mysql_pass}/" ${CPSQLPATH}
     ### cyberpanel user   
-    mysql -uroot -p${root_mysql_pass} \
+    "${mysql}" -uroot -p${root_mysql_pass} \
         -e "SET PASSWORD FOR 'cyberpanel'@'localhost' = PASSWORD('${root_mysql_pass}');"
 
     ### update cyberpanel to applications conf files
@@ -456,27 +468,27 @@ replace_litenerip(){
 }
 
 update_sql_pwd(){
-    mysql -uroot -p${ori_root_mysql_pass} \
+    "${mysql}" -uroot -p${ori_root_mysql_pass} \
         -e "SET PASSWORD FOR 'root'@'localhost' = PASSWORD('${root_mysql_pass}');"
     if [ "${BANNERNAME}" = 'wordpress' ]; then
-        mysql -uroot -p${root_mysql_pass} \
+        "${mysql}" -uroot -p${root_mysql_pass} \
             -e "SET PASSWORD FOR 'wordpress'@'localhost' = PASSWORD('${app_mysql_pass}');"
-        mysql -uroot -p${root_mysql_pass} \
+        "${mysql}" -uroot -p${root_mysql_pass} \
             -e "GRANT ALL PRIVILEGES ON wordpress.* TO wordpress@localhost"
     elif [ "${BANNERNAME}" = 'classicpress' ]; then
-        mysql -uroot -p${root_mysql_pass} \
+        "${mysql}" -uroot -p${root_mysql_pass} \
             -e "SET PASSWORD FOR 'classicpress'@'localhost' = PASSWORD('${app_mysql_pass}');"
-        mysql -uroot -p${root_mysql_pass} \
+        "${mysql}" -uroot -p${root_mysql_pass} \
             -e "GRANT ALL PRIVILEGES ON classicpress.* TO classicpress@localhost"
     elif [ "${BANNERNAME}" = 'joomla' ]; then
-        mysql -uroot -p${root_mysql_pass} \
+        "${mysql}" -uroot -p${root_mysql_pass} \
             -e "SET PASSWORD FOR 'joomla'@'localhost' = PASSWORD('${app_mysql_pass}');"
-        mysql -uroot -p${root_mysql_pass} \
+        "${mysql}" -uroot -p${root_mysql_pass} \
             -e "GRANT ALL PRIVILEGES ON joomla.* TO joomla@localhost"
     elif [ "${BANNERNAME}" = 'drupal' ]; then
-        mysql -uroot -p${root_mysql_pass} \
+        "${mysql}" -uroot -p${root_mysql_pass} \
             -e "SET PASSWORD FOR 'drupal'@'localhost' = PASSWORD('${app_mysql_pass}');"
-        mysql -uroot -p${root_mysql_pass} \
+        "${mysql}" -uroot -p${root_mysql_pass} \
             -e "GRANT ALL PRIVILEGES ON drupal.* TO drupal@localhost"            
     fi    
 }
