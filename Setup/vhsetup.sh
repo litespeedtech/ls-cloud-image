@@ -313,7 +313,7 @@ check_webserver(){
             VH_CONF_FILE="${VHDIR}/${MY_DOMAIN}/vhconf.xml"
             detect_web_user
         else 
-            echoR 'No web serevr detect, exit!'
+            echoR 'No web server detected, exit!'
             exit 2
         fi
     fi    
@@ -986,7 +986,7 @@ rm_dm_ols_svr_conf(){
     if [ ${?} = 0 ]; then
         fst_match_line "virtualhost ${1}" ${WEBCF}
         lst_match_line ${FIRST_LINE_NUM} ${WEBCF} '}'
-        echoG 'Remove the virtual host from serevr config'
+        echoG 'Remove the virtual host from server config'
         sed -i "${FIRST_LINE_NUM},${LAST_LINE_NUM}d" ${WEBCF}
     else
         echoR "virtualhost ${1} does not found, if this is the default virtual host config, please remove it manually!"
