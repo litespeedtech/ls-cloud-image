@@ -2,7 +2,7 @@
 # /********************************************************************
 # LiteSpeed NodeJS setup Script
 # @Author:   LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
-# @Copyright: (c) 2019-2024
+# @Copyright: (c) 2019-2025
 # @Version: 1.2
 # *********************************************************************/
 LSWSFD='/usr/local/lsws'
@@ -15,7 +15,7 @@ PROJNAME='node'
 VHDOCROOT='/usr/local/lsws/Example/html'
 DEMOPROJECT="${VHDOCROOT}/${PROJNAME}"
 ALLERRORS=0
-NODEJSV='18'
+NODEJSV='22'
 NOWPATH=$(pwd)
 
 echoY(){

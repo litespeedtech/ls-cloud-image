@@ -5,7 +5,7 @@
 # @Version: 1.3.1
 # *********************************************************************/
 LSWSFD='/usr/local/lsws'
-PHPVER=74
+PHPVER=84
 USER='nobody'
 GROUP='nogroup'
 FIREWALLLIST="22 80 443"
@@ -16,8 +16,8 @@ VHDOCROOT='/usr/local/lsws/Example/html'
 DEMOPROJECT="${VHDOCROOT}/${PROJNAME}"
 CLONE_PATH='/opt'
 ALLERRORS=0
-RUBYV='3.0.7'
-NODEJSV='16'
+RUBYV='3.4.4'
+NODEJSV='22'
 NOWPATH=$(pwd)
 RUBY_PATH='/usr/bin/ruby'
 RBENV_PATH='/usr/bin/rbenv'
