@@ -46,12 +46,6 @@ linechange(){
     fi  
 }
 
-get_sql_ver(){
-    SQLDBVER=$(/usr/bin/mysql -V | awk '{match($0,"([^ ]+)-MariaDB",a)}END{print a[1]}')
-    SQL_MAINV=$(echo ${SQLDBVER} | awk -F '.' '{print $1}')
-    SQL_SECV=$(echo ${SQLDBVER} | awk -F '.' '{print $2}')
-}
-
 check_sql_ver(){    
     if (( ${SQL_MAINV} >=11 && ${SQL_MAINV}<=99 )); then
         echoG '[OK] Mariadb version -ge 11'
@@ -135,6 +129,12 @@ compatible_mariadb_cmd()
         mysqladmin='mysql-admin'
         mysql='mysql'    
     fi    
+}
+
+get_sql_ver(){
+    SQLDBVER=$(${mysql} -V | awk '{match($0,"([^ ]+)-MariaDB",a)}END{print a[1]}')
+    SQL_MAINV=$(echo ${SQLDBVER} | awk -F '.' '{print $1}')
+    SQL_SECV=$(echo ${SQLDBVER} | awk -F '.' '{print $2}')
 }
 
 system_upgrade() {

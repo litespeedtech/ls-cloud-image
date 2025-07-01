@@ -18,7 +18,7 @@ PHP_SV=$(cut -d "." -f2 <<< ${PHPVER})
 PHPINICONF="${LSWSFD}/lsphp${PHPVER}/etc/php/${PHPVERD}/litespeed/php.ini"
 MARIADBSERVICE='/lib/systemd/system/mariadb.service'
 MARIADBCNF='/etc/mysql/mariadb.conf.d/60-server.cnf'
-DRUSHVER=12
+DRUSHVER=13
 FIREWALLLIST="22 80 443"
 USER='www-data'
 GROUP='www-data'
@@ -45,12 +45,6 @@ linechange(){
         sed -i "${LINENUM}d" ${2}
         sed -i "${LINENUM}i${3}" ${2}
     fi  
-}
-
-get_sql_ver(){
-    SQLDBVER=$(/usr/bin/mysql -V | awk '{match($0,"([^ ]+)-MariaDB",a)}END{print a[1]}')
-    SQL_MAINV=$(echo ${SQLDBVER} | awk -F '.' '{print $1}')
-    SQL_SECV=$(echo ${SQLDBVER} | awk -F '.' '{print $2}')
 }
 
 check_sql_ver(){    
@@ -137,6 +131,12 @@ compatible_mariadb_cmd()
         mysqladmin='mysql-admin'
         mysql='mysql'    
     fi    
+}
+
+get_sql_ver(){
+    SQLDBVER=$(${mysql} -V | awk '{match($0,"([^ ]+)-MariaDB",a)}END{print a[1]}')
+    SQL_MAINV=$(echo ${SQLDBVER} | awk -F '.' '{print $1}')
+    SQL_SECV=$(echo ${SQLDBVER} | awk -F '.' '{print $2}')
 }
 
 system_upgrade() {
