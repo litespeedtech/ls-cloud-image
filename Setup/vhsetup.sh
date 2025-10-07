@@ -3,7 +3,7 @@
 # LiteSpeed domain setup Script
 # @Author:   LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
 # @Copyright: (c) 2019-2025
-# @Version: 2.6
+# @Version: 2.7
 # *********************************************************************/
 MY_DOMAIN=''
 MY_DOMAIN2=''
@@ -43,14 +43,25 @@ EPACE='        '
 echoR() {
     echo -e "\e[31m${1}\e[39m"
 }
-echoG() {
-    echo -e "\e[32m${1}\e[39m"
+function echoY
+{
+    FLAG=$1
+    shift
+    echo -e "\033[38;5;148m$FLAG\033[39m$@"
 }
-echoY() {
-    echo -e "\e[33m${1}\e[39m"
+
+function echoG
+{
+    FLAG=$1
+    shift
+    echo -e "\033[38;5;71m$FLAG\033[39m$@"
 }
-echoB() {
-    echo -e "\033[1;4;94m${1}\033[0m"
+
+function echoB
+{
+    FLAG=$1
+    shift
+    echo -e "\033[38;1;34m$FLAG\033[39m$@"
 }
 echow(){
     FLAG=${1}
@@ -112,125 +123,41 @@ function check_os
         OSNAME=centos
         USER='nobody'
         GROUP='nobody'
-        case $(cat /etc/centos-release | tr -dc '0-9.'|cut -d \. -f1) in 
-        6)
-            OSNAMEVER=CENTOS6
-            OSVER=6
-            ;;
-        7)
-            OSNAMEVER=CENTOS7
-            OSVER=7
-            ;;
-        8)
-            OSNAMEVER=CENTOS8
-            OSVER=8
-            ;;
-        9)
-            OSNAMEVER=CENTOS9
-            OSVER=9
-            ;;            
-        esac
+        OSVER=$(grep -oE '[0-9]+' /etc/centos-release | head -1)
+        OSNAMEVER="CENTOS${OSVER}"
     elif [ -f /etc/redhat-release ] ; then
         OSNAME=centos
         USER='nobody'
         GROUP='nobody'
-        case $(cat /etc/redhat-release | tr -dc '0-9.'|cut -d \. -f1) in 
-        6)
-            OSNAMEVER=CENTOS6
-            OSVER=6
-            ;;
-        7)
-            OSNAMEVER=CENTOS7
-            OSVER=7
-            ;;
-        8)
-            OSNAMEVER=CENTOS8
-            OSVER=8
-            ;;
-        9)
-            OSNAMEVER=CENTOS9
-            OSVER=9
-            ;;            
-        esac             
+        OSVER=$(grep -oE '[0-9]+' /etc/redhat-release | head -1)
+        OSNAMEVER="CENTOS${OSVER}"            
     elif [ -f /etc/lsb-release ] ; then
         OSNAME=ubuntu
-        case $(cat /etc/os-release | grep UBUNTU_CODENAME | cut -d = -f 2) in
-        trusty)
-            OSNAMEVER=UBUNTU14
-            OSVER=trusty
-            MARIADBCPUARCH="arch=amd64,i386,ppc64el"
-            ;;        
-        xenial)
-            OSNAMEVER=UBUNTU16
-            OSVER=xenial
-            MARIADBCPUARCH="arch=amd64,i386,ppc64el"
-            ;;
-        bionic)
-            OSNAMEVER=UBUNTU18
-            OSVER=bionic
-            MARIADBCPUARCH="arch=amd64"
-            ;;
-        focal)            
-            OSNAMEVER=UBUNTU20
-            OSVER=focal
-            MARIADBCPUARCH="arch=amd64"
-            ;;
-        jammy)            
-            OSNAMEVER=UBUNTU22
-            OSVER=jammy
-            MARIADBCPUARCH="arch=amd64"
-            ;;         
-        noble)            
-            OSNAMEVER=UBUNTU24
-            OSVER=noble
-            MARIADBCPUARCH="arch=amd64"
-            ;;                 
-        esac
+        OSVER=$(grep VERSION_ID /etc/os-release | cut -d\" -f2 | cut -d. -f1)
+        OSNAMEVER="UBUNTU${OSVER}"
+        MARIADBCPUARCH="arch=amd64"
+
     elif [ -f /etc/debian_version ] ; then
-        OSNAME=debian
-        case $(cat /etc/os-release | grep VERSION_CODENAME | cut -d = -f 2) in
-        jessie)
-            OSNAMEVER=DEBIAN8
-            OSVER=jessie
-            MARIADBCPUARCH="arch=amd64,i386"
-            ;;
-        stretch) 
-            OSNAMEVER=DEBIAN9
-            OSVER=stretch
-            MARIADBCPUARCH="arch=amd64,i386"
-            ;;
-        buster)
-            OSNAMEVER=DEBIAN10
-            OSVER=buster
-            MARIADBCPUARCH="arch=amd64,i386"
-            ;;
-        bullseye)
-            OSNAMEVER=DEBIAN11
-            OSVER=bullseye
-            MARIADBCPUARCH="arch=amd64,i386"
-            ;;
-        bookworm)
-            OSNAMEVER=DEBIAN12
-            OSVER=bookworm
-            MARIADBCPUARCH="arch=amd64,i386"
-            ;;            
-        esac    
+        OSNAME=debian  
+        OSVER=$(grep VERSION_ID /etc/os-release | cut -d\" -f2)
+        OSNAMEVER="DEBIAN${OSVER}"
+        MARIADBCPUARCH="arch=amd64,i386" 
     fi
 
     if [ "$OSNAMEVER" = '' ] ; then
-        echoR "Sorry, currently one click installation only supports Centos(6-9), Debian(8-12) and Ubuntu(14~24)."
+        echoR "Sorry, currently one click installation only supports Centos(7+), Debian(10+) and Ubuntu(20+)."
         echoR "You can download the source code and build from it."
         echoR "The url of the source code is https://github.com/litespeedtech/openlitespeed/releases."
         exit 1
     else
         if [ "$OSNAME" = "centos" ] ; then
-            echoG "Current platform is $OSNAME $OSVER."
+            echoG "Current platform is "  "$OSNAME $OSVER."
         else
             export DEBIAN_FRONTEND=noninteractive
-            echoG "Current platform is $OSNAMEVER $OSNAME $OSVER."
+            echoG "Current platform is "  "$OSNAME $OSVER."
         fi
     fi
-}    
+}   
 
 check_provider()
 {
@@ -1110,12 +1037,9 @@ certbothook() {
             if [ "${OSVER}" = '7' ]; then
                 echo "0 0,12 * * * root python -c 'import random; import time; time.sleep(random.random() * 3600)' && certbot renew -q --deploy-hook 'systemctl restart lsws'" \
                 | sudo tee -a /etc/crontab > /dev/null
-            #elif [ "${OSVER}" = '8' ]; then
             else
                 echo "0 0,12 * * * root python3 -c 'import random; import time; time.sleep(random.random() * 3600)' && /usr/bin/certbot renew -q --deploy-hook 'systemctl restart lsws'" \
                 | sudo tee -a /etc/crontab > /dev/null
-            #else
-            #    echoY 'Please check certbot crontab'
             fi
         fi    
         grep 'restart lsws' ${BOTCRON} > /dev/null 2>&1
