@@ -619,7 +619,7 @@ else
     USER='www-data'
     GROUP='www-data'     
 fi 
-chown -R \${USER}:\${GROUP} /var/www/html/web/ 
+sudo chown -R \${USER}:\${GROUP} /var/www/html/web/ 
 sudo systemctl start lsws
 echo '#############################################################'
 sudo rm -f '/etc/profile.d/afterssh.sh'
