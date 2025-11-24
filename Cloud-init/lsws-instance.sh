@@ -2,7 +2,6 @@
 # /********************************************************************
 # LiteSpeed Cloud Script
 # @Author:   LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
-# @Copyright: (c) 2020-2024
 # *********************************************************************/
 LSDIR='/usr/local/lsws'
 BANNERNAME='litespeed'
@@ -68,7 +67,8 @@ os_home_path()
 
 ct_version()
 {
-    curl "https://api.quic.cloud/data/1click_ver?t=image&src=aws-lsws" > /dev/null 2>&1
+    curl "https://wpapi.quic.cloud/wpdata/1click_ver?t=image&src=${PROVIDER}_lsws" > /dev/null 2>&1
+    echo "cloud-${PROVIDER}" > ${LSDIR}/PLAT
 }
 
 

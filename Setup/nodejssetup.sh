@@ -15,7 +15,7 @@ PROJNAME='node'
 VHDOCROOT='/usr/local/lsws/Example/html'
 DEMOPROJECT="${VHDOCROOT}/${PROJNAME}"
 ALLERRORS=0
-NODEJSV='22'
+NODEJSV='24'
 NOWPATH=$(pwd)
 
 echoY(){
@@ -118,7 +118,6 @@ ubuntu_install_ols(){
 
 centos_install_nodejs(){
     echoG 'Install nodejs'
-    ### Install nodejs with version 12 by using EPEL repository
     curl -sL https://rpm.nodesource.com/setup_${NODEJSV}.x | sudo -E bash - > /dev/null 2>&1
     yum install nodejs -y > /dev/null 2>&1
     echoG "NodeJS: $(node --version)"
@@ -127,7 +126,6 @@ centos_install_nodejs(){
 
 ubuntu_install_nodejs(){
     echoG 'Install nodejs'
-    ### Install nodejs with version 12 by using EPEL repository
     curl -sL https://deb.nodesource.com/setup_${NODEJSV}.x | sudo -E bash - > /dev/null 2>&1
     apt-get install nodejs -y > /dev/null 2>&1 
     echoG "NodeJS: $(node --version)"
