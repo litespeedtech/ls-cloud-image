@@ -39,6 +39,7 @@ WORDPRESS='OFF'
 CLASSICPRESS='OFF'
 DB_TEST=0
 EPACE='        '
+ACME_OVERALL=""
 
 echoR() {
     echo -e "\e[31m${1}\e[39m"
@@ -244,6 +245,18 @@ check_webserver(){
             exit 2
         fi
     fi    
+}
+
+check_acme(){
+    if [ "${WEBSERVER}" = "OLS" ]; then
+        for ACME_RES in $(grep "acme " ${WEBCF} | awk -F ' ' '{print $2}'); do
+            if [ "${ACME_RES}" = "2" ]; then
+                ACME_OVERALL="${ACME_RES}"
+                echoG "ACME Overall set"
+                break
+            fi
+        done;
+    fi
 }
 
 fst_match_line(){
@@ -738,6 +751,9 @@ rewrite  {
 enable                  1
 autoLoadHtaccess        1
 }
+EOF
+        if [ "${ACME_OVERALL}" != "2" ]; then
+            cat > ${VH_CONF_FILE} << EOF
 
 vhssl  {
 keyFile                 ${LSDIR}/conf/example.key
@@ -745,6 +761,8 @@ certFile                ${LSDIR}/conf/example.crt
 certChain               1
 }
 EOF
+        fi
+
         chown -R lsadm:lsadm ${VHDIR}/*
     else
         echoR "Targeted file already exist, skip!"
@@ -1185,6 +1203,7 @@ main() {
     domain_input
     check_webserver
     server_conf_bk    
+    check_acme
     main_set_vh ${MY_DOMAIN}
     issue_cert
     install_unzip
