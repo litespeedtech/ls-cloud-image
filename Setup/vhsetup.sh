@@ -753,7 +753,7 @@ autoLoadHtaccess        1
 }
 EOF
         if [ "${ACME_OVERALL}" != "2" ]; then
-            cat > ${VH_CONF_FILE} << EOF
+            cat >> ${VH_CONF_FILE} << EOF
 
 vhssl  {
 keyFile                 ${LSDIR}/conf/example.key
