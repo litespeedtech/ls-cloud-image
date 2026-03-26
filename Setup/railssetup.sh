@@ -85,18 +85,35 @@ centos_sys_upgrade(){
     echo -e '#######################   (100%)\r'   
 }
 
-ubuntu_sys_upgrade(){
-    echoG 'Updating system'
-    apt-get update > /dev/null 2>&1
-    echo -ne '#####                     (33%)\r'
-    DEBIAN_FRONTEND=noninteractive apt-get -y -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' upgrade > /dev/null 2>&1
-    echo -ne '#############             (66%)\r'
-    DEBIAN_FRONTEND=noninteractive apt-get -y -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' dist-upgrade > /dev/null 2>&1
-    echo -ne '####################      (99%)\r'
+ubuntu_sys_upgrade() {
+    echoG 'Updating package index'
+    apt-get update > /dev/null 2>&1 || return 1
+    echoG 'Upgrading packages'
+    DEBIAN_FRONTEND=noninteractive \
+    apt-get \
+        -o Dpkg::Use-Pty=0 \
+        -o APT::Status-Fd=1 \
+        -y \
+        -o Dpkg::Options::='--force-confdef' \
+        -o Dpkg::Options::='--force-confold' \
+        full-upgrade 2>/dev/null | \
+    awk -F: '
+        /^dlstatus:/ || /^pmstatus:/ {
+            pct = int($3 + 0)
+            if (pct != last) {
+                printf "\rUpgrading packages... %3d%%", pct
+                fflush()
+                last = pct
+            }
+        }
+        END { printf "\rUpgrading packages... 100%%\n" }
+    '
+    rc=${PIPESTATUS[0]}
+    echoG 'Cleaning package cache'
     apt-get clean > /dev/null 2>&1
     apt-get autoclean > /dev/null 2>&1
-    echo -e '#######################   (100%)\r'    
-}    
+    return $rc
+}
 
 output_msg(){
     if [ ${1} = 0 ]; then
@@ -199,11 +216,11 @@ install_ruby(){
 }
 
 install_gem(){
-    echoG 'Install gem'
+    echoG 'Use bundled RubyGems'
     symlink "${CLONE_PATH}/.rbenv/versions/${RUBYV}/bin/gem" '/usr/bin/gem'
-    gem update --system > /dev/null 2>&1
-    GEM_V="$(gem -v)"
-    output_msg "${?}" 'gem'
+    rc=$?
+    GEM_V="$(gem -v 2>/dev/null)"
+    output_msg "${rc}" 'gem'
 }
 
 install_bundle(){
