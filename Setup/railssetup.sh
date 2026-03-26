@@ -85,9 +85,21 @@ centos_sys_upgrade(){
     echo -e '#######################   (100%)\r'   
 }
 
+wait_for_apt() {
+    while fuser /var/lib/dpkg/lock >/dev/null 2>&1 || \
+          fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1 || \
+          fuser /var/lib/apt/lists/lock >/dev/null 2>&1 || \
+          fuser /var/cache/apt/archives/lock >/dev/null 2>&1; do
+        echoG 'Waiting for apt/dpkg lock...'
+        sleep 3
+    done
+}
+
 ubuntu_sys_upgrade() {
+    wait_for_apt
     echoG 'Updating package index'
     apt-get update > /dev/null 2>&1 || return 1
+    wait_for_apt
     echoG 'Upgrading packages'
     DEBIAN_FRONTEND=noninteractive \
     apt-get \
