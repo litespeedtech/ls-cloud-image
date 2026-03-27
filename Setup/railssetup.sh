@@ -78,53 +78,23 @@ change_owner(){
     chown -R ${USER}:${GROUP} ${DEMOPROJECT}
 }
 
-centos_sys_upgrade(){
+system_upgrade() {
     echoG 'Updating system'
-    echo -ne '#                         (5%)\r'
-    yum update -y > /dev/null 2>&1
-    echo -e '#######################   (100%)\r'   
-}
-
-wait_for_apt() {
-    while fuser /var/lib/dpkg/lock >/dev/null 2>&1 || \
-          fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1 || \
-          fuser /var/lib/apt/lists/lock >/dev/null 2>&1 || \
-          fuser /var/cache/apt/archives/lock >/dev/null 2>&1; do
-        echoG 'Waiting for apt/dpkg lock...'
-        sleep 3
-    done
-}
-
-ubuntu_sys_upgrade() {
-    wait_for_apt
-    echoG 'Updating package index'
-    apt-get update > /dev/null 2>&1 || return 1
-    wait_for_apt
-    echoG 'Upgrading packages'
-    DEBIAN_FRONTEND=noninteractive \
-    apt-get \
-        -o Dpkg::Use-Pty=0 \
-        -o APT::Status-Fd=1 \
-        -y \
-        -o Dpkg::Options::='--force-confdef' \
-        -o Dpkg::Options::='--force-confold' \
-        full-upgrade 2>/dev/null | \
-    awk -F: '
-        /^dlstatus:/ || /^pmstatus:/ {
-            pct = int($3 + 0)
-            if (pct != last) {
-                printf "\rUpgrading packages... %3d%%", pct
-                fflush()
-                last = pct
-            }
-        }
-        END { printf "\rUpgrading packages... 100%%\n" }
-    '
-    rc=${PIPESTATUS[0]}
-    echoG 'Cleaning package cache'
-    apt-get clean > /dev/null 2>&1
-    apt-get autoclean > /dev/null 2>&1
-    return $rc
+    if [ "${OSNAME}" = 'ubuntu' ] || [ "${OSNAME}" = 'debian' ]; then 
+        apt-get update > /dev/null 2>&1
+        echo -ne '#####                     (33%)\r'
+        DEBIAN_FRONTEND=noninteractive apt-get -y -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' upgrade > /dev/null 2>&1
+        echo -ne '#############             (66%)\r'
+        DEBIAN_FRONTEND=noninteractive apt-get -y -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' dist-upgrade > /dev/null 2>&1
+        echo -ne '####################      (99%)\r'
+        apt-get clean > /dev/null 2>&1
+        apt-get autoclean > /dev/null 2>&1
+        echo -ne '#######################   (100%)\r'
+    else
+        echo -ne '#                         (5%)\r'
+        yum update -y > /dev/null 2>&1
+        echo -ne '#######################   (100%)\r'
+    fi    
 }
 
 output_msg(){
@@ -634,12 +604,11 @@ end_message(){
 
 main(){
     init_check
+    system_upgrade
     if [ ${OSNAME} = 'centos' ]; then
-        centos_sys_upgrade
         centos_main_install
         centos_main_config
     else
-        ubuntu_sys_upgrade
         ubuntu_main_install
         ubuntu_main_config
     fi
