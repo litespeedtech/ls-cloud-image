@@ -2,7 +2,7 @@
 # /********************************************************************
 # LiteSpeed WordPress setup Script
 # @Author:   LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
-# @Copyright: (c) 2019-2024
+# @Copyright: (c) 2019-2026
 # *********************************************************************/
 LSWSFD='/usr/local/lsws'
 DOCHM='/var/www/html.old'
@@ -16,7 +16,7 @@ REDISSERVICE='/lib/systemd/system/redis-server.service'
 REDISCONF='/etc/redis/redis.conf'
 WPCONSTCONF="${DOCHM}/wp-content/plugins/litespeed-cache/data/const.default.json"
 MARIADBSERVICE='/lib/systemd/system/mariadb.service'
-PHPVER=84
+PHPVER=85
 FIREWALLLIST="22 80 443"
 USER='www-data'
 GROUP='www-data'
