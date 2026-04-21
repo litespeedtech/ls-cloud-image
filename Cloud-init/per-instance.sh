@@ -626,6 +626,50 @@ sudo rm -f '/etc/profile.d/afterssh.sh'
 EOM
 }
 
+setup_after_ssh_joomla(){
+    sudo cat << EOM > /etc/profile.d/afterssh.sh
+#!/bin/bash
+sudo mv /var/www/html/ /var/www/html.land/
+sudo mv /var/www/html.old/ /var/www/html/
+cd /var/www/html
+echo '############# Auto-Installation (one time only) ###############'
+sudo php installation/joomla.php install \
+  --site-name="My Site" \
+  --admin-username="admin" \
+  --admin-user="admin" \
+  --admin-password=${ADMIN_PASS} \
+  --admin-email='admin@example.com' \
+  --db-type="mysqli" \
+  --db-host="localhost" \
+  --db-name="joomla" \
+  --db-user="joomla" \
+  --db-pass=${app_mysql_pass} \
+  --db-prefix="jos_" \
+  --db-encryption=0 \
+  --no-interaction
+sudo php cli/joomla.php extension:install \
+  --url https://github.com/litespeedtech/lscache-joomla/raw/refs/heads/master/Joomla6/package/lscache-latest.zip
+sudo systemctl stop lsws >/dev/null 2>&1
+sudo /usr/local/lsws/bin/lswsctrl stop >/dev/null 2>&1
+sleep 1
+if [[ \$(sudo ps -ef | grep -i 'openlitespeed' | grep -v 'grep') != '' ]]; then
+  sudo kill -9 \$(sudo ps -ef | grep -v 'grep' | grep -i 'openlitespeed' | grep -i 'main' | awk '{print \$2}')
+fi
+sudo chmod 755 /etc/profile.d/afterssh.sh
+if [ -f /etc/redhat-release ]; then
+    USER='nobody'
+    GROUP='nobody'
+else    
+    USER='www-data'
+    GROUP='www-data'     
+fi 
+sudo chown -R \${USER}:\${GROUP} /var/www/html/
+sudo systemctl start lsws
+echo '#############################################################'
+sudo rm -f '/etc/profile.d/afterssh.sh'
+EOM
+}
+
 update_conntrack_max(){
     if [ "${PROVIDER}" = 'do' ] || [ "${PROVIDER}" = 'vultr' ] || [ "${PROVIDER}" = 'linode' ]; then
         grep nf_conntrack_max /etc/sysctl.conf >/dev/null 2>&1
@@ -801,7 +845,7 @@ main_cms()
         update_pwd_file
         update_phpmyadmin
         renew_blowfish
-        setup_after_ssh
+        setup_after_ssh_joomla
     elif [ "${BANNERNAME}" = 'drupal' ]; then
         update_pwd_file
         update_phpmyadmin

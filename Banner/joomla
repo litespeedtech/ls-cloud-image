@@ -61,23 +61,6 @@ else
     HMUBUNTU=''
 fi
 
-show_install(){
-    cd ~
-    JOOMLA_DB_PASS=$(sed -n 2p ${HMUBUNTU}.db_password | awk -F '"' '{ print $2 }')
-    if [ ! -f /var/www/html/configuration.php ]; then
-        cat<<EOM
-$(echoG '###############################################################################')
-
-$(echoBOLD "Please complete the first time installation on the browser: http://$MYIP")
-$(echoBOLD "  - DataBase Name: joomla")
-$(echoBOLD "  - DataBase UserName: joomla")
-$(echoBOLD "  - DataBase Password: $(echo $JOOMLA_DB_PASS)")
-
-$(echoG '###############################################################################')
-EOM
-    fi
-}
-
 clear
 cat <<EOF
 ********************************************************************************
@@ -91,6 +74,7 @@ Joomla One-Click Quickstart guide:
 $(show_install)
 In a web browser, you can view:
 * The new Joomla site: $(echoY "http://$MYIP")
+* The new Joomla admin: $(echoY "http://$MYIP/administrator")
 * The phpMyAdmin: http://$MYIP/phpmyadmin
 
 On the server:
