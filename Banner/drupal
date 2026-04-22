@@ -71,7 +71,7 @@ All ports are BLOCKED except 22 (SSH), 80 (HTTP) and 443 (HTTPS).
 
 Drupal One-Click Quickstart guide:
 * $(echoB 'https://docs.litespeedtech.com/cloud/images/drupal/')
-$(show_install)
+
 In a web browser, you can view:
 * The new Drupal site: $(echoY "http://$MYIP")
 * The new Drupal admin: $(echoY "http://$MYIP/user/login")

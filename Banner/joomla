@@ -71,7 +71,7 @@ All ports are BLOCKED except 22 (SSH), 80 (HTTP) and 443 (HTTPS).
 
 Joomla One-Click Quickstart guide:
 * $(echoB 'https://docs.litespeedtech.com/cloud/images/joomla/')
-$(show_install)
+
 In a web browser, you can view:
 * The new Joomla site: $(echoY "http://$MYIP")
 * The new Joomla admin: $(echoY "http://$MYIP/administrator")
@@ -81,7 +81,7 @@ On the server:
 * The default web root is located at /var/www/html
 * You can get the MySQL root password and MySQL Joomla user password with command:
    $(echoY "sudo cat ${HMUBUNTU}.db_password")
-* You can get the Web Admin admin password with the following command:
+* You can get the Joomla admin and Web Admin admin password with the following command:
    $(echoY "sudo cat ${HMUBUNTU}.litespeed_password")
 * The phpMyAdmin is located at /var/www/phpmyadmin
 * A script will run that will allow you to add a domain to the web server and implement SSL.
