@@ -2,12 +2,13 @@
 # /********************************************************************
 # OpenLiteSpeed to Enterprise setup Script
 # @Author:   LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
-# @Version: 2.1
+# @Version: 2.2
 # *********************************************************************/
 TOTAL_RAM=$(free -m | awk '/Mem:/ { print $2 }')
 LICENSE_KEY=""
 PHP='php'
 ADMIN_PASS='12345678'
+CONVERTER_CUTOFF_VERSION="1.9.0"
 PANEL=''
 LS_DIR='/usr/local/lsws'
 STORE_DIR='/opt/.litespeed_conf'
@@ -100,6 +101,18 @@ check_pkg_manage(){
     fi
 }
 
+check_ver(){
+    VERSION=$(cat ${LS_DIR}/VERSION)
+}
+
+version_le() {
+    [ "$1" = "$(printf '%s\n' "$1" "$2" | sort -V | head -n1)" ]
+}
+
+version_gt() {
+    [ "$1" != "$2" ] && ! version_le "$1" "$2"
+}
+
 check_php(){
     if [ -e ${LS_DIR}/lsphp73/bin/php ]; then
         PHP="${LS_DIR}/lsphp73/bin/php"
@@ -125,7 +138,9 @@ check_php(){
 }
 
 add_converter_script(){
-cat << EOM > ${LS_DIR}/admin/misc/converter.php
+    if version_le "$VERSION" "$CONVERTER_CUTOFF_VERSION"; then
+        echoG "OLS Version is <= $CONVERTER_CUTOFF_VERSION, update converter"
+        cat << EOM > ${LS_DIR}/admin/misc/converter.php
 <?php
 \$lsws = dirname(dirname(__DIR__)) . '/';
 ini_set('include_path',
@@ -138,19 +153,33 @@ spl_autoload_register( function (\$class) {
 });
 CData::Util_Migrate_AllConf2Xml(\$lsws);
 EOM
-    chmod +x ${LS_DIR}/admin/misc/converter.php
+        chmod +x ${LS_DIR}/admin/misc/converter.php        
+    else
+        echoG "OLS Version is > $CONVERTER_CUTOFF_VERSION"
+    fi
 }
 
 gen_ent_config(){
-    if [ ! -e "${LS_DIR}/admin/misc/converter.php" ]; then
-        echo "${LS_DIR}/admin/misc/converter.php not exist, exit!"
-        exit 1
-    fi
     if [ ! -e "${LS_DIR}/bin/openlitespeed" ]; then
         echo 'OpenLiteSpeed does not exist, exit!'
         exit 1
     fi
-    ${PHP} ${LS_DIR}/admin/misc/converter.php 2>${CONVERT_LOG}
+    echoG 'Converting config Start'
+    if version_le "$VERSION" "$CONVERTER_CUTOFF_VERSION"; then
+        if [ -e "${LS_DIR}/admin/misc/converter.php" ]; then
+            ${PHP} ${LS_DIR}/admin/misc/converter.php 2>${CONVERT_LOG}
+        else
+            echo "converter.php not found"
+            exit 1
+        fi
+    else
+        if [ -e "${LS_DIR}/admin/misc/convertxml.sh" ]; then
+            ${LS_DIR}/admin/misc/convertxml.sh ${LS_DIR} 2xml 2>${CONVERT_LOG}
+        else
+            echo "convertxml.sh not found"
+            exit 1
+        fi
+    fi
     if [ ${?} != 0 ]; then 
         echo "Convert config file failed, error code: ${?}"
         echoR "#############################################"
@@ -176,6 +205,7 @@ gen_ent_config(){
             cp "${FILE}" ${STORE_DIR}/ent_conf/
         fi    
     done
+    echoG 'Converting config End'
 }
 
 set_ent_cache(){
@@ -239,6 +269,8 @@ restore_ols() {
         webadmin_reset
     fi
 }
+
+
 
 download_lsws() {
     echoG 'Download LiteSpeed Web Server.'
@@ -354,7 +386,7 @@ gen_store_dir(){
 uninstall_ols() {
     echoG 'Uninstall OpenLiteSpeed.'
     if [[ -f ${LS_DIR}/conf/httpd_config.conf ]] ; then
-        DATE=`date +%Y-%m-%d_%H%M`
+        DATE=$(date +%Y-%m-%d_%H%M)
         mkdir ${STORE_DIR}/OLS_backup_$DATE/
         echoG "Backing up current OpenLiteSpeed configuration file to ${STORE_DIR}/OLS_backup_${DATE}/"
         cp -a ${LS_DIR}/conf/ ${STORE_DIR}/OLS_backup_${DATE}/
@@ -364,6 +396,16 @@ uninstall_ols() {
         ${PKG_TOOL} remove openlitespeed -y > /dev/null 2>&1
         check_return
         echoG 'OpenLiteSpeed successfully removed...'
+    fi
+}
+
+backup_lsws_conf() {
+    if [[ -f ${LS_DIR}/conf/httpd_config.xml ]] ; then
+        DATE=$(date +%Y-%m-%d_%H%M)
+        mkdir -p ${STORE_DIR}/LSWS_backup_${DATE}
+        echoG "Backing up current LiteSpeed Enterprise configuration to ${STORE_DIR}/LSWS_backup_${DATE}/"
+        cp -a ${LS_DIR}/conf ${STORE_DIR}/LSWS_backup_${DATE}/
+        echoG "LSWS configuration backup completed."
     fi
 }
 
@@ -426,12 +468,22 @@ check_no_lsws(){
     fi    
 }
 
+clean_xml(){
+    find ${LS_DIR}/conf -type f -name "*.xml" -delete
+}
+
+clean_conf(){
+    find ${LS_DIR}/conf -type f -name "*.conf" -delete
+}
+
+
 main_pre_check(){
     check_root_user
     check_no_panel
     check_no_lsws
     check_pkg_manage
     check_php
+    check_ver
 }
 
 main_pre_gen(){
@@ -443,7 +495,9 @@ main_restore_ols(){
     check_root_user
     check_pkg_manage
     gen_store_dir
+    backup_lsws_conf
     restore_ols
+    clean_xml
 }
 
 main_to_lsws(){
@@ -455,6 +509,7 @@ main_to_lsws(){
     uninstall_ols
     install_lsws
     webadmin_reset
+    clean_conf
 }
 
 case ${1} in
