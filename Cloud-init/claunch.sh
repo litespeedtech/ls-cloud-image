@@ -161,6 +161,7 @@ cleanup (){
     #rm -rf /var/lib/cloud/instances/*
     #system log
     rm -rf /var/log/unattended-upgrades
+    rm -f /var/log/ubuntu-advantage-apt-hook.log*
     rm -f /var/log/ubuntu-advantage.log*
     rm -f /var/log/apt/history.log*
     rm -f /var/log/apt/term.log*
