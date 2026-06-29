@@ -849,7 +849,7 @@ main_cyber()
     filepermission_update
     renew_blowfish
     rm_ufw
-    #install_firewalld      
+    install_firewalld
 }
 
 main_cms()
