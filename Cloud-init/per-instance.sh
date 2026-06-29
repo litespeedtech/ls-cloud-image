@@ -728,35 +728,49 @@ install_firewalld(){
         /usr/bin/apt-get install firewalld -y
         /bin/systemctl enable firewalld
 
-        ${FWDCMD}='rule family="ipv4" source address="0.0.0.0/0" port protocol="tcp" port="8090" accept'
-        ${FWDCMD}='rule family="ipv6" port protocol="tcp" port="8090" accept'
-        ${FWDCMD}='rule family="ipv4" source address="0.0.0.0/0" port protocol="tcp" port="80" accept'
-        ${FWDCMD}='rule family="ipv6" port protocol="tcp" port="80" accept'
-        ${FWDCMD}='rule family="ipv4" source address="0.0.0.0/0" port protocol="tcp" port="443" accept'
-        ${FWDCMD}='rule family="ipv6" port protocol="tcp" port="443" accept'
+        #${FWDCMD}='rule family="ipv4" source address="0.0.0.0/0" port protocol="tcp" port="8090" accept'
+        #${FWDCMD}='rule family="ipv6" port protocol="tcp" port="8090" accept'
+        #${FWDCMD}='rule family="ipv4" source address="0.0.0.0/0" port protocol="tcp" port="80" accept'
+        #${FWDCMD}='rule family="ipv6" port protocol="tcp" port="80" accept'
+        #${FWDCMD}='rule family="ipv4" source address="0.0.0.0/0" port protocol="tcp" port="443" accept'
+        #${FWDCMD}='rule family="ipv6" port protocol="tcp" port="443" accept'
+        #${FWDCMD}='rule family="ipv4" source address="0.0.0.0/0" port protocol="udp" port="443" accept'
+        #${FWDCMD}='rule family="ipv6" port protocol="udp" port="443" accept'        
         /usr/bin/firewall-cmd --add-service=ssh --permanent
         /usr/bin/firewall-cmd --add-service=ftp --permanent
-        ${FWDCMD}='rule family="ipv4" source address="0.0.0.0/0" port protocol="tcp" port="25" accept'
-        ${FWDCMD}='rule family="ipv6" port protocol="tcp" port="25" accept'
-        ${FWDCMD}='rule family="ipv4" source address="0.0.0.0/0" port protocol="tcp" port="587" accept'
-        ${FWDCMD}='rule family="ipv6" port protocol="tcp" port="587" accept'
-        ${FWDCMD}='rule family="ipv4" source address="0.0.0.0/0" port protocol="tcp" port="465" accept'
-        ${FWDCMD}='rule family="ipv6" port protocol="tcp" port="465" accept'
-        ${FWDCMD}='rule family="ipv4" source address="0.0.0.0/0" port protocol="tcp" port="110" accept'
-        ${FWDCMD}='rule family="ipv6" port protocol="tcp" port="110" accept'
-        ${FWDCMD}='rule family="ipv4" source address="0.0.0.0/0" port protocol="tcp" port="143" accept'
-        ${FWDCMD}='rule family="ipv6" port protocol="tcp" port="143" accept'
-        ${FWDCMD}='rule family="ipv4" source address="0.0.0.0/0" port protocol="tcp" port="993" accept'
-        ${FWDCMD}='rule family="ipv6" port protocol="tcp" port="993" accept'
-        ${FWDCMD}='rule family="ipv4" source address="0.0.0.0/0" port protocol="udp" port="53" accept'
-        ${FWDCMD}='rule family="ipv6" port protocol="udp" port="53" accept'
-        ${FWDCMD}='rule family="ipv4" source address="0.0.0.0/0" port protocol="tcp" port="53" accept'
-        ${FWDCMD}='rule family="ipv6" port protocol="tcp" port="53" accept'
-        ${FWDCMD}='rule family="ipv4" source address="0.0.0.0/0" port protocol="tcp" port="40110-40210" accept'
-        ${FWDCMD}='rule family="ipv6" port protocol="tcp" port="40110-40210" accept'
-
+        #${FWDCMD}='rule family="ipv4" source address="0.0.0.0/0" port protocol="tcp" port="25" accept'
+        #${FWDCMD}='rule family="ipv6" port protocol="tcp" port="25" accept'
+        #${FWDCMD}='rule family="ipv4" source address="0.0.0.0/0" port protocol="tcp" port="587" accept'
+        #${FWDCMD}='rule family="ipv6" port protocol="tcp" port="587" accept'
+        #${FWDCMD}='rule family="ipv4" source address="0.0.0.0/0" port protocol="tcp" port="465" accept'
+        #${FWDCMD}='rule family="ipv6" port protocol="tcp" port="465" accept'
+        #${FWDCMD}='rule family="ipv4" source address="0.0.0.0/0" port protocol="tcp" port="110" accept'
+        #${FWDCMD}='rule family="ipv6" port protocol="tcp" port="110" accept'
+        #${FWDCMD}='rule family="ipv4" source address="0.0.0.0/0" port protocol="tcp" port="143" accept'
+        #${FWDCMD}='rule family="ipv6" port protocol="tcp" port="143" accept'
+        #${FWDCMD}='rule family="ipv4" source address="0.0.0.0/0" port protocol="tcp" port="993" accept'
+        #${FWDCMD}='rule family="ipv6" port protocol="tcp" port="993" accept'
+        #${FWDCMD}='rule family="ipv4" source address="0.0.0.0/0" port protocol="tcp" port="995" accept'
+        #${FWDCMD}='rule family="ipv6" port protocol="tcp" port="995" accept'        
+        #${FWDCMD}='rule family="ipv4" source address="0.0.0.0/0" port protocol="udp" port="53" accept'
+        #${FWDCMD}='rule family="ipv6" port protocol="udp" port="53" accept'
+        #${FWDCMD}='rule family="ipv4" source address="0.0.0.0/0" port protocol="tcp" port="53" accept'
+        #${FWDCMD}='rule family="ipv6" port protocol="tcp" port="53" accept'
+        #${FWDCMD}='rule family="ipv4" source address="0.0.0.0/0" port protocol="tcp" port="8888" accept'
+        #${FWDCMD}='rule family="ipv6" port protocol="tcp" port="8888" accept'        
+        #${FWDCMD}='rule family="ipv4" source address="0.0.0.0/0" port protocol="tcp" port="40110-40210" accept'
+        #${FWDCMD}='rule family="ipv6" port protocol="tcp" port="40110-40210" accept'
+        /usr/bin/firewall-cmd --remove-rich-rule='rule family="ipv4" source address="0.0.0.0/0" port port="7080" protocol="tcp" accept'
+        /usr/bin/firewall-cmd --remove-rich-rule='rule family="ipv6" port port="7080" protocol="tcp" accept'
         /usr/bin/firewall-cmd --reload
     fi    
+}
+
+rm_ufw(){
+    if [ "${OSNAME}" != 'centos' ]; then
+        ufw disable
+        /usr/bin/apt remove ufw -y
+    fi
 }
 
 check_version() {
@@ -834,6 +848,7 @@ main_cyber()
     install_rainloop
     filepermission_update
     renew_blowfish
+    rm_ufw
     #install_firewalld      
 }
 

@@ -93,7 +93,7 @@ install_basic_pkg(){
     if [ "${OSNAME}" = 'centos' ]; then 
         yum -y install wget > /dev/null 2>&1
     else  
-        apt-get -y install wget > /dev/null 2>&1
+        apt-get -y install wget ufw > /dev/null 2>&1
     fi
 }
 
@@ -107,6 +107,14 @@ install_cyberpanel(){
     echoG 'Finish CyberPanel'
     rm -rf cyberpanel cyberpanel.sh install.sh requirements.txt
 }   
+
+install_ufw(){
+    if [ ${PROVIDER} = 'do' ]; then
+        apt-get -y install ufw > /dev/null 2>&1
+        ufw --force enable
+        ufw default allow incoming
+    fi
+}
 
 rm_agpl_pkg(){
     local RAINLOOP_PATH='/usr/local/CyberCP/public/rainloop'
@@ -141,6 +149,7 @@ main(){
     upgrade
     install_basic_pkg
     install_cyberpanel
+    install_ufw
     rm_agpl_pkg
     special_fstab
     rmdummy
