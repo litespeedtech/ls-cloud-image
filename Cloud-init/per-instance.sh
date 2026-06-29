@@ -762,6 +762,8 @@ install_firewalld(){
         #${FWDCMD}='rule family="ipv6" port protocol="tcp" port="40110-40210" accept'
         /usr/bin/firewall-cmd --remove-rich-rule='rule family="ipv4" source address="0.0.0.0/0" port port="7080" protocol="tcp" accept'
         /usr/bin/firewall-cmd --remove-rich-rule='rule family="ipv6" port port="7080" protocol="tcp" accept'
+        /usr/bin/firewall-cmd --permanent --remove-rich-rule='rule family="ipv4" source address="0.0.0.0/0" port port="7080" protocol="tcp" accept'
+        /usr/bin/firewall-cmd --permanent --remove-rich-rule='rule family="ipv6" port port="7080" protocol="tcp" accept'        
         /usr/bin/firewall-cmd --reload
     fi    
 }
@@ -769,7 +771,7 @@ install_firewalld(){
 rm_ufw(){
     if [ "${OSNAME}" != 'centos' ]; then
         ufw disable
-        /usr/bin/apt remove ufw -y
+        /usr/bin/apt remove ufw -y >/dev/null 2>&1
     fi
 }
 
