@@ -264,7 +264,7 @@ restore_ols() {
         chown root:root ${LS_DIR}/logs
         chmod 755 ${LS_DIR}/logs
         restart_lsws
-        rm -f ${LS_DIR}/autoupdate/*
+        rm -rf ${LS_DIR}/autoupdate/*
         echoG 'OpenLiteSpeed Restored...'
         webadmin_reset
     fi
@@ -383,13 +383,19 @@ gen_store_dir(){
     fi
 }
 
-uninstall_ols() {
-    echoG 'Uninstall OpenLiteSpeed.'
+backup_ols_conf(){
     if [[ -f ${LS_DIR}/conf/httpd_config.conf ]] ; then
         DATE=$(date +%Y-%m-%d_%H%M)
         mkdir ${STORE_DIR}/OLS_backup_$DATE/
         echoG "Backing up current OpenLiteSpeed configuration file to ${STORE_DIR}/OLS_backup_${DATE}/"
         cp -a ${LS_DIR}/conf/ ${STORE_DIR}/OLS_backup_${DATE}/
+        echoG 'OpenLiteSpeed configuration backup completed..'
+    fi    
+}
+
+uninstall_ols() {
+    echoG 'Uninstall OpenLiteSpeed.'
+    if [[ -f ${LS_DIR}/conf/httpd_config.conf ]] ; then
         ${LS_DIR}/bin/lswsctrl stop > /dev/null 2>&1
         pkill lsphp
         systemctl stop lsws
@@ -503,6 +509,7 @@ main_restore_ols(){
 main_to_lsws(){
     main_pre_check
     main_pre_gen
+    backup_ols_conf
     gen_ent_config
     download_lsws
     license_input
