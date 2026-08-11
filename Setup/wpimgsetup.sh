@@ -437,7 +437,6 @@ ubuntu_config_memcached(){
     cat >> "${MEMCACHECONF}" <<END 
 -s /var/www/memcached.sock
 -a 0770
--P /tmp/memcached.pid
 END
     NEWKEY="-u ${USER}"
     linechange '\-u memcache' ${MEMCACHECONF} "${NEWKEY}"  
