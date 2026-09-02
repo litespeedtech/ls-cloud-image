@@ -90,6 +90,16 @@ get_ip()
   fi    
 }
 
+gcp_sudo(){
+    if [ "${PROVIDER}" = 'google' ]; then
+        printf "%s"   "Do you wish to keep root shell? [y/N] "
+        read TMP_YN
+        if [[ "${TMP_YN}" =~ ^(y|Y) ]]; then
+            exec sudo -i
+        fi        
+    fi
+}
+
 domainhelp(){
     echoB "To visit your apps by domain instead of IP, please enter a valid domain."
     echoB "If you don't have one yet, you may cancel this process by pressing CTRL+C and continuing to SSH."
@@ -373,6 +383,7 @@ main(){
     fi   
     main_upgrade
     endsetup
+    gcp_sudo
 }
 main
 rm -- "$0"
