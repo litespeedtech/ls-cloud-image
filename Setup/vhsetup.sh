@@ -3,7 +3,7 @@
 # *******************************************************************************
 # LiteSpeed domain setup Script
 # @Author:   LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
-# @Copyright: (c) 2019-2025
+# @Copyright: (c) 2019-2026
 # @Version: 2.7
 # *******************************************************************************
 
@@ -582,7 +582,16 @@ install_wp() {
         install_wp_cli
         rm -f "${DOCHM}/index.php"
         export WP_CLI_CACHE_DIR="${WWW_PATH}/.wp-cli/"
-        wp core download --path="${DOCHM}" --allow-root --quiet
+        ### WP CLI truncates file paths over 100 chars, wait new release, use download for now.
+        #wp core download --path="${DOCHM}" --allow-root --quiet
+        curl -fsSL https://wordpress.org/latest.zip -o "${DOCHM}/wordpress.zip" &&
+        unzip -q "${DOCHM}/wordpress.zip" -d "${DOCHM}" &&
+        mv "${DOCHM}/wordpress/"* "${DOCHM}/" &&
+        rmdir "${DOCHM}/wordpress" &&
+        rm -f "${DOCHM}/wordpress.zip" || {
+            echoG 'Failed to download or extract WordPress'
+            return 1
+        }          
         wp core config --dbname="${DATABASENAME}" --dbuser="${USERNAME}" --dbpass="${USERPASSWORD}" \
             --dbhost=localhost --dbprefix=wp_ --path="${DOCHM}" --allow-root --quiet
         get_theme_name
