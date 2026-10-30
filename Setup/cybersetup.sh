@@ -128,6 +128,12 @@ rm_agpl_pkg(){
     fi
 }
 
+rm_imagick_pkg(){
+    if [ "${OSNAME}" = 'ubuntu' ] || [ "${PROVIDER}" = 'azure' ]; then
+        apt remove lsphp*-imagick -y
+    fi    
+}
+
 special_fstab(){
     if [ "${PROVIDER}" = 'vultr' ]; then 
         sed -ie '/tmp/ s/^#*/#/' /etc/fstab
@@ -151,6 +157,7 @@ main(){
     install_cyberpanel
     install_ufw
     rm_agpl_pkg
+    rm_imagick_pkg
     special_fstab
     rmdummy
     END_TIME="$(date -u +%s)"
