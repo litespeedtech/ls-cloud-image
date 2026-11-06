@@ -130,9 +130,13 @@ rm_agpl_pkg(){
 
 rm_imagick_pkg(){
     if [ "${OSNAME}" = 'ubuntu' ] && [ "${PROVIDER}" = 'azure' ]; then
-        apt remove lsphp*-imagick -y
-        apt remove imagemagick* imagick* libmagick* -y
-        apt-get --purge autoremove -y
+        apt-get purge -y 'lsphp*-imagick' || true
+        pkgs=$(dpkg-query -W -f='${binary:Package}\n' 2>/dev/null \
+            | grep -E '^(imagemagick|imagick|libmagick)' || true)
+        if [ -n "$pkgs" ]; then
+            apt-get purge -y $pkgs
+        fi
+        apt-get autoremove --purge -y
     fi    
 }
 
