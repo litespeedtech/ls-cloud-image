@@ -129,8 +129,18 @@ rm_agpl_pkg(){
 }
 
 rm_imagick_pkg(){
-    if [ "${OSNAME}" = 'ubuntu' ] || [ "${PROVIDER}" = 'azure' ]; then
+    if [ "${OSNAME}" = 'ubuntu' ] && [ "${PROVIDER}" = 'azure' ]; then
         apt remove lsphp*-imagick -y
+        apt remove imagemagick* imagick* libmagick* -y
+        apt-get --purge autoremove -y
+    fi    
+}
+
+disable_smtp_tls(){
+    if [ "${OSNAME}" = 'ubuntu' ] && [ "${PROVIDER}" = 'azure' ]; then
+        sudo postconf -e 'smtpd_tls_protocols = >=TLSv1.2'
+        sudo postconf -e 'smtpd_tls_mandatory_protocols = >=TLSv1.2'
+        sudo systemctl reload postfix
     fi    
 }
 
@@ -158,6 +168,7 @@ main(){
     install_ufw
     rm_agpl_pkg
     rm_imagick_pkg
+    disable_smtp_tls
     special_fstab
     rmdummy
     END_TIME="$(date -u +%s)"
