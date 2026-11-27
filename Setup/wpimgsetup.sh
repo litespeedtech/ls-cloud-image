@@ -22,7 +22,6 @@ USER='www-data'
 GROUP='www-data'
 THEME='twentytwenty'
 PLUGINLIST="litespeed-cache.zip"
-#PLUGINLIST="litespeed-cache.zip all-in-one-wp-migration.zip google-analytics-for-wordpress.zip jetpack.zip dologin.zip"
 root_mysql_pass=$(openssl rand -hex 24)
 ALLERRORS=0
 EXISTSQLPASS=''
@@ -426,7 +425,7 @@ landing_pg(){
 
 update_final_permission(){
     change_owner ${DOCHM}
-    change_owner /tmp/lshttpd/lsphp.sock*
+    #change_owner /tmp/lshttpd/lsphp.sock*
     rm -f /tmp/lshttpd/.rtreport 
     rm -f /tmp/lshttpd/.status
 }
@@ -634,7 +633,7 @@ END
 }    
 
 db_password_file(){
-    echoG 'Create db fiile'
+    echoG 'Create db file'
     if [ -f ${DBPASSPATH} ]; then 
         echoY "${DBPASSPATH} already exist!, will recreate a new file"
         rm -f ${DBPASSPATH}
@@ -643,7 +642,7 @@ db_password_file(){
     cat >> "${DBPASSPATH}" <<EOM
 root_mysql_pass="${root_mysql_pass}"
 EOM
-    echoG 'Finish db fiile'
+    echoG 'Finish db file'
 }
 
 oci_iptables(){
