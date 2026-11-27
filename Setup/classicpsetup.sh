@@ -447,7 +447,7 @@ config_php(){
 
 update_final_permission(){
     change_owner ${DOCHM}
-    #change_owner /tmp/lshttpd/lsphp.sock*
+    change_owner ${LSWSFD}/extapp-sock/lsphp.sock*
     rm -f /tmp/lshttpd/.rtreport 
     rm -f /tmp/lshttpd/.status
 }
