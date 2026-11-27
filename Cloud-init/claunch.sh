@@ -152,6 +152,7 @@ cleanup (){
     mkdir -p /tmp
     rm -rf /tmp/*
     rm -rf /var/tmp/*
+    rm -rf /usr/local/lsws/extapp-sock/*
     #chmod 1777 /tmp
     #cloud-init here
     rm -f /var/log/cloud-init.log
